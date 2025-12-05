@@ -11,11 +11,13 @@ public class Agendamento {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "usuario_id", nullable = false)
-    private Long usuarioId;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "usuario_id")
+    private Usuario usuario;
 
-    @Column(name = "servico_id", nullable = false)
-    private Long servicoId;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "servico_id")
+    private Servico servico;
 
     @Column(name = "hora_agendamento", nullable = false)
     private LocalDateTime horaAgendamento;
@@ -39,18 +41,20 @@ public class Agendamento {
         this.id = id;
     }
 
-    public Long getUsuarioId() {
-        return usuarioId;
-    }
-    public void setUsuarioId(Long usuarioId) {
-        this.usuarioId = usuarioId;
+    public Usuario getUsuario() {
+        return usuario;
     }
 
-    public Long getServicoId() {
-        return servicoId;
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
     }
-    public void setServicoId(Long servicoId) {
-        this.servicoId = servicoId;
+
+    public Servico getServico() {
+        return servico;
+    }
+
+    public void setServico(Servico servico) {
+        this.servico = servico;
     }
 
     public LocalDateTime getHoraAgendamento() {

@@ -1,6 +1,7 @@
 package com.gov.ma.saoluis.agendamento.repository;
 
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoDTO;
+import com.gov.ma.saoluis.agendamento.DTO.UltimaChamadaDTO;
 import com.gov.ma.saoluis.agendamento.model.Agendamento;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,23 +15,25 @@ import java.util.List;
 public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> {
 
 	@Query(value = """
-		    SELECT 
-		        a.id AS agendamento_id,
-		        a.hora_agendamento,
-		        a.situacao,
-		        a.senha,
-		        a.tipo_atendimento,
-		        u.id AS usuario_id,
-		        u.nome AS usuario_nome,
-		        u.data_nascimento AS data_nascimento,
-		        s.id AS servico_id,
-		        s.nome AS servico_nome
-		    FROM agendamento a
-		    JOIN usuario u ON a.usuario_id = u.id
-		    JOIN servico s ON a.servico_id = s.id
-		""", nativeQuery = true)
-		List<AgendamentoDTO> buscarAgendamentosComDetalhes();
-	
+        SELECT
+            a.id               AS agendamentoId,
+            a.hora_agendamento AS horaAgendamento,
+            a.situacao         AS situacao,
+            a.senha            AS senha,
+            a.tipo_atendimento AS tipoAtendimento,
+
+            u.id               AS usuarioId,
+            u.nome             AS usuarioNome,
+
+            s.id               AS servicoId,
+            s.nome             AS servicoNome
+
+        FROM agendamento a
+        LEFT JOIN usuario u ON a.usuario_id = u.id
+        LEFT JOIN servico s  ON a.servico_id = s.id
+        """, nativeQuery = true)
+	List<AgendamentoDTO> buscarAgendamentosComDetalhes();
+
 	long countByTipoAtendimento(String tipoAtendimento);
 
 	@Query("SELECT COUNT(a) FROM Agendamento a " +
@@ -52,14 +55,33 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 		@Query(value = """
 		    SELECT * FROM agendamento 
 		    WHERE situacao = 'AGENDADO'
-		      AND tipo_atendimento = 'PRIORIDADE'
+		      AND tipo_atendimento = 'PRIORITARIO'
 		      AND DATE(hora_agendamento) = CURRENT_DATE
 		    ORDER BY hora_agendamento ASC 
 		    LIMIT 1
 		""", nativeQuery = true)
 		Agendamento buscarProximoPrioridade();
 
-		@Query("SELECT a FROM Agendamento a WHERE a.horaChamada IS NOT NULL ORDER BY a.horaChamada DESC LIMIT 1")
-		Agendamento findTopByOrderByHoraChamadaDesc();
+	@Query(value = """
+    SELECT
+        a.id               AS agendamentoId,
+        a.senha            AS senha,
+        a.tipo_atendimento AS tipoAtendimento,
+        a.hora_chamada     AS horaChamada,
 
+        u.id                AS usuarioId,
+        u.nome              AS usuarioNome,
+
+        s.id                AS servicoId,
+        s.nome              AS servicoNome
+
+    FROM agendamento a
+    LEFT JOIN usuario u ON a.usuario_id = u.id
+    LEFT JOIN servico s  ON a.servico_id = s.id
+
+    WHERE a.hora_chamada IS NOT NULL
+    ORDER BY a.hora_chamada DESC
+    LIMIT 1
+""", nativeQuery = true)
+	UltimaChamadaDTO buscarUltimaChamada();
 }

@@ -1,6 +1,7 @@
 package com.gov.ma.saoluis.agendamento.controller;
 
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoDTO;
+import com.gov.ma.saoluis.agendamento.DTO.UltimaChamadaDTO;
 import com.gov.ma.saoluis.agendamento.model.Agendamento;
 import com.gov.ma.saoluis.agendamento.service.AgendamentoService;
 import com.gov.ma.saoluis.agendamento.repository.AgendamentoRepository;
@@ -12,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/agendamentos")
-@CrossOrigin(origins = "*")
+
 public class AgendamentoController {
 
     private final AgendamentoService agendamentoService;
@@ -21,8 +22,8 @@ public class AgendamentoController {
         this.agendamentoService = agendamentoService;
     }
 
-    @GetMapping
-    public List<Agendamento> listarTodos() {
+    @GetMapping("/listar-todos")
+    public List<AgendamentoDTO> listarTodos() {
         return agendamentoService.listarTodos();
     }
 
@@ -36,7 +37,6 @@ public class AgendamentoController {
         List<AgendamentoDTO> agendamentos = agendamentoService.listarAgendamentosComDetalhes();
         return ResponseEntity.ok(agendamentos);
     }
-
 
     @PostMapping
     public Agendamento criar(@RequestBody Agendamento agendamento) {
@@ -53,7 +53,7 @@ public class AgendamentoController {
     public void deletar(@PathVariable Long id) {
         agendamentoService.deletar(id);
     }
-    
+
     @PostMapping("/chamar/normal")
     public ResponseEntity<Agendamento> chamarProximaNormal() {
         return ResponseEntity.ok(agendamentoService.chamarProximaNormal());
@@ -63,14 +63,25 @@ public class AgendamentoController {
     public ResponseEntity<Agendamento> chamarProximaPrioridade() {
         return ResponseEntity.ok(agendamentoService.chamarProximaPrioridade());
     }
-    
+
     @GetMapping("/ultima-chamada")
-    public ResponseEntity<Agendamento> getUltimaChamada() {
-        Agendamento ultima = agendamentoService.getUltimaChamada();
+    public ResponseEntity<UltimaChamadaDTO> getUltimaChamada() {
+        UltimaChamadaDTO ultima = agendamentoService.getUltimaChamada();
+
         if (ultima == null) {
             return ResponseEntity.noContent().build();
         }
+
         return ResponseEntity.ok(ultima);
     }
 
+    @PutMapping("/finalizar/{id}")
+    public ResponseEntity<Agendamento> finalizar(@PathVariable Long id) {
+        return ResponseEntity.ok(agendamentoService.finalizarAtendimento(id));
+    }
+
+    @PutMapping("/cancelar/{id}")
+    public ResponseEntity<Agendamento> cancelar(@PathVariable Long id) {
+        return ResponseEntity.ok(agendamentoService.cancelarAtendimento(id));
+    }
 }

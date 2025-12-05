@@ -1,5 +1,6 @@
 package com.gov.ma.saoluis.agendamento.service;
 
+import com.gov.ma.saoluis.agendamento.DTO.UltimaChamadaDTO;
 import org.springframework.stereotype.Service;
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoDTO;
 import com.gov.ma.saoluis.agendamento.model.Agendamento;
@@ -18,9 +19,9 @@ public class AgendamentoService {
         this.agendamentoRepository = agendamentoRepository;
     }
 
-    // 🔹 Listar todos
-    public List<Agendamento> listarTodos() {
-        return agendamentoRepository.findAll();
+    // 🔹 Listar todos COM DETALHES
+    public List<AgendamentoDTO> listarTodos() {
+        return agendamentoRepository.buscarAgendamentosComDetalhes();
     }
 
     // 🔹 Buscar por ID
@@ -63,19 +64,25 @@ public class AgendamentoService {
         Agendamento existente = buscarPorId(id);
 
         existente.setHoraAgendamento(novosDados.getHoraAgendamento());
-        existente.setServicoId(novosDados.getServicoId());
-        existente.setUsuarioId(novosDados.getUsuarioId());
 
-        String tipoAtendimento = (novosDados.getTipoAtendimento() != null && !novosDados.getTipoAtendimento().isEmpty())
-                ? novosDados.getTipoAtendimento()
-                : existente.getTipoAtendimento();
-        existente.setTipoAtendimento(tipoAtendimento);
+        if (novosDados.getUsuario() != null) {
+            existente.setUsuario(novosDados.getUsuario());
+        }
+
+        if (novosDados.getServico() != null) {
+            existente.setServico(novosDados.getServico());
+        }
+
+        if (novosDados.getTipoAtendimento() != null && !novosDados.getTipoAtendimento().isEmpty()) {
+            existente.setTipoAtendimento(novosDados.getTipoAtendimento());
+        }
 
         existente.setSenha(gerarProximaSenha(existente.getSenha()));
         existente.setSituacao("REAGENDADO");
 
         return agendamentoRepository.save(existente);
     }
+
 
     // 🔹 Deletar
     public void deletar(Long id) {
@@ -133,8 +140,38 @@ public class AgendamentoService {
 
         return agendamentoRepository.save(agendamento);
     }
-    
-    public Agendamento getUltimaChamada() {
-        return agendamentoRepository.findTopByOrderByHoraChamadaDesc();
+
+    public UltimaChamadaDTO getUltimaChamada() {
+        return agendamentoRepository.buscarUltimaChamada();
     }
+
+
+    // 🔹 Finalizar atendimento
+    public Agendamento finalizarAtendimento(Long id) {
+        Agendamento agendamento = buscarPorId(id);
+
+        if (!"EM_ATENDIMENTO".equals(agendamento.getSituacao())) {
+            throw new RuntimeException("Este agendamento não está em atendimento.");
+        }
+
+        agendamento.setSituacao("FINALIZADO");
+        agendamento.setHoraChamada(LocalDateTime.now());
+
+        return agendamentoRepository.save(agendamento);
+    }
+
+    // 🔹 Cancelar atendimento (não compareceu)
+    public Agendamento cancelarAtendimento(Long id) {
+        Agendamento agendamento = buscarPorId(id);
+
+        if (!"EM_ATENDIMENTO".equals(agendamento.getSituacao())) {
+            throw new RuntimeException("Este agendamento não está em atendimento.");
+        }
+
+        agendamento.setSituacao("NAO_COMPARECEU");
+        agendamento.setHoraChamada(LocalDateTime.now());
+
+        return agendamentoRepository.save(agendamento);
+    }
+
 }

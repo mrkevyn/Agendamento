@@ -48,10 +48,4 @@ public class ServicoController {
     }
 
     // Exemplo de teste rápido com System.out.print
-    @GetMapping("/teste")
-    public ResponseEntity<String> testeSelect() {
-        List<Servico> servicos = servicoService.listarTodos();
-        servicos.forEach(s -> System.out.println("ID: " + s.getId() + ", Nome: " + s.getNome()));
-        return ResponseEntity.ok("Teste executado, veja o console!");
-    }
 }

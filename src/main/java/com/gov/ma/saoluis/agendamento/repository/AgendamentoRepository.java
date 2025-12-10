@@ -125,4 +125,13 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 """)
 	Long findSecretariaIdByServicoId(@Param("servicoId") Long servicoId);
 
+	@Query("""
+    SELECT a
+    FROM Agendamento a
+    WHERE a.servico.secretaria IS NOT NULL
+      AND a.situacao = 'AGENDADO'
+      AND a.senha = :senha
+    ORDER BY a.horaAgendamento ASC
+""")
+	List<Agendamento> buscarPorSenha(@Param("senha") String senha, org.springframework.data.domain.Pageable pageable);
 }

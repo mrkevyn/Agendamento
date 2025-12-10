@@ -1,7 +1,9 @@
 package com.gov.ma.saoluis.agendamento.service;
 
+import com.gov.ma.saoluis.agendamento.DTO.AgendamentoResponseDTO;
 import com.gov.ma.saoluis.agendamento.DTO.UltimaChamadaDTO;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoDTO;
 import com.gov.ma.saoluis.agendamento.model.Agendamento;
@@ -146,6 +148,32 @@ public class AgendamentoService {
 
         Agendamento proximo = lista.isEmpty() ? null : lista.get(0);
         return processarChamada(proximo);
+    }
+
+    public AgendamentoResponseDTO chamarPorSenha(String senha) throws Exception {
+        Pageable pageable = PageRequest.of(0, 1);
+        List<Agendamento> agendamentos = agendamentoRepository.buscarPorSenha(senha, pageable);
+
+        if (agendamentos.isEmpty()) {
+            throw new Exception("Agendamento não encontrado para a senha " + senha);
+        }
+
+        Agendamento agendamento = agendamentos.get(0);
+        agendamento.setHoraChamada(LocalDateTime.now());
+        agendamentoRepository.save(agendamento);
+
+        // Criar o DTO manualmente
+        return new AgendamentoResponseDTO(
+                agendamento.getId(),
+                agendamento.getHoraAgendamento(),
+                agendamento.getSituacao(),
+                agendamento.getSenha(),
+                agendamento.getTipoAtendimento(),
+                agendamento.getUsuario() != null ? agendamento.getUsuario().getId() : null,
+                agendamento.getUsuario() != null ? agendamento.getUsuario().getNome() : null,
+                agendamento.getServico() != null ? agendamento.getServico().getId() : null,
+                agendamento.getServico() != null ? agendamento.getServico().getNome() : null
+        );
     }
 
     // 🔹 Lógica comum para registrar chamada

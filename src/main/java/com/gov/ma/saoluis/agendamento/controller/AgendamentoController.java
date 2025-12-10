@@ -1,11 +1,13 @@
 package com.gov.ma.saoluis.agendamento.controller;
 
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoDTO;
+import com.gov.ma.saoluis.agendamento.DTO.AgendamentoResponseDTO;
 import com.gov.ma.saoluis.agendamento.DTO.UltimaChamadaDTO;
 import com.gov.ma.saoluis.agendamento.model.Agendamento;
 import com.gov.ma.saoluis.agendamento.service.AgendamentoService;
 import com.gov.ma.saoluis.agendamento.repository.AgendamentoRepository;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -67,6 +69,16 @@ public class AgendamentoController {
             @PathVariable Long secretariaId
     ) {
         return ResponseEntity.ok(agendamentoService.chamarProximaPrioridade(secretariaId));
+    }
+
+    @PostMapping("/chamar/por-senha/{senha}")
+    public ResponseEntity<AgendamentoResponseDTO> chamarPorSenha(@PathVariable String senha) {
+        try {
+            AgendamentoResponseDTO agendamento = agendamentoService.chamarPorSenha(senha);
+            return ResponseEntity.ok(agendamento);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
     }
 
     @GetMapping("/ultima-chamada")

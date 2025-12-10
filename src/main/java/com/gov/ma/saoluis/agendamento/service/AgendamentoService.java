@@ -159,14 +159,15 @@ public class AgendamentoService {
         }
 
         Agendamento agendamento = agendamentos.get(0);
-        agendamento.setHoraChamada(LocalDateTime.now());
-        agendamentoRepository.save(agendamento);
 
-        // Criar o DTO manualmente
+        // 🔹 Atualiza a situação e hora_chamada corretamente
+        agendamento = processarChamada(agendamento);
+
+        // 🔹 Retorna o DTO atualizado
         return new AgendamentoResponseDTO(
                 agendamento.getId(),
                 agendamento.getHoraAgendamento(),
-                agendamento.getSituacao(),
+                agendamento.getSituacao(),            // agora será "EM_ATENDIMENTO"
                 agendamento.getSenha(),
                 agendamento.getTipoAtendimento(),
                 agendamento.getUsuario() != null ? agendamento.getUsuario().getId() : null,

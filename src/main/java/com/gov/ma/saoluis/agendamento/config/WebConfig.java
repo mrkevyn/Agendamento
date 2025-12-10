@@ -16,7 +16,8 @@ public class WebConfig {
                 registry.addMapping("/**")
                         .allowedOriginPatterns(
                                 "http://127.0.0.1",   // XAMPP default
-                                "http://localhost"     // alternativa
+                                "http://localhost",     // alternativa
+                                "http://192.168.200.42"
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowCredentials(true);

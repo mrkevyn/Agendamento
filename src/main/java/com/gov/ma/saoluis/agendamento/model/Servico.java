@@ -8,9 +8,9 @@ import lombok.Setter;
 @Getter
 @Entity
 @Table(name = "servico")
+
 public class Servico {
 
-    // Getters e Setters
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -19,6 +19,7 @@ public class Servico {
 
     private String descricao;
 
-    // Adicione outros campos da tabela
-
+    @ManyToOne
+    @JoinColumn(name = "secretaria_id")
+    private Secretaria secretaria;
 }

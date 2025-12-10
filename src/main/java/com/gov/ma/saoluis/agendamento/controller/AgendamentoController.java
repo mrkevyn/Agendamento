@@ -22,9 +22,10 @@ public class AgendamentoController {
         this.agendamentoService = agendamentoService;
     }
 
-    @GetMapping("/listar-todos")
-    public List<AgendamentoDTO> listarTodos() {
-        return agendamentoService.listarTodos();
+    @GetMapping("/secretaria/{secretariaId}")
+    public ResponseEntity<List<AgendamentoDTO>> listarPorSecretaria(@PathVariable Long secretariaId) {
+        List<AgendamentoDTO> agendamentos = agendamentoService.listarPorSecretaria(secretariaId);
+        return ResponseEntity.ok(agendamentos);
     }
 
     @GetMapping("/{id}")
@@ -54,14 +55,18 @@ public class AgendamentoController {
         agendamentoService.deletar(id);
     }
 
-    @PostMapping("/chamar/normal")
-    public ResponseEntity<Agendamento> chamarProximaNormal() {
-        return ResponseEntity.ok(agendamentoService.chamarProximaNormal());
+    @PostMapping("/chamar/normal/{secretariaId}")
+    public ResponseEntity<Agendamento> chamarProximaNormal(
+            @PathVariable Long secretariaId
+    ) {
+        return ResponseEntity.ok(agendamentoService.chamarProximaNormal(secretariaId));
     }
 
-    @PostMapping("/chamar/prioridade")
-    public ResponseEntity<Agendamento> chamarProximaPrioridade() {
-        return ResponseEntity.ok(agendamentoService.chamarProximaPrioridade());
+    @PostMapping("/chamar/prioridade/{secretariaId}")
+    public ResponseEntity<Agendamento> chamarProximaPrioridade(
+            @PathVariable Long secretariaId
+    ) {
+        return ResponseEntity.ok(agendamentoService.chamarProximaPrioridade(secretariaId));
     }
 
     @GetMapping("/ultima-chamada")

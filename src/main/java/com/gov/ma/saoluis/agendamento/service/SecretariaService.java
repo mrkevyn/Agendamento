@@ -22,7 +22,7 @@ public class SecretariaService {
     }
 
     // 2. Buscar por ID
-    public Optional<Secretaria> buscarPorId(Integer id) {
+    public Optional<Secretaria> buscarPorId(Long id) {
         return secretariaRepository.findById(id);
     }
 

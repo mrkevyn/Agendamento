@@ -27,7 +27,7 @@ public class SecretariaController {
 
     // ✅ GET - Por ID
     @GetMapping("/{id}")
-    public ResponseEntity<Secretaria> buscarPorId(@PathVariable Integer id) {
+    public ResponseEntity<Secretaria> buscarPorId(@PathVariable Long id) {
         return secretariaService.buscarPorId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

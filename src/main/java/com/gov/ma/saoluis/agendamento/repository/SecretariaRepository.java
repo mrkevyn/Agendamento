@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface SecretariaRepository extends JpaRepository<Secretaria, Integer> {
+public interface SecretariaRepository extends JpaRepository<Secretaria, Long> {
 
     // Somente visíveis e ativas
     List<Secretaria> findByVisivelTrueAndAtivoTrue();

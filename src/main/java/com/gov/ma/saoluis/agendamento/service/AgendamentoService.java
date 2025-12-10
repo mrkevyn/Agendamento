@@ -1,6 +1,7 @@
 package com.gov.ma.saoluis.agendamento.service;
 
 import com.gov.ma.saoluis.agendamento.DTO.UltimaChamadaDTO;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoDTO;
 import com.gov.ma.saoluis.agendamento.model.Agendamento;
@@ -20,8 +21,8 @@ public class AgendamentoService {
     }
 
     // 🔹 Listar todos COM DETALHES
-    public List<AgendamentoDTO> listarTodos() {
-        return agendamentoRepository.buscarAgendamentosComDetalhes();
+    public List<AgendamentoDTO> listarPorSecretaria(Long secretariaId) {
+        return agendamentoRepository.buscarAgendamentosPorSecretaria(secretariaId);
     }
 
     // 🔹 Buscar por ID
@@ -32,28 +33,38 @@ public class AgendamentoService {
 
     // 🔹 Criar novo agendamento
     public Agendamento salvar(Agendamento agendamento) {
+
         agendamento.setSituacao("AGENDADO");
 
-        // Define tipo de atendimento padrão
         if (agendamento.getTipoAtendimento() == null || agendamento.getTipoAtendimento().isEmpty()) {
             agendamento.setTipoAtendimento("NORMAL");
         }
 
-        // Se horaAgendamento não estiver definida, usa agora
         if (agendamento.getHoraAgendamento() == null) {
             agendamento.setHoraAgendamento(LocalDateTime.now());
         }
 
+        // PREFIXO
         String prefixo = gerarPrefixo(agendamento.getTipoAtendimento());
 
-        // Conta apenas agendamentos do mesmo tipo e do mesmo dia
-        LocalDate dataDoAgendamento = agendamento.getHoraAgendamento().toLocalDate();
-        long totalPorTipoHoje = agendamentoRepository.countByTipoAtendimentoAndData(
-            agendamento.getTipoAtendimento(),
-            dataDoAgendamento
+        // 🟢 Agora buscamos a secretaria do serviço diretamente no banco!
+        Long secretariaId = agendamentoRepository.findSecretariaIdByServicoId(
+                agendamento.getServico().getId()
         );
 
-        String senha = String.format("%s%03d", prefixo, totalPorTipoHoje + 1);
+        if (secretariaId == null) {
+            throw new RuntimeException("O serviço informado não possui secretaria vinculada.");
+        }
+
+        LocalDate data = agendamento.getHoraAgendamento().toLocalDate();
+
+        long totalHoje = agendamentoRepository.countBySecretariaAndTipoAndData(
+                secretariaId.intValue(),
+                agendamento.getTipoAtendimento(),
+                data
+        );
+
+        String senha = String.format("%s%03d", prefixo, totalHoje + 1);
         agendamento.setSenha(senha);
 
         return agendamentoRepository.save(agendamento);
@@ -83,7 +94,6 @@ public class AgendamentoService {
         return agendamentoRepository.save(existente);
     }
 
-
     // 🔹 Deletar
     public void deletar(Long id) {
         agendamentoRepository.deleteById(id);
@@ -101,6 +111,7 @@ public class AgendamentoService {
 
     // 🔹 Incrementar senha anterior (ex: N001 → N002)
     private String gerarProximaSenha(String senhaAntiga) {
+
         if (senhaAntiga == null || senhaAntiga.length() < 2) {
             return "N001";
         }
@@ -108,9 +119,8 @@ public class AgendamentoService {
         String prefixo = senhaAntiga.substring(0, 1);
         String numeroStr = senhaAntiga.substring(1);
         int numero = Integer.parseInt(numeroStr);
-        int proximoNumero = numero + 1;
 
-        return String.format("%s%03d", prefixo, proximoNumero);
+        return String.format("%s%03d", prefixo, numero + 1);
     }
 
     public List<AgendamentoDTO> listarAgendamentosComDetalhes() {
@@ -118,14 +128,23 @@ public class AgendamentoService {
     }
     
  // 🔹 Chamar próxima senha normal
-    public Agendamento chamarProximaNormal() {
-        Agendamento proximo = agendamentoRepository.buscarProximoNormal();
-        return processarChamada(proximo);
-    }
+ public Agendamento chamarProximaNormal(Long secretariaId) {
+     var lista = agendamentoRepository.buscarProximoNormal(
+             secretariaId,
+             PageRequest.of(0, 1)
+     );
 
-    // 🔹 Chamar próxima senha prioritária
-    public Agendamento chamarProximaPrioridade() {
-        Agendamento proximo = agendamentoRepository.buscarProximoPrioridade();
+     Agendamento proximo = lista.isEmpty() ? null : lista.get(0);
+     return processarChamada(proximo);
+ }
+
+    public Agendamento chamarProximaPrioridade(Long secretariaId) {
+        var lista = agendamentoRepository.buscarProximoPrioridade(
+                secretariaId,
+                PageRequest.of(0, 1)
+        );
+
+        Agendamento proximo = lista.isEmpty() ? null : lista.get(0);
         return processarChamada(proximo);
     }
 
@@ -144,7 +163,6 @@ public class AgendamentoService {
     public UltimaChamadaDTO getUltimaChamada() {
         return agendamentoRepository.buscarUltimaChamada();
     }
-
 
     // 🔹 Finalizar atendimento
     public Agendamento finalizarAtendimento(Long id) {
@@ -173,5 +191,4 @@ public class AgendamentoService {
 
         return agendamentoRepository.save(agendamento);
     }
-
 }

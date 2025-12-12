@@ -33,6 +33,10 @@ public class Agendamento {
     
     private LocalDateTime horaChamada;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "atendente_id")
+    private Atendente atendente;
+
     // Getters e Setters
     public Long getId() {
         return id;
@@ -90,4 +94,12 @@ public class Agendamento {
 	public void setHoraChamada(LocalDateTime horaChamada) {
 		this.horaChamada = horaChamada;
 	}
+
+    public Atendente getAtendente() {
+        return atendente;
+    }
+
+    public void setAtendente(Atendente atendente) {
+        this.atendente = atendente;
+    }
 }

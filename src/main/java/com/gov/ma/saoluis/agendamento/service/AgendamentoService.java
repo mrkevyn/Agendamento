@@ -2,6 +2,8 @@ package com.gov.ma.saoluis.agendamento.service;
 
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoResponseDTO;
 import com.gov.ma.saoluis.agendamento.DTO.UltimaChamadaDTO;
+import com.gov.ma.saoluis.agendamento.model.Atendente;
+import com.gov.ma.saoluis.agendamento.repository.AtendenteRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -16,9 +18,12 @@ import java.util.List;
 @Service
 public class AgendamentoService {
 
+    private final AtendenteRepository atendenteRepository;
+
     private final AgendamentoRepository agendamentoRepository;
 
-    public AgendamentoService(AgendamentoRepository agendamentoRepository) {
+    public AgendamentoService(AtendenteRepository atendenteRepository, AgendamentoRepository agendamentoRepository) {
+        this.atendenteRepository = atendenteRepository;
         this.agendamentoRepository = agendamentoRepository;
     }
 
@@ -194,13 +199,18 @@ public class AgendamentoService {
     }
 
     // 🔹 Finalizar atendimento
-    public Agendamento finalizarAtendimento(Long id) {
+    public Agendamento finalizarAtendimento(Long id, Long atendenteId) {
+
         Agendamento agendamento = buscarPorId(id);
 
         if (!"EM_ATENDIMENTO".equals(agendamento.getSituacao())) {
             throw new RuntimeException("Este agendamento não está em atendimento.");
         }
 
+        Atendente atendente = atendenteRepository.findById(atendenteId)
+                .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
+
+        agendamento.setAtendente(atendente);
         agendamento.setSituacao("FINALIZADO");
         agendamento.setHoraChamada(LocalDateTime.now());
 

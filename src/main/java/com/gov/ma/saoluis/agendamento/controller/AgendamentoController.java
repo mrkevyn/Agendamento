@@ -92,9 +92,12 @@ public class AgendamentoController {
         return ResponseEntity.ok(ultima);
     }
 
-    @PutMapping("/finalizar/{id}")
-    public ResponseEntity<Agendamento> finalizar(@PathVariable Long id) {
-        return ResponseEntity.ok(agendamentoService.finalizarAtendimento(id));
+    @PutMapping("/finalizar/{id}/{atendenteId}")
+    public ResponseEntity<Agendamento> finalizar(
+            @PathVariable Long id,
+            @PathVariable Long atendenteId
+    ) {
+        return ResponseEntity.ok(agendamentoService.finalizarAtendimento(id, atendenteId));
     }
 
     @PutMapping("/cancelar/{id}")

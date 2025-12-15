@@ -57,28 +57,34 @@ public class AgendamentoController {
         agendamentoService.deletar(id);
     }
 
-    @PostMapping("/chamar/normal/{secretariaId}")
+    @PostMapping("/chamar/normal/{secretariaId}/{atendenteId}")
     public ResponseEntity<Agendamento> chamarProximaNormal(
-            @PathVariable Long secretariaId
+            @PathVariable Long secretariaId,
+            @PathVariable Long atendenteId
     ) {
-        return ResponseEntity.ok(agendamentoService.chamarProximaNormal(secretariaId));
+        return ResponseEntity.ok(
+                agendamentoService.chamarProximaNormal(secretariaId, atendenteId)
+        );
     }
 
-    @PostMapping("/chamar/prioridade/{secretariaId}")
+    @PostMapping("/chamar/prioridade/{secretariaId}/{atendenteId}")
     public ResponseEntity<Agendamento> chamarProximaPrioridade(
-            @PathVariable Long secretariaId
+            @PathVariable Long secretariaId,
+            @PathVariable Long atendenteId
     ) {
-        return ResponseEntity.ok(agendamentoService.chamarProximaPrioridade(secretariaId));
+        return ResponseEntity.ok(
+                agendamentoService.chamarProximaPrioridade(secretariaId, atendenteId)
+        );
     }
 
-    @PostMapping("/chamar/por-senha/{senha}")
-    public ResponseEntity<AgendamentoResponseDTO> chamarPorSenha(@PathVariable String senha) {
-        try {
-            AgendamentoResponseDTO agendamento = agendamentoService.chamarPorSenha(senha);
-            return ResponseEntity.ok(agendamento);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
+    @PostMapping("/chamar/por-senha/{senha}/{atendenteId}")
+    public ResponseEntity<AgendamentoResponseDTO> chamarPorSenha(
+            @PathVariable String senha,
+            @PathVariable Long atendenteId
+    ) throws Exception {
+        return ResponseEntity.ok(
+                agendamentoService.chamarPorSenha(senha, atendenteId)
+        );
     }
 
     @GetMapping("/ultima-chamada")
@@ -92,12 +98,9 @@ public class AgendamentoController {
         return ResponseEntity.ok(ultima);
     }
 
-    @PutMapping("/finalizar/{id}/{atendenteId}")
-    public ResponseEntity<Agendamento> finalizar(
-            @PathVariable Long id,
-            @PathVariable Long atendenteId
-    ) {
-        return ResponseEntity.ok(agendamentoService.finalizarAtendimento(id, atendenteId));
+    @PutMapping("/finalizar/{id}")
+    public ResponseEntity<Agendamento> finalizar(@PathVariable Long id) {
+        return ResponseEntity.ok(agendamentoService.finalizarAtendimento(id));
     }
 
     @PutMapping("/cancelar/{id}")

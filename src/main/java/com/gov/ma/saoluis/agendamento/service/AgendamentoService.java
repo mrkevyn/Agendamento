@@ -2,8 +2,8 @@ package com.gov.ma.saoluis.agendamento.service;
 
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoResponseDTO;
 import com.gov.ma.saoluis.agendamento.DTO.UltimaChamadaDTO;
-import com.gov.ma.saoluis.agendamento.model.Atendente;
-import com.gov.ma.saoluis.agendamento.repository.AtendenteRepository;
+import com.gov.ma.saoluis.agendamento.model.Gerenciador;
+import com.gov.ma.saoluis.agendamento.repository.GerenciadorRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,12 +18,12 @@ import java.util.List;
 @Service
 public class AgendamentoService {
 
-    private final AtendenteRepository atendenteRepository;
+    private final GerenciadorRepository atendenteRepository;
 
     private final AgendamentoRepository agendamentoRepository;
 
-    public AgendamentoService(AtendenteRepository atendenteRepository, AgendamentoRepository agendamentoRepository) {
-        this.atendenteRepository = atendenteRepository;
+    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository) {
+        this.atendenteRepository = gerenciadorRepository;
         this.agendamentoRepository = agendamentoRepository;
     }
 
@@ -135,27 +135,38 @@ public class AgendamentoService {
     }
     
  // 🔹 Chamar próxima senha normal
- public Agendamento chamarProximaNormal(Long secretariaId) {
+ public Agendamento chamarProximaNormal(Long secretariaId, Long atendenteId) {
+
+     Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
+             .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
+
      var lista = agendamentoRepository.buscarProximoNormal(
              secretariaId,
              PageRequest.of(0, 1)
      );
 
      Agendamento proximo = lista.isEmpty() ? null : lista.get(0);
-     return processarChamada(proximo);
+
+     return processarChamada(proximo, gerenciador);
  }
 
-    public Agendamento chamarProximaPrioridade(Long secretariaId) {
+    public Agendamento chamarProximaPrioridade(Long secretariaId, Long atendenteId) {
+
+        Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
+                .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
+
         var lista = agendamentoRepository.buscarProximoPrioridade(
                 secretariaId,
                 PageRequest.of(0, 1)
         );
 
         Agendamento proximo = lista.isEmpty() ? null : lista.get(0);
-        return processarChamada(proximo);
+
+        return processarChamada(proximo, gerenciador);
     }
 
-    public AgendamentoResponseDTO chamarPorSenha(String senha) throws Exception {
+    public AgendamentoResponseDTO chamarPorSenha(String senha, Long atendenteId) throws Exception {
+
         Pageable pageable = PageRequest.of(0, 1);
         List<Agendamento> agendamentos = agendamentoRepository.buscarPorSenha(senha, pageable);
 
@@ -163,16 +174,18 @@ public class AgendamentoService {
             throw new Exception("Agendamento não encontrado para a senha " + senha);
         }
 
+        Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
+                .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
+
         Agendamento agendamento = agendamentos.get(0);
 
-        // 🔹 Atualiza a situação e hora_chamada corretamente
-        agendamento = processarChamada(agendamento);
+        // 🔹 Agora chama passando o atendente
+        agendamento = processarChamada(agendamento, gerenciador);
 
-        // 🔹 Retorna o DTO atualizado
         return new AgendamentoResponseDTO(
                 agendamento.getId(),
                 agendamento.getHoraAgendamento(),
-                agendamento.getSituacao(),            // agora será "EM_ATENDIMENTO"
+                agendamento.getSituacao(),
                 agendamento.getSenha(),
                 agendamento.getTipoAtendimento(),
                 agendamento.getUsuario() != null ? agendamento.getUsuario().getId() : null,
@@ -183,13 +196,15 @@ public class AgendamentoService {
     }
 
     // 🔹 Lógica comum para registrar chamada
-    private Agendamento processarChamada(Agendamento agendamento) {
+    private Agendamento processarChamada(Agendamento agendamento, Gerenciador gerenciador) {
+
         if (agendamento == null) {
             throw new RuntimeException("Nenhuma senha disponível para chamar.");
         }
 
         agendamento.setSituacao("EM_ATENDIMENTO");
         agendamento.setHoraChamada(LocalDateTime.now());
+        agendamento.setAtendente(gerenciador); // 🔹 AQUI
 
         return agendamentoRepository.save(agendamento);
     }
@@ -199,7 +214,7 @@ public class AgendamentoService {
     }
 
     // 🔹 Finalizar atendimento
-    public Agendamento finalizarAtendimento(Long id, Long atendenteId) {
+    public Agendamento finalizarAtendimento(Long id) {
 
         Agendamento agendamento = buscarPorId(id);
 
@@ -207,12 +222,7 @@ public class AgendamentoService {
             throw new RuntimeException("Este agendamento não está em atendimento.");
         }
 
-        Atendente atendente = atendenteRepository.findById(atendenteId)
-                .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
-
-        agendamento.setAtendente(atendente);
         agendamento.setSituacao("FINALIZADO");
-        agendamento.setHoraChamada(LocalDateTime.now());
 
         return agendamentoRepository.save(agendamento);
     }

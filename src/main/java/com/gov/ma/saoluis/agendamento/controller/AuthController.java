@@ -2,34 +2,35 @@ package com.gov.ma.saoluis.agendamento.controller;
 
 import com.gov.ma.saoluis.agendamento.DTO.LoginRequestDTO;
 import com.gov.ma.saoluis.agendamento.DTO.LoginResponseDTO;
-import com.gov.ma.saoluis.agendamento.model.Atendente;
-import com.gov.ma.saoluis.agendamento.service.AtendenteService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.gov.ma.saoluis.agendamento.model.Gerenciador;
+import com.gov.ma.saoluis.agendamento.service.GerenciadorService;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final AtendenteService atendenteService;
+    private final GerenciadorService gerenciadorService;
 
-    public AuthController(AtendenteService atendenteService) {
-        this.atendenteService = atendenteService;
+    public AuthController(GerenciadorService gerenciadorService) {
+        this.gerenciadorService = gerenciadorService;
     }
 
     @PostMapping("/login")
     public LoginResponseDTO login(@RequestBody LoginRequestDTO dto) {
 
-        Atendente at = atendenteService.login(dto.acesso());
+        Gerenciador gerenciador = gerenciadorService.login(
+                dto.login(),   // cpf ou email
+                dto.senha()
+        );
 
         return new LoginResponseDTO(
-                at.getId(),
-                at.getNome(),
-                at.getAcesso(),
-                at.getSecretaria().getId(),
-                at.getGuiche()
+                gerenciador.getId(),
+                gerenciador.getNome(),
+                gerenciador.getPerfil(),                 // 👈 PERFIL
+                gerenciador.getSecretaria().getId(),
+                gerenciador.getGuiche()
         );
     }
+
 }

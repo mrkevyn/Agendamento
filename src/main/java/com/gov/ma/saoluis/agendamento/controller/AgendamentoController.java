@@ -57,23 +57,23 @@ public class AgendamentoController {
         agendamentoService.deletar(id);
     }
 
-    @PostMapping("/chamar/normal/{secretariaId}/{atendenteId}")
+    @PostMapping("/chamar/normal/{secretariaId}/{gerenciadorId}")
     public ResponseEntity<Agendamento> chamarProximaNormal(
             @PathVariable Long secretariaId,
-            @PathVariable Long atendenteId
+            @PathVariable Long gerenciadorId
     ) {
         return ResponseEntity.ok(
-                agendamentoService.chamarProximaNormal(secretariaId, atendenteId)
+                agendamentoService.chamarProximaNormal(secretariaId, gerenciadorId)
         );
     }
 
-    @PostMapping("/chamar/prioridade/{secretariaId}/{atendenteId}")
+    @PostMapping("/chamar/prioridade/{secretariaId}/{gerenciadorId}")
     public ResponseEntity<Agendamento> chamarProximaPrioridade(
             @PathVariable Long secretariaId,
-            @PathVariable Long atendenteId
+            @PathVariable Long gerenciadorId
     ) {
         return ResponseEntity.ok(
-                agendamentoService.chamarProximaPrioridade(secretariaId, atendenteId)
+                agendamentoService.chamarProximaPrioridade(secretariaId, gerenciadorId)
         );
     }
 

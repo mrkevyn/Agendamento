@@ -22,9 +22,12 @@ public class AgendamentoService {
 
     private final AgendamentoRepository agendamentoRepository;
 
-    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository) {
+    private final LogService logService;
+
+    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService) {
         this.atendenteRepository = gerenciadorRepository;
         this.agendamentoRepository = agendamentoRepository;
+        this.logService = logService;
     }
 
     // 🔹 Listar todos COM DETALHES
@@ -51,10 +54,8 @@ public class AgendamentoService {
             agendamento.setHoraAgendamento(LocalDateTime.now());
         }
 
-        // PREFIXO
         String prefixo = gerarPrefixo(agendamento.getTipoAtendimento());
 
-        // 🟢 Agora buscamos a secretaria do serviço diretamente no banco!
         Long secretariaId = agendamentoRepository.findSecretariaIdByServicoId(
                 agendamento.getServico().getId()
         );
@@ -74,7 +75,19 @@ public class AgendamentoService {
         String senha = String.format("%s%03d", prefixo, totalHoje + 1);
         agendamento.setSenha(senha);
 
-        return agendamentoRepository.save(agendamento);
+        Agendamento salvo = agendamentoRepository.save(agendamento);
+
+        // 🔴 REGISTRA LOG DO AGENDAMENTO
+        logService.registrar(
+                agendamento.getUsuario().getId(),
+                "USUARIO",
+                "AGENDAMENTO_CRIADO",
+                "Agendamento ID: " + salvo.getId() +
+                        ", Senha: " + salvo.getSenha() +
+                        ", Serviço: " + salvo.getServico().getId()
+        );
+
+        return salvo;
     }
 
     // 🔹 Atualizar (reagendar)

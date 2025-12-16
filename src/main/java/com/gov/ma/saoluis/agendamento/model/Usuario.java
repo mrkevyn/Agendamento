@@ -2,6 +2,8 @@ package com.gov.ma.saoluis.agendamento.model;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "usuario")
 public class Usuario {
@@ -13,6 +15,9 @@ public class Usuario {
     private String nome;
     private String email;
     private String login;
+
+    @Column(name = "data_nascimento")
+    private LocalDate dataNascimento;
 
     // getters e setters
     public Long getId() { return id; }
@@ -26,5 +31,8 @@ public class Usuario {
 
     public String getLogin() { return login; }
     public void setLogin(String login) { this.login = login; }
+
+    public LocalDate getDataNascimento() { return dataNascimento; }
+    public void setDataNascimento(LocalDate dataNascimento) { this.dataNascimento = dataNascimento; }
 
 }

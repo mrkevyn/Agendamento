@@ -5,8 +5,11 @@ import com.gov.ma.saoluis.agendamento.DTO.GerenciadorDTO;
 import com.gov.ma.saoluis.agendamento.DTO.LoginRequestDTO;
 import com.gov.ma.saoluis.agendamento.DTO.LoginResponseDTO;
 import com.gov.ma.saoluis.agendamento.config.JwtService;
+import com.gov.ma.saoluis.agendamento.config.UsuarioLogadoUtil;
 import com.gov.ma.saoluis.agendamento.model.Gerenciador;
+import com.gov.ma.saoluis.agendamento.repository.GerenciadorRepository;
 import com.gov.ma.saoluis.agendamento.service.GerenciadorService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.http.ResponseEntity;
@@ -20,10 +23,13 @@ public class GerenciadorController {
 
     private final GerenciadorService gerenciadorService;
     private final JwtService jwtService;
+    private final GerenciadorRepository gerenciadorRepository;
 
-    public GerenciadorController(GerenciadorService gerenciadorService, JwtService jwtService) {
+    public GerenciadorController(GerenciadorService gerenciadorService, JwtService jwtService,
+                                 GerenciadorRepository gerenciadorRepository) {
         this.gerenciadorService = gerenciadorService;
         this.jwtService = jwtService;
+        this.gerenciadorRepository = gerenciadorRepository;
     }
 
     // ➤ Criar atendente
@@ -91,6 +97,36 @@ public class GerenciadorController {
                         g.getGuiche(),
                         token
                 )
+        );
+    }
+
+    @GetMapping("/usuario-logado")
+    public LoginResponseDTO usuarioLogado(HttpServletRequest request) {
+
+        Long usuarioId = UsuarioLogadoUtil.getUsuarioId();
+
+        if (usuarioId == null) {
+            throw new RuntimeException("Usuário não autenticado");
+        }
+
+        Gerenciador g = gerenciadorRepository.findById(usuarioId)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        // 🔹 Recupera token do header Authorization
+        String authHeader = request.getHeader("Authorization");
+        String token = null;
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
+        }
+
+        return new LoginResponseDTO(
+                g.getId(),
+                g.getNome(),
+                g.getPerfil(),
+                g.getSecretaria().getId(),
+                g.getGuiche(),
+                token
         );
     }
 

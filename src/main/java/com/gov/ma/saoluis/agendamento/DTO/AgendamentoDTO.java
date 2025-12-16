@@ -17,4 +17,8 @@ public interface AgendamentoDTO {
 
     Long getServicoId();
     String getServicoNome();
+
+    // 🔹 Novos campos da secretaria
+    Long getSecretariaId();
+    String getSecretariaNome();
 }

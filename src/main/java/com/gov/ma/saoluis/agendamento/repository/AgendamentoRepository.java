@@ -26,13 +26,42 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             u.nome             AS usuarioNome,
 
             s.id               AS servicoId,
-            s.nome             AS servicoNome
+            s.nome             AS servicoNome,
+
+            sec.id             AS secretariaId,
+            sec.nome           AS secretariaNome
 
         FROM agendamento a
         LEFT JOIN usuario u ON a.usuario_id = u.id
-        LEFT JOIN servico s  ON a.servico_id = s.id
+        LEFT JOIN servico s ON a.servico_id = s.id
+        LEFT JOIN secretaria sec ON s.secretaria_id = sec.id
+        WHERE a.id = :agendamentoId
         """, nativeQuery = true)
-	List<AgendamentoDTO> buscarAgendamentosComDetalhes();
+	List<AgendamentoDTO> buscarAgendamentosComDetalhes(@Param("agendamentoId") Long agendamentoId);
+
+	@Query(value = """
+        SELECT
+            a.id               AS agendamentoId,
+            a.hora_agendamento AS horaAgendamento,
+            a.situacao         AS situacao,
+            a.senha            AS senha,
+            a.tipo_atendimento AS tipoAtendimento,
+
+            u.id               AS usuarioId,
+            u.nome             AS usuarioNome,
+
+            s.id               AS servicoId,
+            s.nome             AS servicoNome,
+
+            sec.id             AS secretariaId,
+            sec.nome           AS secretariaNome
+
+        FROM agendamento a
+        LEFT JOIN usuario u ON a.usuario_id = u.id
+        LEFT JOIN servico s ON a.servico_id = s.id
+        LEFT JOIN secretaria sec ON s.secretaria_id = sec.id
+        """, nativeQuery = true)
+	List<AgendamentoDTO> buscarTodosAgendamentosComDetalhes();
 
 	@Query(value = """
         SELECT

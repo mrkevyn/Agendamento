@@ -1,6 +1,7 @@
 package com.gov.ma.saoluis.agendamento.service;
 
 import com.gov.ma.saoluis.agendamento.DTO.GerenciadorDTO;
+import com.gov.ma.saoluis.agendamento.config.UsuarioLogadoUtil;
 import com.gov.ma.saoluis.agendamento.model.Gerenciador;
 import com.gov.ma.saoluis.agendamento.model.Secretaria;
 import com.gov.ma.saoluis.agendamento.repository.GerenciadorRepository;
@@ -41,6 +42,9 @@ public class GerenciadorService {
 
         Gerenciador salvo = gerenciadorRepository.save(g);
 
+        // 🔹 USUÁRIO LOGADO (vem do JWT)
+        Long usuarioLogadoId = UsuarioLogadoUtil.getUsuarioId();
+
         // 🔹 Determinar ação do log baseado no perfil
         String acaoLog;
         if ("ATENDENTE".equalsIgnoreCase(salvo.getPerfil())) {
@@ -51,7 +55,7 @@ public class GerenciadorService {
 
         // 🔹 Registrar log
         logService.registrar(
-                null, // Sem usuário logado ainda, MÉTODO PENDENTE
+                usuarioLogadoId, // Sem usuário logado ainda, MÉTODO PENDENTE
                 "SISTEMA",
                 acaoLog,
                 "Gerenciador ID: " + salvo.getId() +
@@ -105,11 +109,6 @@ public class GerenciadorService {
         gerenciadorRepository.delete(at);
     }
 
-    // Utilitário interno para gerar o campo acesso
-    private String gerarAcesso(String nome, String sigla) {
-        return nome.replace(" ", "") + "-" + sigla.replace(" ", "");
-    }
-
     public Gerenciador login(String login, String senha) {
 
         Gerenciador gerenciador = gerenciadorRepository
@@ -120,7 +119,47 @@ public class GerenciadorService {
             throw new RuntimeException("Senha inválida");
         }
 
+        // 🔹 REGISTRAR LOG DE LOGIN
+        logService.registrar(
+                gerenciador.getId(),                // ID do usuário logado
+                gerenciador.getNome(),              // Nome do usuário
+                "LOGIN",
+                "Login realizado com sucesso | Perfil: " + gerenciador.getPerfil()
+        );
+
         return gerenciador;
     }
 
+    // ➤ Atualizar guichê (Sistema ou Atendente)
+    public Gerenciador atualizarGuiche(Long id, Integer novoGuiche) {
+        // Recupera o gerenciador com base no ID
+        Gerenciador g = gerenciadorRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Gerenciador não encontrado"));
+
+        // Verifica se o usuário logado pode alterar o guichê
+        Long usuarioLogadoId = UsuarioLogadoUtil.getUsuarioId();
+        String perfilUsuarioLogado = UsuarioLogadoUtil.getPerfil();  // Pega o perfil do usuário logado
+
+        // Permite alterar o guichê apenas se o usuário for ADMIN ou ATENDENTE
+        if (!"ADMIN".equalsIgnoreCase(perfilUsuarioLogado) && !"ATENDENTE".equalsIgnoreCase(perfilUsuarioLogado)) {
+            throw new RuntimeException("Você não tem permissão para alterar o guichê");
+        }
+
+        // Atualiza o guichê
+        g.setGuiche(novoGuiche);
+        Gerenciador salvo = gerenciadorRepository.save(g);
+
+        // Registra o log da alteração
+        String acaoLog = "GUICHE_ALTERADO";
+        logService.registrar(
+                usuarioLogadoId,
+                "SISTEMA",
+                acaoLog,
+                "Gerenciador ID: " + salvo.getId() +
+                        ", Nome: " + salvo.getNome() +
+                        ", Novo Guichê: " + salvo.getGuiche()
+        );
+
+        return salvo;
+    }
 }

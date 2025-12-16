@@ -34,10 +34,17 @@ public class AgendamentoController {
     public Agendamento buscarPorId(@PathVariable Long id) {
         return agendamentoService.buscarPorId(id);
     }
-    
+
+    // 🔹 Listar todos os agendamentos com detalhes
     @GetMapping("/detalhes")
-    public ResponseEntity<List<AgendamentoDTO>> listarComDetalhes() {
-        List<AgendamentoDTO> agendamentos = agendamentoService.listarAgendamentosComDetalhes();
+    public ResponseEntity<List<AgendamentoDTO>> listarTodosComDetalhes() {
+        List<AgendamentoDTO> agendamentos = agendamentoService.listarTodosComDetalhes();
+        return ResponseEntity.ok(agendamentos);
+    }
+
+    @GetMapping("/detalhes/{agendamentoId}")
+    public ResponseEntity<List<AgendamentoDTO>> listarComDetalhes(@PathVariable Long agendamentoId) {
+        List<AgendamentoDTO> agendamentos = agendamentoService.listarAgendamentosComDetalhes(agendamentoId);
         return ResponseEntity.ok(agendamentos);
     }
 

@@ -5,5 +5,5 @@ public record LoginResponseDTO(
         String nome,
         String perfil,
         Long secretaria,
-        Integer guiche
-) {}
+        Integer guiche,
+        String token) {}

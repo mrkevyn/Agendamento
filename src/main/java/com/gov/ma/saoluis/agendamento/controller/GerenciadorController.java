@@ -1,8 +1,10 @@
 package com.gov.ma.saoluis.agendamento.controller;
 
+import com.gov.ma.saoluis.agendamento.DTO.AtualizarGuicheDTO;
 import com.gov.ma.saoluis.agendamento.DTO.GerenciadorDTO;
 import com.gov.ma.saoluis.agendamento.DTO.LoginRequestDTO;
 import com.gov.ma.saoluis.agendamento.DTO.LoginResponseDTO;
+import com.gov.ma.saoluis.agendamento.config.JwtService;
 import com.gov.ma.saoluis.agendamento.model.Gerenciador;
 import com.gov.ma.saoluis.agendamento.service.GerenciadorService;
 import lombok.Getter;
@@ -17,9 +19,11 @@ import java.util.List;
 public class GerenciadorController {
 
     private final GerenciadorService gerenciadorService;
+    private final JwtService jwtService;
 
-    public GerenciadorController(GerenciadorService atendenteService) {
-        this.gerenciadorService = atendenteService;
+    public GerenciadorController(GerenciadorService gerenciadorService, JwtService jwtService) {
+        this.gerenciadorService = gerenciadorService;
+        this.jwtService = jwtService;
     }
 
     // ➤ Criar atendente
@@ -63,29 +67,39 @@ public class GerenciadorController {
 
     // ➤ Login por CPF ou Email + Senha
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO dto) {
+    public ResponseEntity<LoginResponseDTO> login(
+            @RequestBody LoginRequestDTO dto
+    ) {
 
         Gerenciador g = gerenciadorService.login(
-                dto.login(),   // cpf ou email
+                dto.login(),
                 dto.senha()
+        );
+
+        // 🔐 Gera token JWT
+        String token = jwtService.gerarToken(
+                g.getId(),
+                g.getPerfil()
         );
 
         return ResponseEntity.ok(
                 new LoginResponseDTO(
                         g.getId(),
                         g.getNome(),
-                        g.getPerfil(),                 // String
-                        g.getSecretaria().getId(),     // Long
-                        g.getGuiche()                  // Integer (pode ser null)
+                        g.getPerfil(),
+                        g.getSecretaria().getId(),
+                        g.getGuiche(),
+                        token
                 )
         );
     }
 
-    // DTO interno para receber JSON
-    @Getter
-    @Setter
-    public static class LoginRequest {
-        private String login; // cpf ou email
-        private String senha;
+    @PutMapping("/{id}/guiche")
+    public ResponseEntity<Gerenciador> atualizarGuiche(
+            @PathVariable Long id,
+            @RequestBody AtualizarGuicheDTO dto
+    ) {
+        Gerenciador atualizado = gerenciadorService.atualizarGuiche(id, dto.guiche());
+        return ResponseEntity.ok(atualizado);
     }
 }

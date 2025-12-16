@@ -35,6 +35,11 @@ public class AgendamentoService {
         return agendamentoRepository.buscarAgendamentosPorSecretaria(secretariaId);
     }
 
+    // 🔹 Buscar todos os agendamentos com detalhes
+    public List<AgendamentoDTO> listarTodosComDetalhes() {
+        return agendamentoRepository.buscarTodosAgendamentosComDetalhes();
+    }
+
     // 🔹 Buscar por ID
     public Agendamento buscarPorId(Long id) {
         return agendamentoRepository.findById(id)
@@ -143,8 +148,8 @@ public class AgendamentoService {
         return String.format("%s%03d", prefixo, numero + 1);
     }
 
-    public List<AgendamentoDTO> listarAgendamentosComDetalhes() {
-        return agendamentoRepository.buscarAgendamentosComDetalhes();
+    public List<AgendamentoDTO> listarAgendamentosComDetalhes(Long agendamentoId) {
+        return agendamentoRepository.buscarAgendamentosComDetalhes(agendamentoId);
     }
     
  // 🔹 Chamar próxima senha normal

@@ -122,9 +122,9 @@ public class GerenciadorService {
         // 🔹 REGISTRAR LOG DE LOGIN
         logService.registrar(
                 gerenciador.getId(),                // ID do usuário logado
-                gerenciador.getNome(),              // Nome do usuário
+                gerenciador.getPerfil(),              // Nome do usuário
                 "LOGIN",
-                "Login realizado com sucesso | Perfil: " + gerenciador.getPerfil()
+                "Login realizado com sucesso | Perfil: " + gerenciador.getNome()
         );
 
         return gerenciador;

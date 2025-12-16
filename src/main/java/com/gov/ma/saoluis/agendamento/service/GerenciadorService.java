@@ -14,11 +14,14 @@ public class GerenciadorService {
 
     private final GerenciadorRepository gerenciadorRepository;
     private final SecretariaRepository secretariaRepository;
+    private final LogService logService;
 
     public GerenciadorService(GerenciadorRepository gerenciadorRepository,
-                            SecretariaRepository secretariaRepository) {
+                            SecretariaRepository secretariaRepository,
+                            LogService logService) {
         this.gerenciadorRepository = gerenciadorRepository;
         this.secretariaRepository = secretariaRepository;
+        this.logService = logService;
     }
 
     // ➤ Criar gerenciador
@@ -36,7 +39,28 @@ public class GerenciadorService {
         g.setGuiche(dto.guiche()); // pode ser null
         g.setSecretaria(secretaria);
 
-        return gerenciadorRepository.save(g);
+        Gerenciador salvo = gerenciadorRepository.save(g);
+
+        // 🔹 Determinar ação do log baseado no perfil
+        String acaoLog;
+        if ("ATENDENTE".equalsIgnoreCase(salvo.getPerfil())) {
+            acaoLog = "ADMIN_CRIACAO_ATENDENTE";
+        } else {
+            acaoLog = "GERENCIADOR_CRIADO";
+        }
+
+        // 🔹 Registrar log
+        logService.registrar(
+                null, // Sem usuário logado ainda, MÉTODO PENDENTE
+                "SISTEMA",
+                acaoLog,
+                "Gerenciador ID: " + salvo.getId() +
+                        ", Nome: " + salvo.getNome() +
+                        ", CPF: " + salvo.getCpf() +
+                        ", Secretaria ID: " + salvo.getSecretaria().getId()
+        );
+
+        return salvo;
     }
 
     // ➤ Atualizar atendente

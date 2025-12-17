@@ -73,31 +73,36 @@ public class GerenciadorController {
 
     // ➤ Login por CPF ou Email + Senha
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(
+    public ResponseEntity<?> login(
             @RequestBody LoginRequestDTO dto
     ) {
 
-        Gerenciador g = gerenciadorService.login(
-                dto.login(),
-                dto.senha()
-        );
+        try{
+            Gerenciador g = gerenciadorService.login(
+                    dto.login(),
+                    dto.senha()
+            );
 
-        // 🔐 Gera token JWT
-        String token = jwtService.gerarToken(
-                g.getId(),
-                g.getPerfil()
-        );
+            // 🔐 Gera token JWT
+            String token = jwtService.gerarToken(
+                    g.getId(),
+                    g.getPerfil()
+            );
 
-        return ResponseEntity.ok(
-                new LoginResponseDTO(
-                        g.getId(),
-                        g.getNome(),
-                        g.getPerfil(),
-                        g.getSecretaria().getId(),
-                        g.getGuiche(),
-                        token
-                )
-        );
+            return ResponseEntity.ok(
+                    new LoginResponseDTO(
+                            g.getId(),
+                            g.getNome(),
+                            g.getPerfil(),
+                            g.getSecretaria().getId(),
+                            g.getGuiche(),
+                            token
+                    )
+            );
+        }catch (Exception e){
+           System.out.println(e);
+           return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @GetMapping("/usuario-logado")

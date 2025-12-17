@@ -25,6 +25,8 @@ public class JwtFilter extends OncePerRequestFilter {
 
         return path.equals("/auth/login")
                 || path.equals("/gerenciador/login")
+                || path.equals("/gerenciador/**")
+                || path.equals("agendamentos/**")
                 || request.getMethod().equalsIgnoreCase("OPTIONS");
     }
 

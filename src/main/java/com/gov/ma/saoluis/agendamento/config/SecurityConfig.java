@@ -28,7 +28,11 @@ public class SecurityConfig {
 
                         // 🔓 LOGIN LIBERADO
                         .requestMatchers(
-                                "/gerenciador/login"
+                                "/gerenciador/login",
+                                "/gerenciador/**",
+                                "/agendamentos/**"
+
+
                         ).permitAll()
 
                         // 🔒 TODO O RESTO PRECISA JWT

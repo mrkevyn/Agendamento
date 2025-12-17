@@ -15,7 +15,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/agendamentos")
-
 public class AgendamentoController {
 
     private final AgendamentoService agendamentoService;
@@ -36,7 +35,7 @@ public class AgendamentoController {
     }
 
     // 🔹 Listar todos os agendamentos com detalhes
-    @GetMapping("/detalhes")
+    @GetMapping("/detalhamento")
     public ResponseEntity<List<AgendamentoDTO>> listarTodosComDetalhes() {
         List<AgendamentoDTO> agendamentos = agendamentoService.listarTodosComDetalhes();
         return ResponseEntity.ok(agendamentos);

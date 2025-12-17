@@ -31,38 +31,40 @@ public class GerenciadorService {
         Secretaria secretaria = secretariaRepository.findById(dto.secretariaId())
                 .orElseThrow(() -> new RuntimeException("Secretaria não encontrada"));
 
+        // 🔒 VALIDAR GUICHÊ ÚNICO
+        if (dto.guiche() != null) {
+            boolean ocupado = gerenciadorRepository
+                    .existsByGuicheAndSecretariaId(dto.guiche(), secretaria.getId());
+
+            if (ocupado) {
+                throw new RuntimeException(
+                        "Guichê " + dto.guiche() + " já está em uso nesta secretaria"
+                );
+            }
+        }
+
         Gerenciador g = new Gerenciador();
         g.setNome(dto.nome());
         g.setCpf(dto.cpf());
         g.setEmail(dto.email());
-        g.setSenha(dto.senha()); // simples, sem criptografia
-        g.setPerfil(dto.perfil()); // ✅ OBRIGATÓRIO
-        g.setGuiche(dto.guiche()); // pode ser null
+        g.setSenha(dto.senha());
+        g.setPerfil(dto.perfil());
+        g.setGuiche(dto.guiche());
         g.setSecretaria(secretaria);
 
         Gerenciador salvo = gerenciadorRepository.save(g);
 
-        // 🔹 USUÁRIO LOGADO (vem do JWT)
         Long usuarioLogadoId = UsuarioLogadoUtil.getUsuarioId();
 
-        // 🔹 Determinar ação do log baseado no perfil
-        String acaoLog;
-        if ("ATENDENTE".equalsIgnoreCase(salvo.getPerfil())) {
-            acaoLog = "ADMIN_CRIACAO_ATENDENTE";
-        } else {
-            acaoLog = "GERENCIADOR_CRIADO";
-        }
+        String acaoLog = "ATENDENTE".equalsIgnoreCase(salvo.getPerfil())
+                ? "ADMIN_CRIACAO_ATENDENTE"
+                : "GERENCIADOR_CRIADO";
 
-        // 🔹 Registrar log
         logService.registrar(
-                usuarioLogadoId, // Sem usuário logado ainda, MÉTODO PENDENTE
+                usuarioLogadoId,
                 "SISTEMA",
                 acaoLog,
-                "Gerenciador ID: " + salvo.getId() +
-                        ", Nome: " + salvo.getNome() +
-                        ", CPF: " + salvo.getCpf() +
-                        ", Secretaria ID: " + salvo.getSecretaria().getId()
-        );
+                "Gerenciador ID: " + salvo.getId() + ", Nome: " + salvo.getNome() + ", CPF: " + salvo.getCpf() + ", Secretaria ID: " + salvo.getSecretaria().getId() );
 
         return salvo;
     }
@@ -76,10 +78,26 @@ public class GerenciadorService {
         Secretaria secretaria = secretariaRepository.findById(dto.secretariaId())
                 .orElseThrow(() -> new RuntimeException("Secretaria não encontrada"));
 
+        // 🔒 VALIDAR GUICHÊ ÚNICO (exceto ele mesmo)
+        if (dto.guiche() != null) {
+            boolean ocupado = gerenciadorRepository
+                    .existsByGuicheAndSecretariaIdAndIdNot(
+                            dto.guiche(),
+                            secretaria.getId(),
+                            id
+                    );
+
+            if (ocupado) {
+                throw new RuntimeException(
+                        "Guichê " + dto.guiche() + " já está em uso nesta secretaria"
+                );
+            }
+        }
+
         g.setNome(dto.nome());
         g.setCpf(dto.cpf());
         g.setEmail(dto.email());
-        g.setSenha(dto.senha()); // simples
+        g.setSenha(dto.senha());
         g.setGuiche(dto.guiche());
         g.setSecretaria(secretaria);
 
@@ -124,7 +142,7 @@ public class GerenciadorService {
                 gerenciador.getId(),                // ID do usuário logado
                 gerenciador.getPerfil(),              // Nome do usuário
                 "LOGIN",
-                "Login realizado com sucesso | Perfil: " + gerenciador.getNome()
+                "Nome: " + gerenciador.getNome() + "; Email: " + gerenciador.getEmail() + "; Secretaria: " + gerenciador.getSecretaria().getNome()
         );
 
         return gerenciador;
@@ -132,30 +150,49 @@ public class GerenciadorService {
 
     // ➤ Atualizar guichê (Sistema ou Atendente)
     public Gerenciador atualizarGuiche(Long id, Integer novoGuiche) {
-        // Recupera o gerenciador com base no ID
+
         Gerenciador g = gerenciadorRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Gerenciador não encontrado"));
 
-        // Verifica se o usuário logado pode alterar o guichê
         Long usuarioLogadoId = UsuarioLogadoUtil.getUsuarioId();
-        String perfilUsuarioLogado = UsuarioLogadoUtil.getPerfil();  // Pega o perfil do usuário logado
 
-        // Permite alterar o guichê apenas se o usuário for ADMIN ou ATENDENTE
-        if (!"ADMIN".equalsIgnoreCase(perfilUsuarioLogado) && !"ATENDENTE".equalsIgnoreCase(perfilUsuarioLogado)) {
+        if (usuarioLogadoId == null) {
+            throw new RuntimeException("Usuário não autenticado");
+        }
+
+        Gerenciador usuarioLogado = gerenciadorRepository.findById(usuarioLogadoId)
+                .orElseThrow(() -> new RuntimeException("Usuário logado não encontrado"));
+
+        String perfil = usuarioLogado.getPerfil();
+
+        // ✔ ADMIN pode alterar qualquer guichê
+        // ✔ ATENDENTE só pode alterar o próprio
+        if ("ATENDENTE".equalsIgnoreCase(perfil) && !usuarioLogado.getId().equals(id)) {
+            throw new RuntimeException("Atendente só pode alterar o próprio guichê");
+        }
+
+        if (!"ADMIN".equalsIgnoreCase(perfil) && !"ATENDENTE".equalsIgnoreCase(perfil)) {
             throw new RuntimeException("Você não tem permissão para alterar o guichê");
         }
 
-        // Atualiza o guichê
+        // 🔴 Validação de guichê único
+        if (novoGuiche != null &&
+                gerenciadorRepository.existsBySecretariaIdAndGuicheAndIdNot(
+                        g.getSecretaria().getId(),
+                        novoGuiche,
+                        g.getId()
+                )) {
+            throw new RuntimeException("Guichê já está sendo utilizado por outro atendente");
+        }
+
         g.setGuiche(novoGuiche);
         Gerenciador salvo = gerenciadorRepository.save(g);
 
-        // Registra o log da alteração
-        String acaoLog = "GUICHE_ALTERADO";
         logService.registrar(
-                usuarioLogadoId,
-                "SISTEMA",
-                acaoLog,
-                "Gerenciador ID: " + salvo.getId() +
+                usuarioLogado.getId(),
+                usuarioLogado.getPerfil(),
+                "GUICHE_ALTERADO",
+                "Atendente ID: " + salvo.getId() +
                         ", Nome: " + salvo.getNome() +
                         ", Novo Guichê: " + salvo.getGuiche()
         );

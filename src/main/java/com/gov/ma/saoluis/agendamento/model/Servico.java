@@ -20,9 +20,9 @@ public class Servico {
     @Column(length = 500)
     private String descricao;
 
-    // ➜ Guichê associado ao serviço (opcional)
-    @Column(nullable = true)
-    private Integer guiche;
+    // ➜ Número de guichês disponíveis para o serviço
+    @Column(name = "numero_guiches", nullable = true)
+    private Integer numeroGuiches;
 
     // ➜ Tempo médio de atendimento (em minutos, por exemplo)
     @Column(name = "tempo_atendimento", nullable = true)

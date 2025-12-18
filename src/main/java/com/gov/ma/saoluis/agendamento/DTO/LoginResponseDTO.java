@@ -4,6 +4,6 @@ public record LoginResponseDTO(
         Long id,
         String nome,
         String perfil,
-        Long secretaria,
+        SecretariaDTO secretaria,
         Integer guiche,
         String token) {}

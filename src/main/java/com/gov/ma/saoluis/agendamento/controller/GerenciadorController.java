@@ -1,9 +1,6 @@
 package com.gov.ma.saoluis.agendamento.controller;
 
-import com.gov.ma.saoluis.agendamento.DTO.AtualizarGuicheDTO;
-import com.gov.ma.saoluis.agendamento.DTO.GerenciadorDTO;
-import com.gov.ma.saoluis.agendamento.DTO.LoginRequestDTO;
-import com.gov.ma.saoluis.agendamento.DTO.LoginResponseDTO;
+import com.gov.ma.saoluis.agendamento.DTO.*;
 import com.gov.ma.saoluis.agendamento.config.JwtService;
 import com.gov.ma.saoluis.agendamento.config.UsuarioLogadoUtil;
 import com.gov.ma.saoluis.agendamento.model.Gerenciador;
@@ -73,35 +70,40 @@ public class GerenciadorController {
 
     // ➤ Login por CPF ou Email + Senha
     @PostMapping("/login")
-    public ResponseEntity<?> login(
-            @RequestBody LoginRequestDTO dto
-    ) {
+    public ResponseEntity<?> login(@RequestBody LoginRequestDTO dto) {
 
-        try{
+        try {
             Gerenciador g = gerenciadorService.login(
                     dto.login(),
                     dto.senha()
             );
 
-            // 🔐 Gera token JWT
             String token = jwtService.gerarToken(
                     g.getId(),
                     g.getPerfil()
+            );
+
+            // 🏢 Monta SecretariaDTO
+            SecretariaDTO secretariaDTO = new SecretariaDTO(
+                    g.getSecretaria().getId(),
+                    g.getSecretaria().getNome(),
+                    g.getSecretaria().getSigla()
             );
 
             return ResponseEntity.ok(
                     new LoginResponseDTO(
                             g.getId(),
                             g.getNome(),
-                            g.getPerfil(),
-                            g.getSecretaria().getId(),
+                            g.getPerfil(), // se for enum
+                            secretariaDTO,
                             g.getGuiche(),
                             token
                     )
             );
-        }catch (Exception e){
-           System.out.println(e);
-           return ResponseEntity.badRequest().body(e.getMessage());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
@@ -125,11 +127,17 @@ public class GerenciadorController {
             token = authHeader.substring(7);
         }
 
+        SecretariaDTO secretariaDTO = new SecretariaDTO(
+                g.getSecretaria().getId(),
+                g.getSecretaria().getNome(),
+                g.getSecretaria().getSigla()
+        );
+
         return new LoginResponseDTO(
                 g.getId(),
                 g.getNome(),
                 g.getPerfil(),
-                g.getSecretaria().getId(),
+                secretariaDTO,
                 g.getGuiche(),
                 token
         );

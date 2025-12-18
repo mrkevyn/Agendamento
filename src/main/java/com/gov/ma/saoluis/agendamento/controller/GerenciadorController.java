@@ -94,9 +94,7 @@ public class GerenciadorController {
                     new LoginResponseDTO(
                             g.getId(),
                             g.getNome(),
-                            g.getPerfil(), // se for enum
-                            secretariaDTO,
-                            g.getGuiche(),
+                            g.getPerfil(),
                             token
                     )
             );
@@ -108,7 +106,7 @@ public class GerenciadorController {
     }
 
     @GetMapping("/usuario-logado")
-    public LoginResponseDTO usuarioLogado(HttpServletRequest request) {
+    public UsuarioLogadoDTO usuarioLogado(HttpServletRequest request) {
 
         Long usuarioId = UsuarioLogadoUtil.getUsuarioId();
 
@@ -133,7 +131,7 @@ public class GerenciadorController {
                 g.getSecretaria().getSigla()
         );
 
-        return new LoginResponseDTO(
+        return new UsuarioLogadoDTO(
                 g.getId(),
                 g.getNome(),
                 g.getPerfil(),

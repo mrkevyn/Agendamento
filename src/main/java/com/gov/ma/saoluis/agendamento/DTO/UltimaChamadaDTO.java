@@ -10,5 +10,6 @@ public record UltimaChamadaDTO(
         Long usuarioId,
         String usuarioNome,
         Long servicoId,
-        String servicoNome
+        String servicoNome,
+        Integer guiche
 ) {}

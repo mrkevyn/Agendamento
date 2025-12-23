@@ -122,15 +122,18 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         a.tipo_atendimento AS tipoAtendimento,
         a.hora_chamada     AS horaChamada,
 
-        u.id                AS usuarioId,
-        u.nome              AS usuarioNome,
+        u.id               AS usuarioId,
+        u.nome             AS usuarioNome,
 
-        s.id                AS servicoId,
-        s.nome              AS servicoNome
+        s.id               AS servicoId,
+        s.nome             AS servicoNome,
+
+        g.guiche           AS guiche
 
     FROM agendamento a
-    LEFT JOIN usuario u ON a.usuario_id = u.id
-    LEFT JOIN servico s  ON a.servico_id = s.id
+    LEFT JOIN usuario u     ON a.usuario_id = u.id
+    LEFT JOIN servico s     ON a.servico_id = s.id
+    LEFT JOIN gerenciador g ON a.gerenciador_id = g.id
 
     WHERE a.hora_chamada IS NOT NULL
     ORDER BY a.hora_chamada DESC

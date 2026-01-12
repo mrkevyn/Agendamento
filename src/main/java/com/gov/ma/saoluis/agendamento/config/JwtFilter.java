@@ -20,17 +20,6 @@ public class JwtFilter extends OncePerRequestFilter {
     private JwtService jwtService;
 
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getServletPath();
-
-        return path.equals("/auth/login")
-                || path.equals("/gerenciador/login")
-                || path.equals("/gerenciador/**")
-                || path.equals("agendamentos/**")
-                || request.getMethod().equalsIgnoreCase("OPTIONS");
-    }
-
-    @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
@@ -39,6 +28,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
+        // Se não tem token, segue o fluxo normal
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;

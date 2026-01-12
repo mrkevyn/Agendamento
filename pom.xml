@@ -5,9 +5,9 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.7</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<version>3.3.4</version>
 	</parent>
+
 	<groupId>com.gov.ma.saoluis</groupId>
 	<artifactId>agendamento</artifactId>
 	<version>0.0.1-SNAPSHOT</version>

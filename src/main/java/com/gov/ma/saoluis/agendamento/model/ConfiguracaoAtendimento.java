@@ -3,6 +3,7 @@ package com.gov.ma.saoluis.agendamento.model;
 import jakarta.persistence.*;
 
 import java.time.LocalTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -22,10 +23,17 @@ public class ConfiguracaoAtendimento {
     private LocalTime horaInicio;
     private LocalTime horaFim;
 
-    // 👥 Total de atendimentos no período
+    // 🔹 Regra escolhida
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TipoRegraAtendimento tipoRegra;
+
+    // 🅰️ Usado quando regra = POR_QUANTIDADE
     private Integer quantidadeAtendimentos;
 
-    // 🪑 Guichês
+    // 🅱️ Usado quando regra = POR_INTERVALO
+    private Integer intervaloMinutos;
+
     private Integer numeroGuiches;
 
     // 📆 Dias da semana
@@ -33,10 +41,18 @@ public class ConfiguracaoAtendimento {
     @Enumerated(EnumType.STRING)
     private Set<DiaSemana> diasAtendimento;
 
+    // ⏱️ Horários gerados
+    @OneToMany(
+            mappedBy = "configuracao",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.EAGER
+    )
+    private Set<HorarioAtendimento> horarios = new HashSet<>();
+
     private Boolean ativo = true;
-// =========================
-    // Getters e Setters
-    // =========================
+
+    // getters e setters
 
     public Long getId() {
         return id;
@@ -70,12 +86,28 @@ public class ConfiguracaoAtendimento {
         this.horaFim = horaFim;
     }
 
+    public TipoRegraAtendimento getTipoRegra() {
+        return tipoRegra;
+    }
+
+    public void setTipoRegra(TipoRegraAtendimento tipoRegra) {
+        this.tipoRegra = tipoRegra;
+    }
+
     public Integer getQuantidadeAtendimentos() {
         return quantidadeAtendimentos;
     }
 
     public void setQuantidadeAtendimentos(Integer quantidadeAtendimentos) {
         this.quantidadeAtendimentos = quantidadeAtendimentos;
+    }
+
+    public Integer getIntervaloMinutos() {
+        return intervaloMinutos;
+    }
+
+    public void setIntervaloMinutos(Integer intervaloMinutos) {
+        this.intervaloMinutos = intervaloMinutos;
     }
 
     public Integer getNumeroGuiches() {
@@ -100,5 +132,13 @@ public class ConfiguracaoAtendimento {
 
     public void setAtivo(Boolean ativo) {
         this.ativo = ativo;
+    }
+
+    public Set<HorarioAtendimento> getHorarios() {
+        return horarios;
+    }
+
+    public void setHorarios(Set<HorarioAtendimento> horarios) {
+        this.horarios = horarios;
     }
 }

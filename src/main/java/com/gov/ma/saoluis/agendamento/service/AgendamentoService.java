@@ -2,7 +2,9 @@ package com.gov.ma.saoluis.agendamento.service;
 
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoResponseDTO;
 import com.gov.ma.saoluis.agendamento.DTO.UltimaChamadaDTO;
+import com.gov.ma.saoluis.agendamento.model.ConfiguracaoAtendimento;
 import com.gov.ma.saoluis.agendamento.model.Gerenciador;
+import com.gov.ma.saoluis.agendamento.model.SituacaoAgendamento;
 import com.gov.ma.saoluis.agendamento.repository.GerenciadorRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -13,6 +15,7 @@ import com.gov.ma.saoluis.agendamento.repository.AgendamentoRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -24,10 +27,13 @@ public class AgendamentoService {
 
     private final LogService logService;
 
-    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService) {
+    private final ConfiguracaoAtendimentoService configuracaoService;
+
+    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService, ConfiguracaoAtendimentoService configuracaoService) {
         this.atendenteRepository = gerenciadorRepository;
         this.agendamentoRepository = agendamentoRepository;
         this.logService = logService;
+        this.configuracaoService = configuracaoService;
     }
 
     // 🔹 Listar todos COM DETALHES
@@ -49,27 +55,47 @@ public class AgendamentoService {
     // 🔹 Criar novo agendamento
     public Agendamento salvar(Agendamento agendamento) {
 
-        agendamento.setSituacao("AGENDADO");
+        // 🔹 Valida usuário
+        if (agendamento.getUsuario() == null || agendamento.getUsuario().getId() == null) {
+            throw new RuntimeException("Usuário é obrigatório");
+        }
 
-        if (agendamento.getTipoAtendimento() == null || agendamento.getTipoAtendimento().isEmpty()) {
+        // 🔹 Valida serviço
+        if (agendamento.getServico() == null || agendamento.getServico().getId() == null) {
+            throw new RuntimeException("Serviço é obrigatório");
+        }
+
+        agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
+
+        if (agendamento.getTipoAtendimento() == null || agendamento.getTipoAtendimento().isBlank()) {
             agendamento.setTipoAtendimento("NORMAL");
         }
 
         if (agendamento.getHoraAgendamento() == null) {
-            agendamento.setHoraAgendamento(LocalDateTime.now());
+            throw new RuntimeException("Data e hora do agendamento são obrigatórias");
         }
 
-        String prefixo = gerarPrefixo(agendamento.getTipoAtendimento());
+        LocalDate data = agendamento.getHoraAgendamento().toLocalDate();
+        LocalTime hora = agendamento.getHoraAgendamento().toLocalTime();
 
+        // 🔹 Descobre a secretaria pelo serviço
         Long secretariaId = agendamentoRepository.findSecretariaIdByServicoId(
                 agendamento.getServico().getId()
         );
 
         if (secretariaId == null) {
-            throw new RuntimeException("O serviço informado não possui secretaria vinculada.");
+            throw new RuntimeException("O serviço não possui secretaria vinculada");
         }
 
-        LocalDate data = agendamento.getHoraAgendamento().toLocalDate();
+        // 🔥 AQUI entra o ConfiguracaoAtendimentoService
+        ConfiguracaoAtendimento configuracao =
+                configuracaoService.validarDisponibilidade(secretariaId, data, hora);
+
+        // 🔹 Vincula a configuração ao agendamento
+        agendamento.setConfiguracao(configuracao);
+
+        // 🔹 Geração da senha
+        String prefixo = gerarPrefixo(agendamento.getTipoAtendimento());
 
         long totalHoje = agendamentoRepository.countBySecretariaAndTipoAndData(
                 secretariaId.intValue(),
@@ -80,16 +106,17 @@ public class AgendamentoService {
         String senha = String.format("%s%03d", prefixo, totalHoje + 1);
         agendamento.setSenha(senha);
 
+        // 🔹 Salva
         Agendamento salvo = agendamentoRepository.save(agendamento);
 
-        // 🔴 REGISTRA LOG DO AGENDAMENTO
+        // 🔴 LOG
         logService.registrar(
                 agendamento.getUsuario().getId(),
                 "USUARIO",
                 "AGENDAMENTO_CRIADO",
-                "Agendamento ID: " + salvo.getId() +
-                        ", Senha: " + salvo.getSenha() +
-                        ", Serviço: " + salvo.getServico().getId()
+                "Agendamento ID: " + salvo.getId()
+                        + ", Senha: " + salvo.getSenha()
+                        + ", Configuração: " + configuracao.getId()
         );
 
         return salvo;
@@ -114,7 +141,7 @@ public class AgendamentoService {
         }
 
         existente.setSenha(gerarProximaSenha(existente.getSenha()));
-        existente.setSituacao("REAGENDADO");
+        existente.setSituacao(SituacaoAgendamento.REAGENDADO);
 
         return agendamentoRepository.save(existente);
     }
@@ -153,20 +180,20 @@ public class AgendamentoService {
     }
     
  // 🔹 Chamar próxima senha normal
- public Agendamento chamarProximaNormal(Long secretariaId, Long atendenteId) {
+     public Agendamento chamarProximaNormal(Long secretariaId, Long atendenteId) {
 
-     Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
-             .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
+         Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
+                 .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
 
-     var lista = agendamentoRepository.buscarProximoNormal(
-             secretariaId,
-             PageRequest.of(0, 1)
-     );
+         var lista = agendamentoRepository.buscarProximoNormal(
+                 secretariaId,
+                 PageRequest.of(0, 1)
+         );
 
-     Agendamento proximo = lista.isEmpty() ? null : lista.get(0);
+         Agendamento proximo = lista.isEmpty() ? null : lista.get(0);
 
-     return processarChamada(proximo, gerenciador);
- }
+         return processarChamada(proximo, gerenciador);
+     }
 
     public Agendamento chamarProximaPrioridade(Long secretariaId, Long atendenteId) {
 
@@ -220,7 +247,7 @@ public class AgendamentoService {
             throw new RuntimeException("Nenhuma senha disponível para chamar.");
         }
 
-        agendamento.setSituacao("EM_ATENDIMENTO");
+        agendamento.setSituacao(SituacaoAgendamento.EM_ATENDIMENTO);
         agendamento.setHoraChamada(LocalDateTime.now());
         agendamento.setAtendente(gerenciador); // 🔹 AQUI
 
@@ -236,24 +263,25 @@ public class AgendamentoService {
 
         Agendamento agendamento = buscarPorId(id);
 
-        if (!"EM_ATENDIMENTO".equals(agendamento.getSituacao())) {
+        if (agendamento.getSituacao() != SituacaoAgendamento.EM_ATENDIMENTO) {
             throw new RuntimeException("Este agendamento não está em atendimento.");
         }
 
-        agendamento.setSituacao("FINALIZADO");
+        agendamento.setSituacao(SituacaoAgendamento.ATENDIDO);
 
         return agendamentoRepository.save(agendamento);
     }
 
     // 🔹 Cancelar atendimento (não compareceu)
     public Agendamento cancelarAtendimento(Long id) {
+
         Agendamento agendamento = buscarPorId(id);
 
-        if (!"EM_ATENDIMENTO".equals(agendamento.getSituacao())) {
+        if (agendamento.getSituacao() != SituacaoAgendamento.EM_ATENDIMENTO) {
             throw new RuntimeException("Este agendamento não está em atendimento.");
         }
 
-        agendamento.setSituacao("NAO_COMPARECEU");
+        agendamento.setSituacao(SituacaoAgendamento.FALTOU);
         agendamento.setHoraChamada(LocalDateTime.now());
 
         return agendamentoRepository.save(agendamento);

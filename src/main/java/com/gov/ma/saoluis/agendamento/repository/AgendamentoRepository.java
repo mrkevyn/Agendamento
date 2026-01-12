@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -161,9 +162,12 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     SELECT a
     FROM Agendamento a
     WHERE a.servico.secretaria IS NOT NULL
-      AND a.situacao = 'AGENDADO'
       AND a.senha = :senha
+      AND a.situacao IN ('AGENDADO', 'REAGENDADO')
     ORDER BY a.horaAgendamento ASC
 """)
-	List<Agendamento> buscarPorSenha(@Param("senha") String senha, org.springframework.data.domain.Pageable pageable);
+	List<Agendamento> buscarPorSenha(
+			@Param("senha") String senha,
+			Pageable pageable
+	);
 }

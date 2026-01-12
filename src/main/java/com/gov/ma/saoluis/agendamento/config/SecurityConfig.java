@@ -29,7 +29,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/gerenciador/login",
                                 "/gerenciador/**",
-                                "/agendamentos/**"
+                                "/agendamentos/**",
+                                "/api/configuracoes-atendimento/**"
 
 
                         ).permitAll()

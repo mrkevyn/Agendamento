@@ -2,7 +2,6 @@ package com.gov.ma.saoluis.agendamento.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "agendamento")
 public class Agendamento {
@@ -10,6 +9,10 @@ public class Agendamento {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "configuracao_atendimento_id", nullable = false)
+    private ConfiguracaoAtendimento configuracao;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "usuario_id")
@@ -22,8 +25,9 @@ public class Agendamento {
     @Column(name = "hora_agendamento", nullable = false)
     private LocalDateTime horaAgendamento;
 
-    @Column(nullable = false, length = 50)
-    private String situacao;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private SituacaoAgendamento situacao;
 
     @Column(name = "tipo_atendimento", nullable = false, length = 30)
     private String tipoAtendimento; // NORMAL, PRIORIDADE, PREFERENCIAL
@@ -68,10 +72,11 @@ public class Agendamento {
         this.horaAgendamento = horaAgendamento;
     }
 
-    public String getSituacao() {
+    public SituacaoAgendamento getSituacao() {
         return situacao;
     }
-    public void setSituacao(String situacao) {
+
+    public void setSituacao(SituacaoAgendamento situacao) {
         this.situacao = situacao;
     }
 
@@ -101,5 +106,14 @@ public class Agendamento {
 
     public void setAtendente(Gerenciador gerenciador) {
         this.gerenciador = gerenciador;
+    }
+
+    // getters e setters
+    public ConfiguracaoAtendimento getConfiguracao() {
+        return configuracao;
+    }
+
+    public void setConfiguracao(ConfiguracaoAtendimento configuracao) {
+        this.configuracao = configuracao;
     }
 }

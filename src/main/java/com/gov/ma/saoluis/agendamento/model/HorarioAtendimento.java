@@ -1,6 +1,7 @@
 package com.gov.ma.saoluis.agendamento.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalTime;
@@ -13,9 +14,9 @@ public class HorarioAtendimento {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "configuracao_id", nullable = false)
-    @JsonBackReference
+    @ManyToOne
+    @JoinColumn(name = "configuracao_id")
+    @JsonIgnore
     private ConfiguracaoAtendimento configuracao;
 
     @Column(nullable = false)

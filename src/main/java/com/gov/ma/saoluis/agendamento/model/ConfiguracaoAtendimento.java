@@ -1,5 +1,6 @@
 package com.gov.ma.saoluis.agendamento.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 import java.time.LocalTime;
@@ -45,8 +46,7 @@ public class ConfiguracaoAtendimento {
     @OneToMany(
             mappedBy = "configuracao",
             cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.EAGER
+            orphanRemoval = true
     )
     private Set<HorarioAtendimento> horarios = new HashSet<>();
 

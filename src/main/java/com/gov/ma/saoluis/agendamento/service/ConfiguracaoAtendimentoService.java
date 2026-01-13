@@ -29,13 +29,7 @@ public class ConfiguracaoAtendimentoService {
 
         validarConfiguracao(configuracao);
 
-        if (configuracao.getTipoRegra() == TipoRegraAtendimento.POR_INTERVALO) {
-            gerarHorariosPorIntervalo(configuracao);
-        }
-
-        if (configuracao.getTipoRegra() == TipoRegraAtendimento.POR_QUANTIDADE) {
-            gerarHorariosPorQuantidade(configuracao);
-        }
+        gerarHorarios(configuracao);
 
         configuracao.setAtivo(true);
 
@@ -52,9 +46,14 @@ public class ConfiguracaoAtendimentoService {
         existente.setHoraInicio(novosDados.getHoraInicio());
         existente.setHoraFim(novosDados.getHoraFim());
         existente.setQuantidadeAtendimentos(novosDados.getQuantidadeAtendimentos());
+        existente.setIntervaloMinutos(novosDados.getIntervaloMinutos());
         existente.setNumeroGuiches(novosDados.getNumeroGuiches());
         existente.setDiasAtendimento(novosDados.getDiasAtendimento());
+        existente.setTipoRegra(novosDados.getTipoRegra());
         existente.setAtivo(novosDados.getAtivo());
+
+        // 🔥 gera sem quebrar a coleção
+        gerarHorarios(existente);
 
         return repository.save(existente);
     }
@@ -102,12 +101,8 @@ public class ConfiguracaoAtendimentoService {
     // 🔹 Validações de regra
     private void validarConfiguracao(ConfiguracaoAtendimento cfg) {
 
-        if (cfg.getSecretaria() == null) {
-            throw new RuntimeException("Secretaria é obrigatória");
-        }
-
         if (cfg.getHoraInicio() == null || cfg.getHoraFim() == null) {
-            throw new RuntimeException("Horário inicial e final são obrigatórios");
+            throw new RuntimeException("Hora início e fim são obrigatórias");
         }
 
         if (cfg.getHoraFim().isBefore(cfg.getHoraInicio())) {
@@ -118,25 +113,26 @@ public class ConfiguracaoAtendimentoService {
             throw new RuntimeException("Tipo de regra é obrigatório");
         }
 
-        if (cfg.getTipoRegra() == TipoRegraAtendimento.POR_QUANTIDADE) {
-            if (cfg.getQuantidadeAtendimentos() == null || cfg.getQuantidadeAtendimentos() <= 0) {
-                throw new RuntimeException("Quantidade de atendimentos inválida");
+        // 🔹 POR INTERVALO
+        if (cfg.getTipoRegra() == TipoRegraAtendimento.POR_INTERVALO) {
+
+            if (cfg.getIntervaloMinutos() == null || cfg.getIntervaloMinutos() <= 0) {
+                throw new RuntimeException("Intervalo em minutos é obrigatório");
             }
-            cfg.setIntervaloMinutos(null); // limpa o que não usa
+
+            // 🔥 IGNORA quantidade vinda do front
+            cfg.setQuantidadeAtendimentos(null);
         }
 
-        if (cfg.getTipoRegra() == TipoRegraAtendimento.POR_INTERVALO) {
-            if (cfg.getIntervaloMinutos() == null || cfg.getIntervaloMinutos() <= 0) {
-                throw new RuntimeException("Intervalo inválido");
+        // 🔹 POR QUANTIDADE
+        if (cfg.getTipoRegra() == TipoRegraAtendimento.POR_QUANTIDADE) {
+
+            if (cfg.getQuantidadeAtendimentos() == null || cfg.getQuantidadeAtendimentos() < 2) {
+                throw new RuntimeException("Quantidade mínima de atendimentos é 2");
             }
 
-            long minutosTotais = java.time.Duration.between(
-                    cfg.getHoraInicio(),
-                    cfg.getHoraFim()
-            ).toMinutes();
-
-            int quantidade = (int) (minutosTotais / cfg.getIntervaloMinutos());
-            cfg.setQuantidadeAtendimentos(quantidade);
+            // 🔥 IGNORA intervalo vindo do front
+            cfg.setIntervaloMinutos(null);
         }
 
         if (cfg.getNumeroGuiches() == null || cfg.getNumeroGuiches() <= 0) {
@@ -150,7 +146,7 @@ public class ConfiguracaoAtendimentoService {
 
     private void gerarHorariosPorIntervalo(ConfiguracaoAtendimento cfg) {
 
-        Set<HorarioAtendimento> horarios = new HashSet<>();
+        cfg.getHorarios().clear(); // 🔥 remove antigos (orphanRemoval cuida do delete)
 
         LocalTime atual = cfg.getHoraInicio();
 
@@ -159,40 +155,60 @@ public class ConfiguracaoAtendimentoService {
             h.setConfiguracao(cfg);
             h.setHora(atual);
             h.setOcupado(false);
-            horarios.add(h);
+
+            cfg.getHorarios().add(h);
 
             atual = atual.plusMinutes(cfg.getIntervaloMinutos());
         }
 
-        cfg.setQuantidadeAtendimentos(horarios.size());
-        cfg.setHorarios(horarios);
+        cfg.setQuantidadeAtendimentos(cfg.getHorarios().size());
     }
 
     private void gerarHorariosPorQuantidade(ConfiguracaoAtendimento cfg) {
+
+        cfg.getHorarios().clear();
 
         long minutosTotais = Duration.between(
                 cfg.getHoraInicio(),
                 cfg.getHoraFim()
         ).toMinutes();
 
-        long intervalo = minutosTotais / (cfg.getQuantidadeAtendimentos() - 1);
+        int quantidade = cfg.getQuantidadeAtendimentos();
 
-        Set<HorarioAtendimento> horarios = new HashSet<>();
+        long intervalo = minutosTotais / quantidade;
 
         LocalTime atual = cfg.getHoraInicio();
 
-        for (int i = 0; i < cfg.getQuantidadeAtendimentos(); i++) {
+        for (int i = 0; i < quantidade; i++) {
+
             HorarioAtendimento h = new HorarioAtendimento();
             h.setConfiguracao(cfg);
             h.setHora(atual);
             h.setOcupado(false);
-            horarios.add(h);
+
+            cfg.getHorarios().add(h);
 
             atual = atual.plusMinutes(intervalo);
         }
 
+        // ⏱ sistema calcula
         cfg.setIntervaloMinutos((int) intervalo);
-        cfg.setHorarios(horarios);
+    }
+
+    private void gerarHorarios(ConfiguracaoAtendimento cfg) {
+
+        // 🔥 LIMPA HORÁRIOS ANTIGOS (funciona no update)
+        if (cfg.getHorarios() != null) {
+            cfg.getHorarios().clear();
+        }
+
+        if (cfg.getTipoRegra() == TipoRegraAtendimento.POR_INTERVALO) {
+            gerarHorariosPorIntervalo(cfg);
+        }
+
+        if (cfg.getTipoRegra() == TipoRegraAtendimento.POR_QUANTIDADE) {
+            gerarHorariosPorQuantidade(cfg);
+        }
     }
 
     // 🔹 Converte DayOfWeek → DiaSemana

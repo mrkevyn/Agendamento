@@ -41,6 +41,9 @@ public class Agendamento {
     @JoinColumn(name = "gerenciador_id")
     private Gerenciador gerenciador;
 
+    @Column(name = "nome_cidadao", length = 255)
+    private String nome_cidado;
+
     // Getters e Setters
     public Long getId() {
         return id;
@@ -115,5 +118,13 @@ public class Agendamento {
 
     public void setConfiguracao(ConfiguracaoAtendimento configuracao) {
         this.configuracao = configuracao;
+    }
+
+    public String getNome_cidado(){
+        return nome_cidado;
+    }
+
+    public void setNome_cidado(String nome_cidado){
+        this.nome_cidado = nome_cidado;
     }
 }

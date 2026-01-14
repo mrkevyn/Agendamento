@@ -15,7 +15,7 @@ public class Agendamento {
     private ConfiguracaoAtendimento configuracao;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "usuario_id")
+    @JoinColumn(name = "usuario_id", nullable = true)
     private Usuario usuario;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -42,7 +42,7 @@ public class Agendamento {
     private Gerenciador gerenciador;
 
     @Column(name = "nome_cidadao", length = 255)
-    private String nome_cidado;
+    private String nome_cidadao;
 
     // Getters e Setters
     public Long getId() {
@@ -120,11 +120,11 @@ public class Agendamento {
         this.configuracao = configuracao;
     }
 
-    public String getNome_cidado(){
-        return nome_cidado;
+    public String getNomeCidadao(){
+        return nome_cidadao;
     }
 
-    public void setNome_cidado(String nome_cidado){
-        this.nome_cidado = nome_cidado;
+    public void setNomeCidadao(String nome_cidadao){
+        this.nome_cidadao = nome_cidadao;
     }
 }

@@ -24,4 +24,9 @@ public class UsuarioService {
     public Usuario buscarPorLogin(String login) {
         return usuarioRepository.findByLogin(login);
     }
+
+    public Usuario buscarPorId(Long id) {
+        return usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+    }
 }

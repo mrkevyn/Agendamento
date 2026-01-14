@@ -27,13 +27,23 @@ public class ConfiguracaoAtendimentoService {
     // 🔹 Criar configuração
     public ConfiguracaoAtendimento salvar(ConfiguracaoAtendimento configuracao) {
 
+        // 🔹 Valida os dados da configuração (horários, dias, número de guichês, regra, etc)
         validarConfiguracao(configuracao);
 
+        // 🔹 Gera os horários de atendimento de acordo com a regra
         gerarHorarios(configuracao);
 
+        // 🔹 Marca como ativa
         configuracao.setAtivo(true);
 
-        return repository.save(configuracao);
+        // 🔹 Salva no banco
+        ConfiguracaoAtendimento salva = repository.save(configuracao);
+
+        // 🔹 Opcional: já criar agendamentos “espontâneos” ou pré-reservas se quiser
+        //    ou simplesmente garantir que qualquer agendamento posterior terá configuracao_atendimento_id preenchido
+        //    nada precisa mudar no serviço, pois a configuração pertence à secretaria
+
+        return salva;
     }
 
     // 🔹 Atualizar configuração

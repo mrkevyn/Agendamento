@@ -2,16 +2,16 @@ package com.gov.ma.saoluis.agendamento.service;
 
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoResponseDTO;
 import com.gov.ma.saoluis.agendamento.DTO.UltimaChamadaDTO;
-import com.gov.ma.saoluis.agendamento.model.ConfiguracaoAtendimento;
-import com.gov.ma.saoluis.agendamento.model.Gerenciador;
-import com.gov.ma.saoluis.agendamento.model.SituacaoAgendamento;
+import com.gov.ma.saoluis.agendamento.model.*;
+import com.gov.ma.saoluis.agendamento.repository.ChamadaAgendamentoRepository;
 import com.gov.ma.saoluis.agendamento.repository.GerenciadorRepository;
+import com.gov.ma.saoluis.agendamento.repository.HorarioAtendimentoRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoDTO;
-import com.gov.ma.saoluis.agendamento.model.Agendamento;
 import com.gov.ma.saoluis.agendamento.repository.AgendamentoRepository;
+import com.gov.ma.saoluis.agendamento.DTO.AgendamentoAppRequest;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,11 +29,23 @@ public class AgendamentoService {
 
     private final ConfiguracaoAtendimentoService configuracaoService;
 
-    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService, ConfiguracaoAtendimentoService configuracaoService) {
+    private final ChamadaAgendamentoRepository chamadaAgendamentoRepository;
+
+    private final HorarioAtendimentoRepository horarioRepository;
+
+    private final ServicoService servicoService;
+
+    private final UsuarioService usuarioService;
+
+    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService, ConfiguracaoAtendimentoService configuracaoService, ChamadaAgendamentoRepository chamadaAgendamentoRepository, HorarioAtendimentoRepository horarioRepository, ServicoService servicoService, UsuarioService usuarioService) {
         this.atendenteRepository = gerenciadorRepository;
         this.agendamentoRepository = agendamentoRepository;
         this.logService = logService;
         this.configuracaoService = configuracaoService;
+        this.chamadaAgendamentoRepository = chamadaAgendamentoRepository;
+        this.horarioRepository = horarioRepository;
+        this.servicoService = servicoService;
+        this.usuarioService = usuarioService;
     }
 
     // 🔹 Listar todos COM DETALHES
@@ -53,73 +65,105 @@ public class AgendamentoService {
     }
 
     // 🔹 Criar novo agendamento
-    public Agendamento salvar(Agendamento agendamento) {
+    public Agendamento salvarApp(AgendamentoAppRequest req) {
 
-        // 🔹 Valida usuário
-        if (agendamento.getUsuario() == null || agendamento.getUsuario().getId() == null) {
-            throw new RuntimeException("Usuário é obrigatório");
+        Usuario usuario = usuarioService.buscarPorId(req.usuarioId());
+        Servico servico = servicoService.buscarPorId(req.servicoId());
+
+        HorarioAtendimento horario = horarioRepository.findById(req.horarioId())
+                .orElseThrow(() -> new RuntimeException("Horário inválido"));
+
+        if (horario.getOcupado()) {
+            throw new RuntimeException("Horário já ocupado");
         }
 
-        // 🔹 Valida serviço
+        ConfiguracaoAtendimento configuracao = horario.getConfiguracao();
+
+        // 🔒 trava o horário
+        horario.setOcupado(true);
+        horarioRepository.save(horario);
+
+        Agendamento agendamento = new Agendamento();
+        agendamento.setUsuario(usuario);
+        agendamento.setServico(servico);
+        agendamento.setConfiguracao(configuracao);
+        agendamento.setHoraAgendamento(
+                LocalDateTime.of(LocalDate.now(), horario.getHora())
+        );
+        agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
+        agendamento.setTipoAtendimento(
+                req.tipoAtendimento() == null ? "NORMAL" : req.tipoAtendimento()
+        );
+
+        // 🔢 senha
+        long totalHoje = agendamentoRepository.countBySecretariaAndTipoAndData(
+                configuracao.getSecretaria().getId().intValue(),
+                agendamento.getTipoAtendimento(),
+                LocalDate.now()
+        );
+
+        agendamento.setSenha(
+                String.format("%s%03d", gerarPrefixo(agendamento.getTipoAtendimento()), totalHoje + 1)
+        );
+
+        return agendamentoRepository.save(agendamento);
+    }
+
+    private void validarAgendamentoEspontaneo(Agendamento agendamento) {
+
+        if (agendamento.getConfiguracao() == null) {
+            throw new RuntimeException("Configuração de atendimento é obrigatória");
+        }
+
+        if (!agendamento.getConfiguracao().getAtivo()) {
+            throw new RuntimeException("Configuração de atendimento está inativa");
+        }
+
+        if (agendamento.getServico() == null) {
+            throw new RuntimeException("Serviço é obrigatório");
+        }
+
+        if (agendamento.getNomeCidadao() == null || agendamento.getNomeCidadao().isBlank()) {
+            throw new RuntimeException("Nome do cidadão é obrigatório para atendimento espontâneo");
+        }
+
+        if (agendamento.getTipoAtendimento() == null || agendamento.getTipoAtendimento().isBlank()) {
+            throw new RuntimeException("Tipo de atendimento é obrigatório");
+        }
+    }
+
+    public Agendamento criarEspontaneo(Agendamento agendamento) {
+
         if (agendamento.getServico() == null || agendamento.getServico().getId() == null) {
             throw new RuntimeException("Serviço é obrigatório");
         }
 
+        if (agendamento.getConfiguracao() == null || agendamento.getConfiguracao().getId() == null) {
+            throw new RuntimeException("Configuração é obrigatória");
+        }
+
+        ConfiguracaoAtendimento cfg =
+                configuracaoService.buscarPorId(agendamento.getConfiguracao().getId());
+
+        agendamento.setConfiguracao(cfg);
         agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
+        agendamento.setHoraAgendamento(LocalDateTime.now());
 
         if (agendamento.getTipoAtendimento() == null || agendamento.getTipoAtendimento().isBlank()) {
             agendamento.setTipoAtendimento("NORMAL");
         }
 
-        if (agendamento.getHoraAgendamento() == null) {
-            throw new RuntimeException("Data e hora do agendamento são obrigatórias");
-        }
-
-        LocalDate data = agendamento.getHoraAgendamento().toLocalDate();
-        LocalTime hora = agendamento.getHoraAgendamento().toLocalTime();
-
-        // 🔹 Descobre a secretaria pelo serviço
-        Long secretariaId = agendamentoRepository.findSecretariaIdByServicoId(
-                agendamento.getServico().getId()
+        // 🔥 Gera senha correta (sem depender de horário)
+        agendamento.setSenha(
+                gerarSenhaEspontanea(
+                        cfg.getSecretaria().getId(),
+                        agendamento.getTipoAtendimento()
+                )
         );
 
-        if (secretariaId == null) {
-            throw new RuntimeException("O serviço não possui secretaria vinculada");
-        }
+        validarAgendamentoEspontaneo(agendamento);
 
-        // 🔥 AQUI entra o ConfiguracaoAtendimentoService
-        ConfiguracaoAtendimento configuracao =
-                configuracaoService.validarDisponibilidade(secretariaId, data, hora);
-
-        // 🔹 Vincula a configuração ao agendamento
-        agendamento.setConfiguracao(configuracao);
-
-        // 🔹 Geração da senha
-        String prefixo = gerarPrefixo(agendamento.getTipoAtendimento());
-
-        long totalHoje = agendamentoRepository.countBySecretariaAndTipoAndData(
-                secretariaId.intValue(),
-                agendamento.getTipoAtendimento(),
-                data
-        );
-
-        String senha = String.format("%s%03d", prefixo, totalHoje + 1);
-        agendamento.setSenha(senha);
-
-        // 🔹 Salva
-        Agendamento salvo = agendamentoRepository.save(agendamento);
-
-        // 🔴 LOG
-        logService.registrar(
-                agendamento.getUsuario().getId(),
-                "USUARIO",
-                "AGENDAMENTO_CRIADO",
-                "Agendamento ID: " + salvo.getId()
-                        + ", Senha: " + salvo.getSenha()
-                        + ", Configuração: " + configuracao.getId()
-        );
-
-        return salvo;
+        return agendamentoRepository.save(agendamento);
     }
 
     // 🔹 Atualizar (reagendar)
@@ -173,6 +217,19 @@ public class AgendamentoService {
         int numero = Integer.parseInt(numeroStr);
 
         return String.format("%s%03d", prefixo, numero + 1);
+    }
+
+    private String gerarSenhaEspontanea(Long secretariaId, String tipoAtendimento) {
+
+        String prefixo = gerarPrefixo(tipoAtendimento);
+
+        long totalHoje = agendamentoRepository.countBySecretariaAndTipoAndData(
+                secretariaId.intValue(),
+                tipoAtendimento,
+                LocalDate.now()
+        );
+
+        return String.format("%s%03d", prefixo, totalHoje + 1);
     }
 
     public List<AgendamentoDTO> listarAgendamentosComDetalhes(Long agendamentoId) {
@@ -251,11 +308,28 @@ public class AgendamentoService {
         agendamento.setHoraChamada(LocalDateTime.now());
         agendamento.setAtendente(gerenciador); // 🔹 AQUI
 
-        return agendamentoRepository.save(agendamento);
+        Agendamento agendamentoSalvo = agendamentoRepository.save(agendamento);
+        // 🔹 REGISTRA HISTÓRICO DA CHAMADA
+        ChamadaAgendamento chamada = new ChamadaAgendamento();
+        chamada.setAgendamento(agendamentoSalvo);
+        chamada.setGerenciador(gerenciador);
+        chamada.setSecretaria(
+                agendamentoSalvo.getServico() != null
+                        ? agendamentoSalvo.getServico().getSecretaria()
+                        : null
+        );
+        chamada.setSenha(agendamentoSalvo.getSenha());
+        chamada.setTipoAtendimento(agendamentoSalvo.getTipoAtendimento());
+        chamada.setGuiche(gerenciador.getGuiche());
+        chamada.setDataChamada(LocalDateTime.now());
+
+        chamadaAgendamentoRepository.save(chamada);
+
+        return agendamentoSalvo;
     }
 
     public UltimaChamadaDTO getUltimaChamada() {
-        return agendamentoRepository.buscarUltimaChamada();
+        return chamadaAgendamentoRepository.buscarUltimaChamada();
     }
 
     // 🔹 Finalizar atendimento

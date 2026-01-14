@@ -80,7 +80,8 @@ public class GerenciadorController {
 
             String token = jwtService.gerarToken(
                     g.getId(),
-                    g.getPerfil()
+                    g.getPerfil(),
+                    g.getSecretaria().getId()
             );
 
             // 🏢 Monta SecretariaDTO

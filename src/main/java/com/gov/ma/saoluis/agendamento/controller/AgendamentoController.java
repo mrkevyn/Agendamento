@@ -1,5 +1,6 @@
 package com.gov.ma.saoluis.agendamento.controller;
 
+import com.gov.ma.saoluis.agendamento.DTO.AgendamentoAppRequest;
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoDTO;
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoResponseDTO;
 import com.gov.ma.saoluis.agendamento.DTO.UltimaChamadaDTO;
@@ -47,10 +48,17 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendamentos);
     }
 
-    @PostMapping
-    public Agendamento criar(@RequestBody Agendamento agendamento) {
-        agendamento.setId(null); // garante que será um novo agendamento
-        return agendamentoService.salvar(agendamento);
+    @PostMapping("/agendar-app")
+    public Agendamento criarApp(@RequestBody AgendamentoAppRequest req) {
+        return agendamentoService.salvarApp(req);
+    }
+
+    @PostMapping("/espontaneo")
+    public ResponseEntity<Agendamento> criarEspontaneo(
+            @RequestBody Agendamento agendamento
+    ) {
+        Agendamento salvo = agendamentoService.criarEspontaneo(agendamento);
+        return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
     }
 
     @PutMapping("/{id}")

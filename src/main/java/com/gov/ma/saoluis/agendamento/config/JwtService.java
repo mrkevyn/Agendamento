@@ -17,11 +17,12 @@ public class JwtService {
 
     private final Key key = Keys.hmacShaKeyFor(SECRET.getBytes());
 
-    public String gerarToken(Long usuarioId, String perfil) {
+    public String gerarToken(Long usuarioId, String perfil, Long secretariaId) {
 
         return Jwts.builder()
                 .setSubject(usuarioId.toString())
                 .claim("perfil", perfil)
+                .claim("secretariaId", secretariaId)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRACAO))
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -42,5 +43,9 @@ public class JwtService {
 
     public String getPerfil(String token) {
         return validarToken(token).get("perfil", String.class);
+    }
+
+    public Long getSecretariaId(String token) {
+        return validarToken(token).get("secretariaId", Long.class);
     }
 }

@@ -3,15 +3,14 @@ package com.gov.ma.saoluis.agendamento.service;
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoResponseDTO;
 import com.gov.ma.saoluis.agendamento.DTO.UltimaChamadaDTO;
 import com.gov.ma.saoluis.agendamento.model.*;
-import com.gov.ma.saoluis.agendamento.repository.ChamadaAgendamentoRepository;
-import com.gov.ma.saoluis.agendamento.repository.GerenciadorRepository;
-import com.gov.ma.saoluis.agendamento.repository.HorarioAtendimentoRepository;
+import com.gov.ma.saoluis.agendamento.repository.*;
+import jakarta.transaction.Transactional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoDTO;
-import com.gov.ma.saoluis.agendamento.repository.AgendamentoRepository;
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoAppRequest;
+import com.gov.ma.saoluis.agendamento.service.SlotAtendimentoService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -37,7 +36,11 @@ public class AgendamentoService {
 
     private final UsuarioService usuarioService;
 
-    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService, ConfiguracaoAtendimentoService configuracaoService, ChamadaAgendamentoRepository chamadaAgendamentoRepository, HorarioAtendimentoRepository horarioRepository, ServicoService servicoService, UsuarioService usuarioService) {
+    private final SlotAtendimentoService slotAtendimentoService;
+
+    private final SlotAtendimentoRepository slotAtendimentoRepository;
+
+    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService, ConfiguracaoAtendimentoService configuracaoService, ChamadaAgendamentoRepository chamadaAgendamentoRepository, HorarioAtendimentoRepository horarioRepository, ServicoService servicoService, UsuarioService usuarioService, SlotAtendimentoService slotAtendimentoService, SlotAtendimentoRepository slotAtendimentoRepository) {
         this.atendenteRepository = gerenciadorRepository;
         this.agendamentoRepository = agendamentoRepository;
         this.logService = logService;
@@ -46,6 +49,8 @@ public class AgendamentoService {
         this.horarioRepository = horarioRepository;
         this.servicoService = servicoService;
         this.usuarioService = usuarioService;
+        this.slotAtendimentoService = slotAtendimentoService;
+        this.slotAtendimentoRepository = slotAtendimentoRepository;
     }
 
     // 🔹 Listar todos COM DETALHES
@@ -65,49 +70,70 @@ public class AgendamentoService {
     }
 
     // 🔹 Criar novo agendamento
+    @Transactional
     public Agendamento salvarApp(AgendamentoAppRequest req) {
 
         Usuario usuario = usuarioService.buscarPorId(req.usuarioId());
         Servico servico = servicoService.buscarPorId(req.servicoId());
 
-        HorarioAtendimento horario = horarioRepository.findById(req.horarioId())
-                .orElseThrow(() -> new RuntimeException("Horário inválido"));
+        ConfiguracaoAtendimento cfg = configuracaoService.buscarPorId(req.configuracaoId());
 
-        if (horario.getOcupado()) {
-            throw new RuntimeException("Horário já ocupado");
+        // 1) valida se dia/hora é permitido pra secretaria
+        configuracaoService.validarDisponibilidade(
+                cfg.getSecretaria().getId(),
+                req.data(),
+                req.hora()
+        );
+
+        // 2) garante slots do dia (cria se não existir)
+        slotAtendimentoService.garantirSlotsDoDia(cfg, req.data());
+
+        // 3) lock no slot específico
+        SlotAtendimento slot = slotAtendimentoRepository.lockSlot(
+                cfg.getId(),
+                req.data(),
+                req.hora()
+        ).orElseThrow(() -> new RuntimeException("Horário indisponível"));
+
+        // 4) verifica vagas
+        if (!slot.temVaga()) {
+            throw new RuntimeException("Horário lotado");
         }
 
-        ConfiguracaoAtendimento configuracao = horario.getConfiguracao();
+        // 5) reserva (incrementa)
+        slot.setReservados(slot.getReservados() + 1);
+        slotAtendimentoRepository.save(slot);
 
-        // 🔒 trava o horário
-        horario.setOcupado(true);
-        horarioRepository.save(horario);
-
+        // 6) cria agendamento
         Agendamento agendamento = new Agendamento();
         agendamento.setUsuario(usuario);
         agendamento.setServico(servico);
-        agendamento.setConfiguracao(configuracao);
+        agendamento.setConfiguracao(cfg);
+
         agendamento.setHoraAgendamento(
-                LocalDateTime.of(LocalDate.now(), horario.getHora())
+                java.time.LocalDateTime.of(req.data(), req.hora())
         );
+
         agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
+
         agendamento.setTipoAtendimento(
                 req.tipoAtendimento() == null ? "NORMAL" : req.tipoAtendimento()
         );
 
-        // 🔢 senha
-        long totalHoje = agendamentoRepository.countBySecretariaAndTipoAndData(
-                configuracao.getSecretaria().getId().intValue(),
+        // 7) senha (use req.data() e não LocalDate.now())
+        long totalNoDia = agendamentoRepository.countBySecretariaAndTipoAndData(
+                cfg.getSecretaria().getId().intValue(),
                 agendamento.getTipoAtendimento(),
-                LocalDate.now()
+                req.data()
         );
 
         agendamento.setSenha(
-                String.format("%s%03d", gerarPrefixo(agendamento.getTipoAtendimento()), totalHoje + 1)
+                String.format("%s%03d", gerarPrefixo(agendamento.getTipoAtendimento()), totalNoDia + 1)
         );
 
         return agendamentoRepository.save(agendamento);
     }
+
 
     private void validarAgendamentoEspontaneo(Agendamento agendamento) {
 

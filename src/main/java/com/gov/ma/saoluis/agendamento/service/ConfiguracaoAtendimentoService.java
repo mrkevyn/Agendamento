@@ -1,49 +1,58 @@
 package com.gov.ma.saoluis.agendamento.service;
 
-import com.gov.ma.saoluis.agendamento.model.ConfiguracaoAtendimento;
-import com.gov.ma.saoluis.agendamento.model.DiaSemana;
-import com.gov.ma.saoluis.agendamento.model.HorarioAtendimento;
-import com.gov.ma.saoluis.agendamento.model.TipoRegraAtendimento;
+import com.gov.ma.saoluis.agendamento.model.*;
 import com.gov.ma.saoluis.agendamento.repository.ConfiguracaoAtendimentoRepository;
+import com.gov.ma.saoluis.agendamento.repository.SlotAtendimentoRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.HashSet;
+
 import java.util.List;
-import java.util.Set;
 
 @Service
 public class ConfiguracaoAtendimentoService {
 
     private final ConfiguracaoAtendimentoRepository repository;
 
-    public ConfiguracaoAtendimentoService(ConfiguracaoAtendimentoRepository repository) {
+    private final SlotAtendimentoService slotService;
+
+    private final SlotAtendimentoRepository slotAtendimentoRepository;
+
+    public ConfiguracaoAtendimentoService(ConfiguracaoAtendimentoRepository repository, SlotAtendimentoService slotService, SlotAtendimentoRepository slotAtendimentoRepository) {
         this.repository = repository;
+        this.slotService = slotService;
+        this.slotAtendimentoRepository = slotAtendimentoRepository;
     }
 
     // 🔹 Criar configuração
+    @Transactional
     public ConfiguracaoAtendimento salvar(ConfiguracaoAtendimento configuracao) {
-
-        // 🔹 Valida os dados da configuração (horários, dias, número de guichês, regra, etc)
         validarConfiguracao(configuracao);
-
-        // 🔹 Gera os horários de atendimento de acordo com a regra
         gerarHorarios(configuracao);
-
-        // 🔹 Marca como ativa
         configuracao.setAtivo(true);
 
-        // 🔹 Salva no banco
         ConfiguracaoAtendimento salva = repository.save(configuracao);
 
-        // 🔹 Opcional: já criar agendamentos “espontâneos” ou pré-reservas se quiser
-        //    ou simplesmente garantir que qualquer agendamento posterior terá configuracao_atendimento_id preenchido
-        //    nada precisa mudar no serviço, pois a configuração pertence à secretaria
+        // pré-gerar próximos 30 dias
+        LocalDate hoje = LocalDate.now();
+        for (int i = 0; i <= 30; i++) {
+            slotService.garantirSlotsDoDia(salva, hoje.plusDays(i));
+        }
 
         return salva;
+    }
+
+    private void gerarSlotsProximosDias(ConfiguracaoAtendimento cfg, int dias) {
+        LocalDate hoje = LocalDate.now();
+
+        for (int i = 0; i <= dias; i++) {
+            LocalDate data = hoje.plusDays(i);
+            slotService.garantirSlotsDoDia(cfg, data);
+        }
     }
 
     // 🔹 Atualizar configuração
@@ -221,8 +230,31 @@ public class ConfiguracaoAtendimentoService {
         }
     }
 
-    // 🔹 Converte DayOfWeek → DiaSemana
+    // 🔹 Converte DayOfWeek → DiaSemana (PT-BR)
     private DiaSemana converterDia(DayOfWeek dayOfWeek) {
-        return DiaSemana.valueOf(dayOfWeek.name());
+        return switch (dayOfWeek) {
+            case MONDAY -> DiaSemana.SEGUNDA;
+            case TUESDAY -> DiaSemana.TERCA;
+            case WEDNESDAY -> DiaSemana.QUARTA;
+            case THURSDAY -> DiaSemana.QUINTA;
+            case FRIDAY -> DiaSemana.SEXTA;
+            case SATURDAY -> DiaSemana.SABADO;
+            case SUNDAY -> DiaSemana.DOMINGO;
+        };
+    }
+
+    public List<LocalDate> listarDatasDisponiveis(Long secretariaId, Long configuracaoId, int dias) {
+        ConfiguracaoAtendimento cfg = buscarPorId(configuracaoId);
+
+        LocalDate hoje = LocalDate.now();
+        return java.util.stream.IntStream.rangeClosed(0, dias)
+                .mapToObj(hoje::plusDays)
+                .filter(data -> {
+                    slotService.garantirSlotsDoDia(cfg, data);
+                    return slotAtendimentoRepository.findByConfiguracaoIdAndDataOrderByHora(configuracaoId, data)
+                            .stream()
+                            .anyMatch(SlotAtendimento::temVaga);
+                })
+                .toList();
     }
 }

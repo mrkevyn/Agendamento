@@ -20,6 +20,9 @@ public class Servico {
     @Column(length = 500)
     private String descricao;
 
+    @Column(nullable = false)
+    private boolean ativo = true;
+
     // ➜ Número de guichês disponíveis para o serviço
     @Column(name = "numero_guiches", nullable = true)
     private Integer numeroGuiches;

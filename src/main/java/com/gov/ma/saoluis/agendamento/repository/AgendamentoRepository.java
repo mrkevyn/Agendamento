@@ -170,4 +170,18 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 			@Param("senha") String senha,
 			Pageable pageable
 	);
+
+	@Query(value = """
+    select senha
+    from agendamento
+    where configuracao_atendimento_id = :configId
+      and tipo_atendimento = :tipo
+      and date(hora_agendamento) = :data
+    order by id desc
+    limit 1
+""", nativeQuery = true)
+	String findUltimaSenhaDoDia(@Param("configId") Long configId,
+								@Param("tipo") String tipo,
+								@Param("data") LocalDate data);
+
 }

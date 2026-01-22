@@ -104,6 +104,15 @@ public class AgendamentoService {
         slot.setReservados(slot.getReservados() + 1);
         slotAtendimentoRepository.save(slot);
 
+        // opcional: lotou -> marca template ocupado
+        if (slot.getReservados() >= slot.getCapacidade()) {
+            cfg.getHorarios().stream()
+                    .filter(h -> h.getHora().equals(req.hora()))
+                    .findFirst()
+                    .ifPresent(h -> h.setOcupado(true));
+            // 💡 se quiser persistir isso, faça cfgRepo.save(cfg) ou garanta cascade/dirty checking
+        }
+
         // 6) cria agendamento
         Agendamento agendamento = new Agendamento();
         agendamento.setUsuario(usuario);
@@ -120,18 +129,33 @@ public class AgendamentoService {
                 req.tipoAtendimento() == null ? "NORMAL" : req.tipoAtendimento()
         );
 
-        // 7) senha (use req.data() e não LocalDate.now())
-        long totalNoDia = agendamentoRepository.countBySecretariaAndTipoAndData(
-                cfg.getSecretaria().getId().intValue(),
-                agendamento.getTipoAtendimento(),
-                req.data()
-        );
+        int tentativas = 0;
+        while (true) {
+            tentativas++;
 
-        agendamento.setSenha(
-                String.format("%s%03d", gerarPrefixo(agendamento.getTipoAtendimento()), totalNoDia + 1)
-        );
+            agendamento.setSenha(
+                    gerarSenhaParaDia(cfg.getId(), agendamento.getTipoAtendimento(), req.data())
+            );
 
-        return agendamentoRepository.save(agendamento);
+            try {
+                return agendamentoRepository.save(agendamento);
+            } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                if (tentativas >= 5) {
+                    throw new RuntimeException("Falha ao gerar senha única");
+                }
+                // tenta de novo
+            }
+        }
+    }
+
+    private String gerarSenhaParaDia(Long configId, String tipo, LocalDate data) {
+        String prefixo = gerarPrefixo(tipo);
+
+        String ultima = agendamentoRepository.findUltimaSenhaDoDia(configId, tipo, data);
+
+        if (ultima == null) return prefixo + "001";
+
+        return gerarProximaSenha(ultima);
     }
 
 

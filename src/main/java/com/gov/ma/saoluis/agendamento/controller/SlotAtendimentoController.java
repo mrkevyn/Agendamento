@@ -103,4 +103,13 @@ public class SlotAtendimentoController {
                 configuracaoService.listarDatasDisponiveis(secretariaId, configuracaoId, dias)
         );
     }
+
+    @GetMapping("/secretaria/{secretariaId}/slots")
+    public ResponseEntity<List<SlotAtendimento>> listarSlotsPorSecretaria(
+            @PathVariable Long secretariaId,
+            @RequestParam(required = false) LocalDate data
+    ) {
+        return ResponseEntity.ok(slotService.listarSlotsPorSecretaria(secretariaId, data));
+    }
+
 }

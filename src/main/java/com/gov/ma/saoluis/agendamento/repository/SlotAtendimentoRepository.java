@@ -46,4 +46,12 @@ public interface SlotAtendimentoRepository extends JpaRepository<SlotAtendimento
             @Param("data") LocalDate data,
             @Param("hora") LocalTime hora
     );
+
+    List<SlotAtendimento> findByConfiguracaoSecretariaIdAndAtivoTrueAndDataOrderByHoraAsc(
+            Long secretariaId, LocalDate data
+    );
+
+    List<SlotAtendimento> findByConfiguracaoSecretariaIdAndAtivoTrueAndDataGreaterThanEqualOrderByDataAscHoraAsc(
+            Long secretariaId, LocalDate data
+    );
 }

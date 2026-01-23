@@ -85,6 +85,7 @@ public class ConfiguracaoAtendimentoService {
 
     // 🔹 Listar por secretaria
     public List<ConfiguracaoAtendimento> listarPorSecretaria(Long secretariaId) {
+        System.out.print(repository.findBySecretariaIdAndAtivoTrue(secretariaId));
         return repository.findBySecretariaIdAndAtivoTrue(secretariaId);
     }
 

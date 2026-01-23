@@ -58,4 +58,15 @@ public class SlotAtendimentoService {
             case SUNDAY -> DiaSemana.DOMINGO;
         };
     }
+
+    public List<SlotAtendimento> listarSlotsPorSecretaria(Long secretariaId, LocalDate data) {
+        if (data != null) {
+            return slotRepo.findByConfiguracaoSecretariaIdAndAtivoTrueAndDataOrderByHoraAsc(secretariaId, data);
+        }
+        // exemplo: hoje (ou os próximos 7 dias, se preferir)
+        return slotRepo.findByConfiguracaoSecretariaIdAndAtivoTrueAndDataGreaterThanEqualOrderByDataAscHoraAsc(
+                secretariaId, LocalDate.now()
+        );
+    }
+
 }

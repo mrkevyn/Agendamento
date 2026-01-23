@@ -111,5 +111,4 @@ public class SlotAtendimentoController {
     ) {
         return ResponseEntity.ok(slotService.listarSlotsPorSecretaria(secretariaId, data));
     }
-
 }

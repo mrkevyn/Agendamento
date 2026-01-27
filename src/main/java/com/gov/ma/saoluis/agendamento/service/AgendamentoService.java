@@ -189,7 +189,9 @@ public class AgendamentoService {
     }
 
     @Transactional
-    public Agendamento criarEspontaneo(Agendamento agendamento) {
+    public Agendamento criarEspontaneo(Long secretariaId, Agendamento agendamento) {
+
+        if (secretariaId == null) throw new RuntimeException("Secretaria é obrigatória");
 
         if (agendamento.getServico() == null || agendamento.getServico().getId() == null) {
             throw new RuntimeException("Serviço é obrigatório");
@@ -201,11 +203,16 @@ public class AgendamentoService {
             throw new RuntimeException("Serviço sem secretaria vinculada");
         }
 
-        Long secretariaId = servico.getSecretaria().getId();
+        if (!servico.getSecretaria().getId().equals(secretariaId)) {
+            throw new RuntimeException("Serviço não pertence à secretaria informada");
+        }
 
         agendamento.setServico(servico);
 
-        // 🔥 não setar configuracao no espontâneo
+        // ✅ salva secretaria no agendamento (isso que estava faltando)
+        agendamento.setSecretaria(servico.getSecretaria());
+
+        // 🔥 espontâneo não usa configuração
         agendamento.setConfiguracao(null);
 
         agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
@@ -219,7 +226,6 @@ public class AgendamentoService {
 
         validarAgendamentoEspontaneo(agendamento);
 
-        // ✅ senha única do dia (retry por UNIQUE)
         int tentativas = 0;
         LocalDate hoje = LocalDate.now();
 
@@ -233,9 +239,7 @@ public class AgendamentoService {
             try {
                 return agendamentoRepository.save(agendamento);
             } catch (org.springframework.dao.DataIntegrityViolationException e) {
-                if (tentativas >= 5) {
-                    throw new RuntimeException("Falha ao gerar senha única");
-                }
+                if (tentativas >= 5) throw new RuntimeException("Falha ao gerar senha única");
             }
         }
     }
@@ -402,8 +406,8 @@ public class AgendamentoService {
         return agendamentoSalvo;
     }
 
-    public UltimaChamadaDTO getUltimaChamada() {
-        return chamadaAgendamentoRepository.buscarUltimaChamada();
+    public List<UltimaChamadaDTO> getUltimasChamadasPorSecretaria(Long secretariaId) {
+        return chamadaAgendamentoRepository.buscarUltimasChamadasPorSecretaria(secretariaId);
     }
 
     // 🔹 Finalizar atendimento

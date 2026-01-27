@@ -44,6 +44,10 @@ public class Agendamento {
     @Column(name = "nome_cidadao", length = 255)
     private String nome_cidadao;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "secretaria_id", nullable = false)
+    private Secretaria secretaria;
+
     // Getters e Setters
     public Long getId() {
         return id;
@@ -126,5 +130,13 @@ public class Agendamento {
 
     public void setNomeCidadao(String nome_cidadao){
         this.nome_cidadao = nome_cidadao;
+    }
+
+    public void setSecretaria(Secretaria secretaria) {
+        this.secretaria = secretaria;
+    }
+
+    public Secretaria getSecretaria() {
+        return secretaria;
     }
 }

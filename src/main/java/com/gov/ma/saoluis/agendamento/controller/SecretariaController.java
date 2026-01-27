@@ -1,7 +1,9 @@
 package com.gov.ma.saoluis.agendamento.controller;
 
 import com.gov.ma.saoluis.agendamento.model.Secretaria;
+import com.gov.ma.saoluis.agendamento.model.Servico;
 import com.gov.ma.saoluis.agendamento.service.SecretariaService;
+import com.gov.ma.saoluis.agendamento.service.ServicoService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -10,13 +12,14 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/secretarias")
-@CrossOrigin(origins = "*") // Libera acesso para frontend
 public class SecretariaController {
 
     private final SecretariaService secretariaService;
+    private final ServicoService servicoService;
 
-    public SecretariaController(SecretariaService secretariaService) {
+    public SecretariaController(SecretariaService secretariaService, ServicoService servicoService) {
         this.secretariaService = secretariaService;
+        this.servicoService = servicoService;
     }
 
     // ✅ GET - Todas
@@ -66,5 +69,14 @@ public class SecretariaController {
         }
 
         return ResponseEntity.ok(secretaria);
+    }
+
+    @GetMapping("/{secretariaId}/servicos")
+    public ResponseEntity<List<Servico>> listarServicosDaSecretaria(
+            @PathVariable Long secretariaId
+    ) {
+        return ResponseEntity.ok(
+                servicoService.listarPorSecretaria(secretariaId)
+        );
     }
 }

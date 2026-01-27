@@ -202,4 +202,18 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 			@Param("fim") LocalDateTime fim,
 			Pageable pageable
 	);
+
+	@Query("""
+    select a
+    from Agendamento a
+    where a.senha = :senha
+      and a.servico.secretaria.id = :secretariaId
+    order by a.id desc
+""")
+	List<Agendamento> buscarPorSenhaESecetaria(
+			@Param("secretariaId") Long secretariaId,
+			@Param("senha") String senha,
+			Pageable pageable
+	);
+
 }

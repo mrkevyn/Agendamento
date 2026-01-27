@@ -27,4 +27,8 @@ public class ServicoService {
         Optional<Servico> servico = servicoRepository.findById(id);
         return servico.orElse(null); // retorna null se não encontrar
     }
+
+    public List<Servico> listarPorSecretaria(Long secretariaId) {
+        return servicoRepository.findBySecretariaId(secretariaId);
+    }
 }

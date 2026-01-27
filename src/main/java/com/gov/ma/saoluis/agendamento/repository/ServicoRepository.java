@@ -14,4 +14,6 @@ public interface ServicoRepository extends JpaRepository<Servico, Long> {
     
     // ou filtrando
     List<Servico> findByNomeContaining(String nome);
+
+    List<Servico> findBySecretariaId(Long secretariaId);
 }

@@ -53,11 +53,12 @@ public class AgendamentoController {
         return agendamentoService.salvarApp(req);
     }
 
-    @PostMapping("/espontaneo")
+    @PostMapping("/espontaneo/{secretariaId}")
     public ResponseEntity<Agendamento> criarEspontaneo(
+            @PathVariable Long secretariaId,
             @RequestBody Agendamento agendamento
     ) {
-        Agendamento salvo = agendamentoService.criarEspontaneo(agendamento);
+        Agendamento salvo = agendamentoService.criarEspontaneo(secretariaId, agendamento);
         return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
     }
 
@@ -101,15 +102,18 @@ public class AgendamentoController {
         );
     }
 
-    @GetMapping("/ultima-chamada")
-    public ResponseEntity<UltimaChamadaDTO> getUltimaChamada() {
-        UltimaChamadaDTO ultima = agendamentoService.getUltimaChamada();
+    @GetMapping("/ultimas-chamadas")
+    public ResponseEntity<List<UltimaChamadaDTO>> getUltimasChamadas(
+            @RequestParam Long secretariaId
+    ) {
+        List<UltimaChamadaDTO> lista =
+                agendamentoService.getUltimasChamadasPorSecretaria(secretariaId);
 
-        if (ultima == null) {
+        if (lista == null || lista.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
 
-        return ResponseEntity.ok(ultima);
+        return ResponseEntity.ok(lista);
     }
 
     @PutMapping("/finalizar/{id}")

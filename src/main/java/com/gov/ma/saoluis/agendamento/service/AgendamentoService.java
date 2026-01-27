@@ -148,6 +148,21 @@ public class AgendamentoService {
         }
     }
 
+    private String gerarSenhaParaDiaEspontaneo(Long secretariaId, String tipo, LocalDate data) {
+        String prefixo = gerarPrefixo(tipo);
+
+        LocalDateTime inicio = data.atStartOfDay();
+        LocalDateTime fim = data.plusDays(1).atStartOfDay();
+
+        String ultima = agendamentoRepository.findUltimaSenhaDoDiaParaEspontaneo(
+                secretariaId, tipo, inicio, fim, PageRequest.of(0, 1)
+        ).stream().findFirst().orElse(null);
+
+        if (ultima == null) return prefixo + "001";
+
+        return gerarProximaSenha(ultima); // N001 -> N002
+    }
+
     private String gerarSenhaParaDia(Long configId, String tipo, LocalDate data) {
         String prefixo = gerarPrefixo(tipo);
 
@@ -158,16 +173,7 @@ public class AgendamentoService {
         return gerarProximaSenha(ultima);
     }
 
-
     private void validarAgendamentoEspontaneo(Agendamento agendamento) {
-
-        if (agendamento.getConfiguracao() == null) {
-            throw new RuntimeException("Configuração de atendimento é obrigatória");
-        }
-
-        if (!agendamento.getConfiguracao().getAtivo()) {
-            throw new RuntimeException("Configuração de atendimento está inativa");
-        }
 
         if (agendamento.getServico() == null) {
             throw new RuntimeException("Serviço é obrigatório");
@@ -182,38 +188,56 @@ public class AgendamentoService {
         }
     }
 
+    @Transactional
     public Agendamento criarEspontaneo(Agendamento agendamento) {
 
         if (agendamento.getServico() == null || agendamento.getServico().getId() == null) {
             throw new RuntimeException("Serviço é obrigatório");
         }
 
-        if (agendamento.getConfiguracao() == null || agendamento.getConfiguracao().getId() == null) {
-            throw new RuntimeException("Configuração é obrigatória");
+        Servico servico = servicoService.buscarPorId(agendamento.getServico().getId());
+
+        if (servico.getSecretaria() == null || servico.getSecretaria().getId() == null) {
+            throw new RuntimeException("Serviço sem secretaria vinculada");
         }
 
-        ConfiguracaoAtendimento cfg =
-                configuracaoService.buscarPorId(agendamento.getConfiguracao().getId());
+        Long secretariaId = servico.getSecretaria().getId();
 
-        agendamento.setConfiguracao(cfg);
+        agendamento.setServico(servico);
+
+        // 🔥 não setar configuracao no espontâneo
+        agendamento.setConfiguracao(null);
+
         agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
         agendamento.setHoraAgendamento(LocalDateTime.now());
 
         if (agendamento.getTipoAtendimento() == null || agendamento.getTipoAtendimento().isBlank()) {
             agendamento.setTipoAtendimento("NORMAL");
+        } else {
+            agendamento.setTipoAtendimento(agendamento.getTipoAtendimento().toUpperCase());
         }
-
-        // 🔥 Gera senha correta (sem depender de horário)
-        agendamento.setSenha(
-                gerarSenhaEspontanea(
-                        cfg.getSecretaria().getId(),
-                        agendamento.getTipoAtendimento()
-                )
-        );
 
         validarAgendamentoEspontaneo(agendamento);
 
-        return agendamentoRepository.save(agendamento);
+        // ✅ senha única do dia (retry por UNIQUE)
+        int tentativas = 0;
+        LocalDate hoje = LocalDate.now();
+
+        while (true) {
+            tentativas++;
+
+            agendamento.setSenha(
+                    gerarSenhaParaDiaEspontaneo(secretariaId, agendamento.getTipoAtendimento(), hoje)
+            );
+
+            try {
+                return agendamentoRepository.save(agendamento);
+            } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                if (tentativas >= 5) {
+                    throw new RuntimeException("Falha ao gerar senha única");
+                }
+            }
+        }
     }
 
     // 🔹 Atualizar (reagendar)

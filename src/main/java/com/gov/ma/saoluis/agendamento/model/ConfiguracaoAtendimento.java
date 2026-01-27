@@ -24,6 +24,9 @@ public class ConfiguracaoAtendimento {
     private LocalTime horaInicio;
     private LocalTime horaFim;
 
+    private LocalTime pausaInicio; // ex: 13:00
+    private LocalTime pausaFim;    // ex: 14:00
+
     // 🔹 Regra escolhida
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -84,6 +87,22 @@ public class ConfiguracaoAtendimento {
 
     public void setHoraFim(LocalTime horaFim) {
         this.horaFim = horaFim;
+    }
+
+    public LocalTime getPausaInicio() {
+        return pausaInicio;
+    }
+
+    public void setPausaInicio(LocalTime pausaInicio) {
+        this.pausaInicio = pausaInicio;
+    }
+
+    public LocalTime getPausaFim() {
+        return pausaFim;
+    }
+
+    public void setPausaFim(LocalTime pausaFim) {
+        this.pausaFim = pausaFim;
     }
 
     public TipoRegraAtendimento getTipoRegra() {

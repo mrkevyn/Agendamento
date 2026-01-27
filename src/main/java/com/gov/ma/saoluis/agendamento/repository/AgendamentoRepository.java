@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -184,4 +185,21 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 								@Param("tipo") String tipo,
 								@Param("data") LocalDate data);
 
+
+	@Query("""
+        select a.senha
+        from Agendamento a
+        where a.servico.secretaria.id = :secretariaId
+          and upper(a.tipoAtendimento) = upper(:tipo)
+          and a.horaAgendamento >= :inicio
+          and a.horaAgendamento < :fim
+        order by a.id desc
+    """)
+	List<String> findUltimaSenhaDoDiaParaEspontaneo(
+			@Param("secretariaId") Long secretariaId,
+			@Param("tipo") String tipo,
+			@Param("inicio") LocalDateTime inicio,
+			@Param("fim") LocalDateTime fim,
+			Pageable pageable
+	);
 }

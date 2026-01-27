@@ -133,6 +133,30 @@ public class ConfiguracaoAtendimentoService {
             throw new RuntimeException("Tipo de regra é obrigatório");
         }
 
+        // ✅ PAUSA (opcional) - ex: 13:00 até 14:00
+        if (cfg.getPausaInicio() != null || cfg.getPausaFim() != null) {
+
+            // se um veio, os dois precisam vir
+            if (cfg.getPausaInicio() == null || cfg.getPausaFim() == null) {
+                throw new RuntimeException("Pausa deve ter início e fim");
+            }
+
+            // início < fim
+            if (!cfg.getPausaInicio().isBefore(cfg.getPausaFim())) {
+                throw new RuntimeException("Pausa início deve ser antes da pausa fim");
+            }
+
+            // pausa dentro do expediente
+            if (cfg.getPausaInicio().isBefore(cfg.getHoraInicio()) || cfg.getPausaFim().isAfter(cfg.getHoraFim())) {
+                throw new RuntimeException("Pausa deve estar dentro do horário de atendimento");
+            }
+
+            // pausa não pode engolir tudo (tem que sobrar tempo)
+            if (!cfg.getPausaInicio().isAfter(cfg.getHoraInicio()) && !cfg.getPausaFim().isBefore(cfg.getHoraFim())) {
+                throw new RuntimeException("Pausa inválida: não pode cobrir todo o expediente");
+            }
+        }
+
         // 🔹 POR INTERVALO
         if (cfg.getTipoRegra() == TipoRegraAtendimento.POR_INTERVALO) {
 
@@ -166,17 +190,20 @@ public class ConfiguracaoAtendimentoService {
 
     private void gerarHorariosPorIntervalo(ConfiguracaoAtendimento cfg) {
 
-        cfg.getHorarios().clear(); // 🔥 remove antigos (orphanRemoval cuida do delete)
+        cfg.getHorarios().clear();
 
         LocalTime atual = cfg.getHoraInicio();
 
         while (!atual.isAfter(cfg.getHoraFim())) {
-            HorarioAtendimento h = new HorarioAtendimento();
-            h.setConfiguracao(cfg);
-            h.setHora(atual);
-            h.setOcupado(false);
 
-            cfg.getHorarios().add(h);
+            // ✅ pula horários na pausa
+            if (!estaNaPausa(cfg, atual)) {
+                HorarioAtendimento h = new HorarioAtendimento();
+                h.setConfiguracao(cfg);
+                h.setHora(atual);
+                h.setOcupado(false);
+                cfg.getHorarios().add(h);
+            }
 
             atual = atual.plusMinutes(cfg.getIntervaloMinutos());
         }
@@ -188,30 +215,41 @@ public class ConfiguracaoAtendimentoService {
 
         cfg.getHorarios().clear();
 
-        long minutosTotais = Duration.between(
-                cfg.getHoraInicio(),
-                cfg.getHoraFim()
-        ).toMinutes();
+        long totalMinutos = Duration.between(cfg.getHoraInicio(), cfg.getHoraFim()).toMinutes();
+
+        long pausaMin = 0;
+        if (cfg.getPausaInicio() != null && cfg.getPausaFim() != null) {
+            pausaMin = Duration.between(cfg.getPausaInicio(), cfg.getPausaFim()).toMinutes();
+        }
+
+        long minutosUteis = totalMinutos - pausaMin;
 
         int quantidade = cfg.getQuantidadeAtendimentos();
-
-        long intervalo = minutosTotais / quantidade;
+        long intervalo = minutosUteis / quantidade;
 
         LocalTime atual = cfg.getHoraInicio();
 
         for (int i = 0; i < quantidade; i++) {
 
+            // se cair na pausa, pula pro fim da pausa
+            if (estaNaPausa(cfg, atual)) {
+                atual = cfg.getPausaFim();
+            }
+
             HorarioAtendimento h = new HorarioAtendimento();
             h.setConfiguracao(cfg);
             h.setHora(atual);
             h.setOcupado(false);
-
             cfg.getHorarios().add(h);
 
             atual = atual.plusMinutes(intervalo);
+
+            // se depois de somar cair na pausa, ajusta também
+            if (estaNaPausa(cfg, atual)) {
+                atual = cfg.getPausaFim();
+            }
         }
 
-        // ⏱ sistema calcula
         cfg.setIntervaloMinutos((int) intervalo);
     }
 
@@ -257,5 +295,24 @@ public class ConfiguracaoAtendimentoService {
                             .anyMatch(SlotAtendimento::temVaga);
                 })
                 .toList();
+    }
+
+    private boolean estaNaPausa(ConfiguracaoAtendimento cfg, LocalTime hora) {
+        if (cfg.getPausaInicio() == null || cfg.getPausaFim() == null) return false;
+
+        // dentro: [pausaInicio, pausaFim)
+        return !hora.isBefore(cfg.getPausaInicio()) && hora.isBefore(cfg.getPausaFim());
+    }
+
+    public ConfiguracaoAtendimento buscarConfigAtivaPorSecretaria(Long secretariaId) {
+
+        List<ConfiguracaoAtendimento> configs =
+                repository.findBySecretariaIdAndAtivoTrue(secretariaId);
+
+        if (configs.isEmpty()) {
+            throw new RuntimeException("Não existe configuração ativa para esta secretaria");
+        }
+
+        return configs.get(0); // ⚠️ perigoso se tiver mais de uma
     }
 }

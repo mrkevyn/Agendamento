@@ -158,7 +158,6 @@ public class AgendamentoService {
         return gerarProximaSenha(ultima);
     }
 
-
     private void validarAgendamentoEspontaneo(Agendamento agendamento) {
 
         if (agendamento.getConfiguracao() == null) {

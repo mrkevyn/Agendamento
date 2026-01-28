@@ -17,8 +17,8 @@ public interface ChamadaAgendamentoRepository
         ca.senha            AS senha,
         ca.tipo_atendimento AS tipoAtendimento,
         ca.data_chamada     AS horaChamada,
-        
-        a.nome_cidadao AS nomeCidadao,
+
+        a.nome_cidadao      AS nomeCidadao,
 
         u.id                AS usuarioId,
         u.nome              AS usuarioNome,
@@ -36,12 +36,12 @@ public interface ChamadaAgendamentoRepository
     LEFT JOIN usuario u      ON a.usuario_id = u.id
     LEFT JOIN gerenciador g  ON ca.gerenciador_id = g.id
 
-    WHERE sec.id = :secretariaId
+    WHERE UPPER(sec.sigla) = UPPER(:sigla)   -- ✅ AQUI
 
     ORDER BY ca.data_chamada DESC
     LIMIT 5
 """, nativeQuery = true)
     List<UltimaChamadaDTO> buscarUltimasChamadasPorSecretaria(
-            @Param("secretariaId") Long secretariaId
+            @Param("sigla") String sigla
     );
 }

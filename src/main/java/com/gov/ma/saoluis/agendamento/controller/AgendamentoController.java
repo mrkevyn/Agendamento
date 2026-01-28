@@ -102,12 +102,11 @@ public class AgendamentoController {
         );
     }
 
-    @GetMapping("/ultimas-chamadas")
+    @GetMapping("/ultimas-chamadas/{sigla}")
     public ResponseEntity<List<UltimaChamadaDTO>> getUltimasChamadas(
-            @RequestParam Long secretariaId
+            @PathVariable String sigla
     ) {
-        List<UltimaChamadaDTO> lista =
-                agendamentoService.getUltimasChamadasPorSecretaria(secretariaId);
+        var lista = agendamentoService.getUltimasChamadasPorSecretaria(sigla);
 
         if (lista == null || lista.isEmpty()) {
             return ResponseEntity.noContent().build();

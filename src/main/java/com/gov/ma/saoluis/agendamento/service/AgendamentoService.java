@@ -406,8 +406,8 @@ public class AgendamentoService {
         return agendamentoSalvo;
     }
 
-    public List<UltimaChamadaDTO> getUltimasChamadasPorSecretaria(Long secretariaId) {
-        return chamadaAgendamentoRepository.buscarUltimasChamadasPorSecretaria(secretariaId);
+    public List<UltimaChamadaDTO> getUltimasChamadasPorSecretaria(String sigla) {
+        return chamadaAgendamentoRepository.buscarUltimasChamadasPorSecretaria(sigla);
     }
 
     // 🔹 Finalizar atendimento

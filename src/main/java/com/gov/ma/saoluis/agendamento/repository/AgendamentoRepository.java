@@ -74,7 +74,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             a.tipo_atendimento AS tipoAtendimento,
 
             u.id               AS usuarioId,
-            u.nome             AS usuarioNome,
+            COALESCE(u.nome, a.nome_cidadao) AS usuarioNome,
 
             s.id               AS servicoId,
             s.nome             AS servicoNome

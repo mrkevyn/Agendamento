@@ -65,25 +65,28 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         """, nativeQuery = true)
 	List<AgendamentoDTO> buscarTodosAgendamentosComDetalhes();
 
-	@Query(value = """
-        SELECT
-            a.id               AS agendamentoId,
-            a.hora_agendamento AS horaAgendamento,
-            a.situacao         AS situacao,
-            a.senha            AS senha,
-            a.tipo_atendimento AS tipoAtendimento,
-
-            u.id               AS usuarioId,
-            COALESCE(u.nome, a.nome_cidadao) AS usuarioNome,
-
-            s.id               AS servicoId,
-            s.nome             AS servicoNome
-
-        FROM agendamento a
-        LEFT JOIN usuario u ON a.usuario_id = u.id
-        LEFT JOIN servico s  ON a.servico_id = s.id
-        WHERE s.secretaria_id = :secretariaId
-        """, nativeQuery = true)
+		@Query(value = """
+		SELECT
+			a.id               AS agendamentoId,
+			a.hora_agendamento AS horaAgendamento,
+			a.situacao         AS situacao,
+			a.senha            AS senha,
+			a.tipo_atendimento AS tipoAtendimento,
+	
+			u.id               AS usuarioId,
+			COALESCE(u.nome, a.nome_cidadao) AS usuarioNome,
+	
+			s.id               AS servicoId,
+			s.nome             AS servicoNome
+	
+		FROM agendamento a
+		LEFT JOIN usuario u ON a.usuario_id = u.id
+		LEFT JOIN servico s  ON a.servico_id = s.id
+		WHERE s.secretaria_id = :secretariaId
+		  AND a.hora_agendamento >= CURRENT_DATE
+		  AND a.hora_agendamento < CURRENT_DATE + INTERVAL '1 day'
+		ORDER BY a.hora_agendamento ASC
+	""", nativeQuery = true)
 	List<AgendamentoDTO> buscarAgendamentosPorSecretaria(@Param("secretariaId") Long secretariaId);
 
 

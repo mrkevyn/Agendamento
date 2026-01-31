@@ -21,4 +21,7 @@ public interface AgendamentoDTO {
     // 🔹 Novos campos da secretaria
     Long getSecretariaId();
     String getSecretariaNome();
+
+    Integer getGuiche();
+    Long getGerenciadorId(); // recomendo também retornar, ajuda debug
 }

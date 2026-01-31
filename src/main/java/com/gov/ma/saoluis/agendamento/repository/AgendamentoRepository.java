@@ -12,9 +12,13 @@ import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> {
+
+	@Query(value = "select * from agendamento where id = :id", nativeQuery = true)
+	Optional<Agendamento> findByIdNativo(@Param("id") Long id);
 
 	@Query(value = """
         SELECT
@@ -65,28 +69,33 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         """, nativeQuery = true)
 	List<AgendamentoDTO> buscarTodosAgendamentosComDetalhes();
 
-		@Query(value = """
-		SELECT
-			a.id               AS agendamentoId,
-			a.hora_agendamento AS horaAgendamento,
-			a.situacao         AS situacao,
-			a.senha            AS senha,
-			a.tipo_atendimento AS tipoAtendimento,
-	
-			u.id               AS usuarioId,
-			COALESCE(u.nome, a.nome_cidadao) AS usuarioNome,
-	
-			s.id               AS servicoId,
-			s.nome             AS servicoNome
-	
-		FROM agendamento a
-		LEFT JOIN usuario u ON a.usuario_id = u.id
-		LEFT JOIN servico s  ON a.servico_id = s.id
-		WHERE s.secretaria_id = :secretariaId
-		  AND a.hora_agendamento >= CURRENT_DATE
-		  AND a.hora_agendamento < CURRENT_DATE + INTERVAL '1 day'
-		ORDER BY a.hora_agendamento ASC
-	""", nativeQuery = true)
+	@Query(value = """
+    SELECT
+        a.id               AS agendamentoId,
+        a.hora_agendamento AS horaAgendamento,
+        a.situacao         AS situacao,
+        a.senha            AS senha,
+        a.tipo_atendimento AS tipoAtendimento,
+
+        a.gerenciador_id   AS gerenciadorId,     -- ✅ quem chamou (pode ser null)
+        g.guiche           AS guiche,            -- ✅ guichê vem do gerenciador
+
+        u.id               AS usuarioId,
+        COALESCE(u.nome, a.nome_cidadao) AS usuarioNome,
+
+        s.id               AS servicoId,
+        s.nome             AS servicoNome
+
+    FROM agendamento a
+    LEFT JOIN usuario u      ON a.usuario_id = u.id
+    LEFT JOIN servico s      ON a.servico_id = s.id
+    LEFT JOIN gerenciador g  ON g.id = a.gerenciador_id   -- ✅ JOIN AQUI
+
+    WHERE s.secretaria_id = :secretariaId
+      AND a.hora_agendamento >= CURRENT_DATE
+      AND a.hora_agendamento < CURRENT_DATE + INTERVAL '1 day'
+    ORDER BY a.hora_agendamento ASC
+""", nativeQuery = true)
 	List<AgendamentoDTO> buscarAgendamentosPorSecretaria(@Param("secretariaId") Long secretariaId);
 
 
@@ -101,24 +110,36 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 	@Query("""
     SELECT a
     FROM Agendamento a
-    WHERE a.servico.secretaria IS NOT NULL
-      AND a.servico.secretaria.id = :secretariaId
+    WHERE a.servico.secretaria.id = :secretariaId
       AND a.tipoAtendimento = 'NORMAL'
-      AND a.situacao = 'AGENDADO'
+      AND a.situacao IN ( 'AGENDADO', 'REAGENDADO')
+      AND a.horaAgendamento >= :inicio
+      AND a.horaAgendamento < :fim
     ORDER BY a.horaAgendamento ASC
 """)
-	List<Agendamento> buscarProximoNormal(@Param("secretariaId") Long secretariaId, org.springframework.data.domain.Pageable pageable);
+	List<Agendamento> buscarProximoNormalHoje(
+			@Param("secretariaId") Long secretariaId,
+			@Param("inicio") LocalDateTime inicio,
+			@Param("fim") LocalDateTime fim,
+			Pageable pageable
+	);
 
 	@Query("""
     SELECT a
     FROM Agendamento a
-    WHERE a.servico.secretaria IS NOT NULL
-      AND a.servico.secretaria.id = :secretariaId
+    WHERE a.servico.secretaria.id = :secretariaId
       AND a.tipoAtendimento = 'PRIORIDADE'
-      AND a.situacao = 'AGENDADO'
+      AND a.situacao IN ('AGENDADO', 'REAGENDADO')
+      AND a.horaAgendamento >= :inicio
+      AND a.horaAgendamento < :fim
     ORDER BY a.horaAgendamento ASC
 """)
-	List<Agendamento> buscarProximoPrioridade(@Param("secretariaId") Long secretariaId, org.springframework.data.domain.Pageable pageable);
+	List<Agendamento> buscarProximoPrioridadeHoje(
+			@Param("secretariaId") Long secretariaId,
+			@Param("inicio") LocalDateTime inicio,
+			@Param("fim") LocalDateTime fim,
+			Pageable pageable
+	);
 
 	@Query(value = """
     SELECT
@@ -165,13 +186,18 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 	@Query("""
     SELECT a
     FROM Agendamento a
-    WHERE a.servico.secretaria IS NOT NULL
+    WHERE a.servico.secretaria.id = :secretariaId
       AND a.senha = :senha
       AND a.situacao IN ('AGENDADO', 'REAGENDADO')
+      AND a.horaAgendamento >= :inicio
+      AND a.horaAgendamento < :fim
     ORDER BY a.horaAgendamento ASC
 """)
-	List<Agendamento> buscarPorSenha(
+	List<Agendamento> buscarPorSenhaHoje(
+			@Param("secretariaId") Long secretariaId,
 			@Param("senha") String senha,
+			@Param("inicio") LocalDateTime inicio,
+			@Param("fim") LocalDateTime fim,
 			Pageable pageable
 	);
 
@@ -218,5 +244,4 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 			@Param("senha") String senha,
 			Pageable pageable
 	);
-
 }

@@ -15,6 +15,7 @@ import com.gov.ma.saoluis.agendamento.service.SlotAtendimentoService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -65,7 +66,7 @@ public class AgendamentoService {
 
     // 🔹 Buscar por ID
     public Agendamento buscarPorId(Long id) {
-        return agendamentoRepository.findById(id)
+        return agendamentoRepository.findByIdNativo(id)
                 .orElseThrow(() -> new RuntimeException("Agendamento não encontrado"));
     }
 
@@ -227,7 +228,9 @@ public class AgendamentoService {
         validarAgendamentoEspontaneo(agendamento);
 
         int tentativas = 0;
-        LocalDate hoje = LocalDate.now();
+        LocalDateTime agora = LocalDateTime.now(ZoneId.of("America/Fortaleza"));
+        agendamento.setHoraAgendamento(agora);
+        LocalDate hoje = agora.toLocalDate();
 
         while (true) {
             tentativas++;
@@ -320,9 +323,12 @@ public class AgendamentoService {
          Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
                  .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
 
-         var lista = agendamentoRepository.buscarProximoNormal(
-                 secretariaId,
-                 PageRequest.of(0, 1)
+         LocalDate hoje = LocalDate.now();
+         LocalDateTime inicio = hoje.atStartOfDay();
+         LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
+
+         var lista = agendamentoRepository.buscarProximoNormalHoje(
+                 secretariaId, inicio, fim, PageRequest.of(0, 1)
          );
 
          Agendamento proximo = lista.isEmpty() ? null : lista.get(0);
@@ -335,9 +341,12 @@ public class AgendamentoService {
         Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
                 .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
 
-        var lista = agendamentoRepository.buscarProximoPrioridade(
-                secretariaId,
-                PageRequest.of(0, 1)
+        LocalDate hoje = LocalDate.now();
+        LocalDateTime inicio = hoje.atStartOfDay();
+        LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
+
+        var lista = agendamentoRepository.buscarProximoPrioridadeHoje(
+                secretariaId, inicio, fim, PageRequest.of(0, 1)
         );
 
         Agendamento proximo = lista.isEmpty() ? null : lista.get(0);
@@ -347,15 +356,23 @@ public class AgendamentoService {
 
     public AgendamentoResponseDTO chamarPorSenha(String senha, Long atendenteId) throws Exception {
 
-        Pageable pageable = PageRequest.of(0, 1);
-        List<Agendamento> agendamentos = agendamentoRepository.buscarPorSenha(senha, pageable);
-
-        if (agendamentos.isEmpty()) {
-            throw new Exception("Agendamento não encontrado para a senha " + senha);
-        }
-
         Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
                 .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
+
+        Long secretariaId = gerenciador.getSecretaria().getId();
+
+        LocalDate hoje = LocalDate.now();
+        LocalDateTime inicio = hoje.atStartOfDay();
+        LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
+
+        Pageable pageable = PageRequest.of(0, 1);
+        List<Agendamento> agendamentos = agendamentoRepository.buscarPorSenhaHoje(
+                secretariaId, senha, inicio, fim, pageable
+        );
+
+        if (agendamentos.isEmpty()) {
+            throw new Exception("Agendamento não encontrado para a senha " + senha + " (hoje)");
+        }
 
         Agendamento agendamento = agendamentos.get(0);
 

@@ -25,12 +25,21 @@ public class SlotAtendimentoService {
 
     @Transactional
     public void garantirSlotsDoDia(ConfiguracaoAtendimento cfg, LocalDate data) {
-        DiaSemana dia = converterDia(data.getDayOfWeek());
-        if (!cfg.getDiasAtendimento().contains(dia)) return;
+
+        // 📆 só gera slot se a data estiver configurada
+        if (cfg.getDatasAtendimento() == null
+                || !cfg.getDatasAtendimento().contains(data)) {
+            return;
+        }
 
         for (HorarioAtendimento ht : cfg.getHorarios()) {
             // ✅ ideal: insertIfNotExists (ON CONFLICT) para não abortar transação
-            slotRepo.insertIfNotExists(cfg.getId(), data, ht.getHora(), cfg.getNumeroGuiches());
+            slotRepo.insertIfNotExists(
+                    cfg.getId(),
+                    data,
+                    ht.getHora(),
+                    cfg.getNumeroGuiches()
+            );
         }
     }
 

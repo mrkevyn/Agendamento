@@ -1,5 +1,6 @@
 package com.gov.ma.saoluis.agendamento.controller;
 
+import com.gov.ma.saoluis.agendamento.DTO.HorarioDiaResponse;
 import com.gov.ma.saoluis.agendamento.DTO.HorarioDisponivelResponse;
 import com.gov.ma.saoluis.agendamento.model.ConfiguracaoAtendimento;
 import com.gov.ma.saoluis.agendamento.model.SlotAtendimento;
@@ -33,27 +34,29 @@ public class SlotAtendimentoController {
         this.configuracaoService = configuracaoService;
     }
 
-    // ✅ 1) Listar horários disponíveis por data
     @GetMapping("/horarios-disponiveis")
     public ResponseEntity<List<HorarioDisponivelResponse>> listarHorariosDisponiveis(
             @RequestParam Long secretariaId,
             @RequestParam Long configuracaoId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data
     ) {
-        // 1) pega config
         ConfiguracaoAtendimento cfg = configuracaoService.buscarPorId(configuracaoId);
 
-        // 2) valida se essa data é permitida (dia da semana) - e janela de horário será aplicada depois
-        // aqui você só valida o dia; se quiser validar a janela, não faz sentido sem hora
-        // então fazemos só o "dia permitido" implicitamente via garantirSlotsDoDia (ele já checa dia)
-        // se você quiser forçar validação do dia, faça um método validarDia(secretariaId, data)
+        // (opcional mas recomendado) trava config errada/secretaria errada
+        if (!cfg.getSecretaria().getId().equals(secretariaId)) {
+            throw new RuntimeException("Configuração não pertence a esta secretaria");
+        }
 
-        // 3) garante slots do dia
+        // ✅ regra nova: data precisa estar vinculada
+        if (cfg.getDatasAtendimento() == null || !cfg.getDatasAtendimento().contains(data)) {
+            return ResponseEntity.ok(List.of()); // ou lança erro, veja abaixo
+            // throw new RuntimeException("Data não vinculada a esta configuração");
+        }
+
         slotService.garantirSlotsDoDia(cfg, data);
 
-        // 4) lista slots e filtra os com vaga
-        List<SlotAtendimento> slots = slotRepo
-                .findByConfiguracaoIdAndDataOrderByHora(configuracaoId, data);
+        List<SlotAtendimento> slots =
+                slotRepo.findByConfiguracaoIdAndDataOrderByHora(configuracaoId, data);
 
         List<HorarioDisponivelResponse> response = slots.stream()
                 .filter(SlotAtendimento::temVaga)
@@ -61,12 +64,49 @@ public class SlotAtendimentoController {
                         s.getHora(),
                         s.getCapacidade() - s.getReservados()
                 ))
-                .collect(Collectors.toList());
+                .toList();
 
         return ResponseEntity.ok(response);
     }
 
-    // ✅ 2) Validar um horário específico (uso interno/admin)
+    @GetMapping("/horarios-do-dia")
+    public ResponseEntity<List<HorarioDiaResponse>> listarHorariosDoDia(
+            @RequestParam Long secretariaId,
+            @RequestParam Long configuracaoId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data
+    ) {
+        ConfiguracaoAtendimento cfg = configuracaoService.buscarPorId(configuracaoId);
+
+        if (!cfg.getSecretaria().getId().equals(secretariaId)) {
+            throw new RuntimeException("Configuração não pertence a esta secretaria");
+        }
+
+        if (cfg.getDatasAtendimento() == null || !cfg.getDatasAtendimento().contains(data)) {
+            return ResponseEntity.ok(List.of());
+        }
+
+        slotService.garantirSlotsDoDia(cfg, data);
+
+        List<SlotAtendimento> slots =
+                slotRepo.findByConfiguracaoIdAndDataOrderByHora(configuracaoId, data);
+
+        List<HorarioDiaResponse> response = slots.stream()
+                .map(s -> {
+                    int vagas = Math.max(0, s.getCapacidade() - s.getReservados());
+                    boolean lotado = vagas == 0;
+                    return new HorarioDiaResponse(
+                            s.getHora(),
+                            s.getCapacidade(),
+                            s.getReservados(),
+                            vagas,
+                            lotado
+                    );
+                })
+                .toList();
+
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/validar")
     public ResponseEntity<SlotAtendimento> validarSlot(
             @RequestParam Long secretariaId,
@@ -74,14 +114,18 @@ public class SlotAtendimentoController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime hora
     ) {
-        // 1) valida se a config permite esse dia/hora
+        ConfiguracaoAtendimento cfg = configuracaoService.buscarPorId(configuracaoId);
+
+        if (!cfg.getSecretaria().getId().equals(secretariaId)) {
+            throw new RuntimeException("Configuração não pertence a esta secretaria");
+        }
+
+        // valida data/hora dentro do bloco e data vinculada
         configuracaoService.validarDisponibilidade(secretariaId, data, hora);
 
-        // 2) garante slots do dia
-        ConfiguracaoAtendimento cfg = configuracaoService.buscarPorId(configuracaoId);
+        // só cria se data é vinculada (garantir já sabe disso)
         slotService.garantirSlotsDoDia(cfg, data);
 
-        // 3) busca o slot (sem lock aqui, pq é validação; lock é no AGENDAR)
         SlotAtendimento slot = slotRepo
                 .findByConfiguracaoIdAndDataAndHora(configuracaoId, data, hora)
                 .orElseThrow(() -> new RuntimeException("Horário indisponível"));
@@ -96,18 +140,19 @@ public class SlotAtendimentoController {
     @GetMapping("/datas-disponiveis")
     public ResponseEntity<List<LocalDate>> datasDisponiveis(
             @RequestParam Long secretariaId,
-            @RequestParam Long configuracaoId,
-            @RequestParam(defaultValue = "30") int dias
+            @RequestParam Long configuracaoId
     ) {
         return ResponseEntity.ok(
-                configuracaoService.listarDatasDisponiveis(secretariaId, configuracaoId, dias)
+                configuracaoService.listarDatasVinculadas(secretariaId, configuracaoId)
         );
     }
 
     @GetMapping("/secretaria/{secretariaId}/slots")
     public ResponseEntity<List<SlotAtendimento>> listarSlotsPorSecretaria(
             @PathVariable Long secretariaId,
-            @RequestParam(required = false) LocalDate data
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate data
     ) {
         return ResponseEntity.ok(slotService.listarSlotsPorSecretaria(secretariaId, data));
     }

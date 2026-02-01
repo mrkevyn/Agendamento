@@ -1,5 +1,6 @@
 package com.gov.ma.saoluis.agendamento.controller;
 
+import com.gov.ma.saoluis.agendamento.DTO.DatasRequest;
 import com.gov.ma.saoluis.agendamento.model.ConfiguracaoAtendimento;
 import com.gov.ma.saoluis.agendamento.service.ConfiguracaoAtendimentoService;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,14 @@ public class ConfiguracaoAtendimentoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(salva);
     }
 
+    @PostMapping("/{id}/datas")
+    public ResponseEntity<ConfiguracaoAtendimento> adicionarDatas(
+            @PathVariable Long id,
+            @RequestBody DatasRequest req
+    ) {
+        return ResponseEntity.ok(service.adicionarDatas(id, req.datas()));
+    }
+
     // 🔹 Atualizar configuração
     @PutMapping("/{id}")
     public ResponseEntity<ConfiguracaoAtendimento> atualizar(
@@ -49,9 +58,7 @@ public class ConfiguracaoAtendimentoController {
 
     // 🔹 Listar configurações ativas por secretaria
     @GetMapping("/secretaria/{secretariaId}")
-    public ResponseEntity<List<ConfiguracaoAtendimento>> listarPorSecretaria(
-            @PathVariable Long secretariaId
-    ) {
+    public ResponseEntity<List<ConfiguracaoAtendimento>> listarPorSecretaria(@PathVariable Long secretariaId) {
         return ResponseEntity.ok(service.listarPorSecretaria(secretariaId));
     }
 

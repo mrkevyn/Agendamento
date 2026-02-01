@@ -1,5 +1,6 @@
 package com.gov.ma.saoluis.agendamento.service;
 
+import com.gov.ma.saoluis.agendamento.DTO.DatasResponse;
 import com.gov.ma.saoluis.agendamento.model.*;
 import com.gov.ma.saoluis.agendamento.repository.ConfiguracaoAtendimentoRepository;
 import com.gov.ma.saoluis.agendamento.repository.SlotAtendimentoRepository;
@@ -12,6 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class ConfiguracaoAtendimentoService {
@@ -31,19 +33,37 @@ public class ConfiguracaoAtendimentoService {
     // 🔹 Criar configuração
     @Transactional
     public ConfiguracaoAtendimento salvar(ConfiguracaoAtendimento configuracao) {
-        validarConfiguracao(configuracao);
+        validarConfiguracao(configuracao); // valida só a base (hora/regra/guiches)
+
         gerarHorarios(configuracao);
         configuracao.setAtivo(true);
 
-        ConfiguracaoAtendimento salva = repository.save(configuracao);
-
-        // pré-gerar próximos 30 dias
-        LocalDate hoje = LocalDate.now();
-        for (int i = 0; i <= 30; i++) {
-            slotService.garantirSlotsDoDia(salva, hoje.plusDays(i));
+        // garante que não salva null
+        if (configuracao.getDatasAtendimento() == null) {
+            configuracao.setDatasAtendimento(new java.util.HashSet<>());
         }
 
-        return salva;
+        return repository.save(configuracao);
+    }
+
+    @Transactional
+    public ConfiguracaoAtendimento adicionarDatas(Long configuracaoId, Set<LocalDate> datas) {
+
+        if (datas == null || datas.isEmpty()) {
+            throw new RuntimeException("Informe ao menos uma data de atendimento");
+        }
+
+        ConfiguracaoAtendimento cfg = buscarPorId(configuracaoId);
+
+        cfg.getDatasAtendimento().addAll(datas);
+
+        ConfiguracaoAtendimento salvo = repository.save(cfg);
+
+        for (LocalDate data : datas) {
+            slotService.garantirSlotsDoDia(salvo, data);
+        }
+
+        return salvo;
     }
 
     private void gerarSlotsProximosDias(ConfiguracaoAtendimento cfg, int dias) {
@@ -67,14 +87,26 @@ public class ConfiguracaoAtendimentoService {
         existente.setQuantidadeAtendimentos(novosDados.getQuantidadeAtendimentos());
         existente.setIntervaloMinutos(novosDados.getIntervaloMinutos());
         existente.setNumeroGuiches(novosDados.getNumeroGuiches());
-        existente.setDiasAtendimento(novosDados.getDiasAtendimento());
         existente.setTipoRegra(novosDados.getTipoRegra());
         existente.setAtivo(novosDados.getAtivo());
 
-        // 🔥 gera sem quebrar a coleção
+        // ✅ Atualiza datas sem quebrar a coleção (@ElementCollection)
+        existente.getDatasAtendimento().clear();
+        if (novosDados.getDatasAtendimento() != null) {
+            existente.getDatasAtendimento().addAll(novosDados.getDatasAtendimento());
+        }
+
+        // 🔥 gera sem quebrar a coleção de horários
         gerarHorarios(existente);
 
-        return repository.save(existente);
+        ConfiguracaoAtendimento salvo = repository.save(existente);
+
+        // (opcional, mas recomendado) garantir slots para as novas datas
+        for (LocalDate data : salvo.getDatasAtendimento()) {
+            slotService.garantirSlotsDoDia(salvo, data);
+        }
+
+        return salvo;
     }
 
     // 🔹 Buscar por ID
@@ -87,6 +119,16 @@ public class ConfiguracaoAtendimentoService {
     public List<ConfiguracaoAtendimento> listarPorSecretaria(Long secretariaId) {
         System.out.print(repository.findBySecretariaIdAndAtivoTrue(secretariaId));
         return repository.findBySecretariaIdAndAtivoTrue(secretariaId);
+    }
+
+    public DatasResponse listarDatas(Long id){
+        ConfiguracaoAtendimento cfg = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Configuração não encontrada"));
+
+        Set<LocalDate> set = cfg.getDatasAtendimento(); // pode ser null
+        List<LocalDate> datas = (set == null) ? List.of() : set.stream().sorted().toList();
+
+        return new DatasResponse(datas);
     }
 
     // 🔹 Desativar configuração
@@ -102,16 +144,18 @@ public class ConfiguracaoAtendimentoService {
             LocalDate data,
             LocalTime hora
     ) {
-
-        DiaSemana diaSemana = converterDia(data.getDayOfWeek());
-
         List<ConfiguracaoAtendimento> configuracoes =
                 repository.findAtivasPorSecretaria(secretariaId);
 
         return configuracoes.stream()
-                .filter(cfg -> cfg.getDiasAtendimento().contains(diaSemana))
+                // 📆 valida por data específica
+                .filter(cfg -> cfg.getDatasAtendimento() != null
+                        && cfg.getDatasAtendimento().contains(data))
+
+                // ⏰ valida horário dentro do bloco
                 .filter(cfg -> !hora.isBefore(cfg.getHoraInicio())
-                        && !hora.isAfter(cfg.getHoraFim()))
+                        && hora.isBefore(cfg.getHoraFim()))
+
                 .findFirst()
                 .orElseThrow(() ->
                         new RuntimeException("Horário indisponível para esta secretaria")
@@ -181,10 +225,6 @@ public class ConfiguracaoAtendimentoService {
 
         if (cfg.getNumeroGuiches() == null || cfg.getNumeroGuiches() <= 0) {
             throw new RuntimeException("Número de guichês inválido");
-        }
-
-        if (cfg.getDiasAtendimento() == null || cfg.getDiasAtendimento().isEmpty()) {
-            throw new RuntimeException("Informe ao menos um dia de atendimento");
         }
     }
 
@@ -294,6 +334,23 @@ public class ConfiguracaoAtendimentoService {
                             .stream()
                             .anyMatch(SlotAtendimento::temVaga);
                 })
+                .toList();
+    }
+
+    public List<LocalDate> listarDatasVinculadas(Long secretariaId, Long configuracaoId) {
+        ConfiguracaoAtendimento cfg = buscarPorId(configuracaoId);
+
+        if (!cfg.getSecretaria().getId().equals(secretariaId)) {
+            throw new RuntimeException("Configuração não pertence a esta secretaria");
+        }
+
+        if (cfg.getDatasAtendimento() == null) return List.of();
+
+        LocalDate hoje = LocalDate.now();
+
+        return cfg.getDatasAtendimento().stream()
+                .filter(d -> !d.isBefore(hoje))
+                .sorted()
                 .toList();
     }
 

@@ -3,6 +3,7 @@ package com.gov.ma.saoluis.agendamento.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -42,8 +43,12 @@ public class ConfiguracaoAtendimento {
 
     // 📆 Dias da semana
     @ElementCollection(fetch = FetchType.EAGER)
-    @Enumerated(EnumType.STRING)
-    private Set<DiaSemana> diasAtendimento;
+    @CollectionTable(
+            name = "configuracao_datas",
+            joinColumns = @JoinColumn(name = "configuracao_id")
+    )
+    @Column(name = "data", nullable = false)
+    private Set<LocalDate> datasAtendimento = new HashSet<>();
 
     // ⏱️ Horários gerados
     @OneToMany(
@@ -137,12 +142,12 @@ public class ConfiguracaoAtendimento {
         this.numeroGuiches = numeroGuiches;
     }
 
-    public Set<DiaSemana> getDiasAtendimento() {
-        return diasAtendimento;
+    public void setDatasAtendimento(Set<LocalDate> datasAtendimento) {
+        this.datasAtendimento = datasAtendimento;
     }
 
-    public void setDiasAtendimento(Set<DiaSemana> diasAtendimento) {
-        this.diasAtendimento = diasAtendimento;
+    public Set<LocalDate> getDatasAtendimento() {
+        return datasAtendimento;
     }
 
     public Boolean getAtivo() {

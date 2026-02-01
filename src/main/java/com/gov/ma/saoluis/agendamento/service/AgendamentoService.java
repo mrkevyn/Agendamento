@@ -124,6 +124,8 @@ public class AgendamentoService {
                 java.time.LocalDateTime.of(req.data(), req.hora())
         );
 
+        agendamento.setTipoAgendamento(TipoAgendamento.AGENDADO);
+
         agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
 
         agendamento.setTipoAtendimento(
@@ -216,8 +218,12 @@ public class AgendamentoService {
         // 🔥 espontâneo não usa configuração
         agendamento.setConfiguracao(null);
 
+        agendamento.setTipoAgendamento(TipoAgendamento.ESPONTANEO);
+
         agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
-        agendamento.setHoraAgendamento(LocalDateTime.now());
+        // ✅ data/hora e situação
+        LocalDateTime agora = LocalDateTime.now(ZoneId.of("America/Fortaleza"));
+        agendamento.setHoraAgendamento(agora);
 
         if (agendamento.getTipoAtendimento() == null || agendamento.getTipoAtendimento().isBlank()) {
             agendamento.setTipoAtendimento("NORMAL");
@@ -228,8 +234,6 @@ public class AgendamentoService {
         validarAgendamentoEspontaneo(agendamento);
 
         int tentativas = 0;
-        LocalDateTime agora = LocalDateTime.now(ZoneId.of("America/Fortaleza"));
-        agendamento.setHoraAgendamento(agora);
         LocalDate hoje = agora.toLocalDate();
 
         while (true) {

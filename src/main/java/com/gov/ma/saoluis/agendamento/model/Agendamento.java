@@ -48,6 +48,10 @@ public class Agendamento {
     @JoinColumn(name = "secretaria_id", nullable = false)
     private Secretaria secretaria;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_agendamento", nullable = false)
+    private TipoAgendamento tipoAgendamento;
+
     // Getters e Setters
     public Long getId() {
         return id;
@@ -115,7 +119,6 @@ public class Agendamento {
         this.gerenciador = gerenciador;
     }
 
-    // getters e setters
     public ConfiguracaoAtendimento getConfiguracao() {
         return configuracao;
     }
@@ -138,5 +141,13 @@ public class Agendamento {
 
     public Secretaria getSecretaria() {
         return secretaria;
+    }
+
+    public TipoAgendamento getTipoAgendamento() {
+        return tipoAgendamento;
+    }
+
+    public void setTipoAgendamento(TipoAgendamento tipoAgendamento) {
+        this.tipoAgendamento = tipoAgendamento;
     }
 }

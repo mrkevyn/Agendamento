@@ -76,6 +76,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         a.situacao         AS situacao,
         a.senha            AS senha,
         a.tipo_atendimento AS tipoAtendimento,
+        a.tipo_agendamento AS tipoAgendamento,
 
         a.gerenciador_id   AS gerenciadorId,     -- ✅ quem chamou (pode ser null)
         g.guiche           AS guiche,            -- ✅ guichê vem do gerenciador

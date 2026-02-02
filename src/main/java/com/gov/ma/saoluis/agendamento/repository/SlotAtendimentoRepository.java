@@ -19,6 +19,15 @@ public interface SlotAtendimentoRepository extends JpaRepository<SlotAtendimento
 
     Optional<SlotAtendimento> findByConfiguracaoIdAndDataAndHora(Long configuracaoId, LocalDate data, LocalTime hora);
 
+
+    boolean existsByConfiguracaoIdAndDataAndReservadosGreaterThan(
+            Long configuracaoId,
+            LocalDate data,
+            int reservados
+    );
+
+    void deleteByConfiguracaoIdAndData(Long configuracaoId, LocalDate data);
+
     // ✅ idempotente: não quebra transação se já existir
     @Modifying
     @Query(value = """

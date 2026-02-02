@@ -66,6 +66,37 @@ public class ConfiguracaoAtendimentoService {
         return salvo;
     }
 
+    @Transactional
+    public ConfiguracaoAtendimento removerDatas(Long configuracaoId, Set<LocalDate> datas) {
+
+        if (datas == null || datas.isEmpty()) {
+            throw new RuntimeException("Informe ao menos uma data para remover");
+        }
+
+        ConfiguracaoAtendimento cfg = buscarPorId(configuracaoId);
+
+        for (LocalDate data : datas) {
+
+            // se já tem alguém reservado, bloqueia
+            boolean temReserva = slotAtendimentoRepository.existsByConfiguracaoIdAndDataAndReservadosGreaterThan(
+                    configuracaoId, data, 0
+            );
+
+            if (temReserva) {
+                throw new RuntimeException("Não é possível desvincular a data " + data +
+                        " porque existem reservas nesse dia.");
+            }
+
+            // remove do conjunto vinculado
+            cfg.getDatasAtendimento().remove(data);
+
+            // (opcional) apaga slots do dia pra não ficar lixo no banco
+            slotAtendimentoRepository.deleteByConfiguracaoIdAndData(configuracaoId, data);
+        }
+
+        return repository.save(cfg);
+    }
+
     private void gerarSlotsProximosDias(ConfiguracaoAtendimento cfg, int dias) {
         LocalDate hoje = LocalDate.now();
 

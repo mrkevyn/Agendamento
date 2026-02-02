@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/configuracoes-atendimento")
@@ -36,6 +37,14 @@ public class ConfiguracaoAtendimentoController {
             @RequestBody DatasRequest req
     ) {
         return ResponseEntity.ok(service.adicionarDatas(id, req.datas()));
+    }
+
+    @DeleteMapping("/{id}/datas")
+    public ResponseEntity<ConfiguracaoAtendimento> removerDatas(
+            @PathVariable Long id,
+            @RequestBody Set<LocalDate> datas
+    ) {
+        return ResponseEntity.ok(service.removerDatas(id, datas));
     }
 
     // 🔹 Atualizar configuração

@@ -46,6 +46,7 @@ public class GerenciadorService {
         Gerenciador g = new Gerenciador();
         g.setNome(dto.nome());
         g.setCpf(dto.cpf());
+        g.setContato(dto.contato());
         g.setEmail(dto.email());
         g.setSenha(dto.senha());
         g.setPerfil(dto.perfil());

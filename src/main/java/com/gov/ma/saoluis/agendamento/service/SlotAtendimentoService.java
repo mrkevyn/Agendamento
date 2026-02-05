@@ -77,4 +77,13 @@ public class SlotAtendimentoService {
                 secretariaId, LocalDate.now()
         );
     }
+
+    @Transactional
+    public void excluirSlot(Long configuracaoId, LocalDate data, LocalTime hora) {
+        int total = slotRepo.deleteByConfiguracaoIdAndDataAndHora(configuracaoId, data, hora);
+        if (total == 0) {
+            throw new RuntimeException("Horário não encontrado para excluir.");
+        }
+    }
+
 }

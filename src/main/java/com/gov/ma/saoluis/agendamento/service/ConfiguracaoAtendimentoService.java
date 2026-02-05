@@ -149,7 +149,12 @@ public class ConfiguracaoAtendimentoService {
     // 🔹 Listar por secretaria
     public List<ConfiguracaoAtendimento> listarPorSecretaria(Long secretariaId) {
         System.out.print(repository.findBySecretariaIdAndAtivoTrue(secretariaId));
-        return repository.findBySecretariaIdAndAtivoTrue(secretariaId);
+        return repository.findBySecretariaId(secretariaId);
+    }
+
+    public List<ConfiguracaoAtendimento> listarPorSecretariaAtivas(Long secretariaId, Boolean ativo) {
+        if (ativo == null) return repository.findBySecretariaId(secretariaId);
+        return repository.findBySecretariaIdAndAtivo(secretariaId, ativo);
     }
 
     public DatasResponse listarDatas(Long id){
@@ -166,6 +171,12 @@ public class ConfiguracaoAtendimentoService {
     public void desativar(Long id) {
         ConfiguracaoAtendimento configuracao = buscarPorId(id);
         configuracao.setAtivo(false);
+        repository.save(configuracao);
+    }
+
+    public void ativar(Long id) {
+        ConfiguracaoAtendimento configuracao = buscarPorId(id);
+        configuracao.setAtivo(true);
         repository.save(configuracao);
     }
 

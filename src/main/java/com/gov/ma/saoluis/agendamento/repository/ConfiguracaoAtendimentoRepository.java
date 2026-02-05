@@ -14,6 +14,10 @@ public interface ConfiguracaoAtendimentoRepository
 
     List<ConfiguracaoAtendimento> findBySecretariaIdAndAtivoTrue(Long secretariaId);
 
+    List<ConfiguracaoAtendimento> findBySecretariaId(Long secretariaId);
+    List<ConfiguracaoAtendimento> findBySecretariaIdAndAtivo(Long secretariaId, boolean ativo);
+
+
     @Query("""
         SELECT c
         FROM ConfiguracaoAtendimento c

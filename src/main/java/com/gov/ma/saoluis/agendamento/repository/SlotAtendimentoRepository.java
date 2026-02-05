@@ -63,4 +63,17 @@ public interface SlotAtendimentoRepository extends JpaRepository<SlotAtendimento
     List<SlotAtendimento> findByConfiguracaoSecretariaIdAndAtivoTrueAndDataGreaterThanEqualOrderByDataAscHoraAsc(
             Long secretariaId, LocalDate data
     );
+
+    @Modifying
+    @Query("""
+  delete from SlotAtendimento s
+  where s.configuracao.id = :configuracaoId
+    and s.data = :data
+    and s.hora = :hora
+""")
+    int deleteByConfiguracaoIdAndDataAndHora(
+            @Param("configuracaoId") Long configuracaoId,
+            @Param("data") LocalDate data,
+            @Param("hora") LocalTime hora
+    );
 }

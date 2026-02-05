@@ -53,7 +53,7 @@ public class SlotAtendimentoController {
             // throw new RuntimeException("Data não vinculada a esta configuração");
         }
 
-        slotService.garantirSlotsDoDia(cfg, data);
+        //slotService.garantirSlotsDoDia(cfg, data);
 
         List<SlotAtendimento> slots =
                 slotRepo.findByConfiguracaoIdAndDataOrderByHora(configuracaoId, data);
@@ -85,7 +85,7 @@ public class SlotAtendimentoController {
             return ResponseEntity.ok(List.of());
         }
 
-        slotService.garantirSlotsDoDia(cfg, data);
+        //slotService.garantirSlotsDoDia(cfg, data);
 
         List<SlotAtendimento> slots =
                 slotRepo.findByConfiguracaoIdAndDataOrderByHora(configuracaoId, data);
@@ -107,6 +107,23 @@ public class SlotAtendimentoController {
         return ResponseEntity.ok(response);
     }
 
+    @DeleteMapping("/horarios-do-dia")
+    public ResponseEntity<Void> excluirHorarioDoDia(
+            @RequestParam Long secretariaId,
+            @RequestParam Long configuracaoId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime hora
+    ) {
+        ConfiguracaoAtendimento cfg = configuracaoService.buscarPorId(configuracaoId);
+
+        if (!cfg.getSecretaria().getId().equals(secretariaId)) {
+            throw new RuntimeException("Configuração não pertence a esta secretaria");
+        }
+
+        slotService.excluirSlot(configuracaoId, data, hora);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/validar")
     public ResponseEntity<SlotAtendimento> validarSlot(
             @RequestParam Long secretariaId,
@@ -124,7 +141,7 @@ public class SlotAtendimentoController {
         configuracaoService.validarDisponibilidade(secretariaId, data, hora);
 
         // só cria se data é vinculada (garantir já sabe disso)
-        slotService.garantirSlotsDoDia(cfg, data);
+        //slotService.garantirSlotsDoDia(cfg, data);
 
         SlotAtendimento slot = slotRepo
                 .findByConfiguracaoIdAndDataAndHora(configuracaoId, data, hora)

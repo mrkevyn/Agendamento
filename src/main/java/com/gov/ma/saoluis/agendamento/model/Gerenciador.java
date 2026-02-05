@@ -24,6 +24,9 @@ public class Gerenciador {
     @Column(nullable = false, length = 11, unique = true)
     private String cpf;
 
+    @Column(nullable = false, length = 124, unique = true)
+    private String contato;
+
     @Column(nullable = false, length = 150, unique = true)
     private String email;
 
@@ -71,6 +74,14 @@ public class Gerenciador {
 
     public void setCpf(String cpf) {
         this.cpf = cpf;
+    }
+
+    public void setContato(String contato){
+        this.contato = contato;
+    }
+
+    public String getContato(){
+        return contato;
     }
 
     public String getEmail() {

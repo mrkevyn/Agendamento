@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Setter
 @Getter
 @Entity
@@ -23,19 +26,17 @@ public class Servico {
     @Column(nullable = false)
     private boolean ativo = true;
 
-    // ➜ Número de guichês disponíveis para o serviço
-    @Column(name = "numero_guiches", nullable = true)
-    private Integer numeroGuiches;
-
-    // ➜ Tempo médio de atendimento (em minutos, por exemplo)
-    @Column(name = "tempo_atendimento", nullable = true)
-    private Integer tempoAtendimento;
-
-    // ➜ Dias de atendimento (ex: "SEG-SEX", "SEG,TER,QUI")
-    @Column(nullable = true, length = 50)
-    private String dias;
-
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "secretaria_id", nullable = false)
     private Secretaria secretaria;
+
+    // 🔗 RELAÇÃO N:N COM ENDEREÇO
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "servico_endereco",
+            joinColumns = @JoinColumn(name = "servico_id"),
+            inverseJoinColumns = @JoinColumn(name = "endereco_id")
+    )
+    private Set<Endereco> enderecos = new HashSet<>();
+
 }

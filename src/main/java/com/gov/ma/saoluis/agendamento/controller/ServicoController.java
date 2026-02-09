@@ -1,5 +1,6 @@
 package com.gov.ma.saoluis.agendamento.controller;
 
+import com.gov.ma.saoluis.agendamento.DTO.VincularEnderecosDTO;
 import com.gov.ma.saoluis.agendamento.model.Servico;
 import com.gov.ma.saoluis.agendamento.service.ServicoService;
 import org.springframework.http.HttpStatus;
@@ -47,5 +48,19 @@ public class ServicoController {
         }
     }
 
-    // Exemplo de teste rápido com System.out.print
+    @PutMapping("/servicos/{id}/enderecos")
+    public ResponseEntity<Servico> vincularEnderecos(
+            @PathVariable Long id,
+            @RequestBody VincularEnderecosDTO dto
+    ) {
+        return ResponseEntity.ok(servicoService.vincularEnderecos(id, dto.enderecoIds()));
+    }
+
+    @PutMapping("/servicos/{id}/enderecos/remover")
+    public ResponseEntity<Servico> desvincularEnderecos(
+            @PathVariable Long id,
+            @RequestBody VincularEnderecosDTO dto
+    ) {
+        return ResponseEntity.ok(servicoService.desvincularEnderecos(id, dto.enderecoIds()));
+    }
 }

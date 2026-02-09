@@ -103,16 +103,10 @@ public class AgendamentoController {
     }
 
     @GetMapping("/ultimas-chamadas/{sigla}")
-    public ResponseEntity<List<UltimaChamadaDTO>> getUltimasChamadas(
-            @PathVariable String sigla
-    ) {
-        var lista = agendamentoService.getUltimasChamadasPorSecretaria(sigla);
-
-        if (lista == null || lista.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        }
-
-        return ResponseEntity.ok(lista);
+    public ResponseEntity<List<UltimaChamadaDTO>> getUltimasChamadas(@PathVariable String sigla) {
+        return ResponseEntity.ok(
+                agendamentoService.getUltimasChamadasPorSecretaria(sigla)
+        );
     }
 
     @PutMapping("/finalizar/{id}")

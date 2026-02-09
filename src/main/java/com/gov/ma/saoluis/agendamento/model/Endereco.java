@@ -1,6 +1,7 @@
 package com.gov.ma.saoluis.agendamento.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -51,4 +52,9 @@ public class Endereco {
     @JsonIgnore
     @ManyToMany(mappedBy = "enderecos")
     private Set<Servico> servicos = new HashSet<>();
+
+    // 🔗 Fotos do endereço
+    @OneToMany(mappedBy = "endereco", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private Set<EnderecoFoto> fotos = new HashSet<>();
 }

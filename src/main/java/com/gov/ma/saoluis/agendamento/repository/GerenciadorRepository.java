@@ -14,6 +14,8 @@ public interface GerenciadorRepository extends JpaRepository<Gerenciador, Long> 
 
     boolean existsByGuicheAndSecretariaId(Integer guiche, Long secretariaId);
 
+    boolean existsByGuicheAndEnderecoId(Integer guiche, Long enderecoId);
+
     boolean existsByGuicheAndSecretariaIdAndIdNot(
             Integer guiche,
             Long secretariaId,

@@ -47,6 +47,10 @@ public class Gerenciador {
     @JoinColumn(name = "secretaria_id", nullable = false)
     private Secretaria secretaria;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "endereco_id", nullable = false)
+    private Endereco endereco;
+
     // Construtor padrão (Hibernate)
     public Gerenciador() {
     }
@@ -117,6 +121,14 @@ public class Gerenciador {
 
     public void setSecretaria(Secretaria secretaria) {
         this.secretaria = secretaria;
+    }
+
+    public void setEndereco(Endereco endereco) {
+        this.endereco = endereco;
+    }
+
+    public Endereco getEndereco() {
+        return endereco;
     }
 
     @PrePersist

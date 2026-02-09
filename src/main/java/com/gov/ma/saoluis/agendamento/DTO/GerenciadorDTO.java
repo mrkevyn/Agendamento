@@ -8,5 +8,6 @@ public record GerenciadorDTO(
         String senha,
         String perfil,      // 👈 AQUI
         Integer guiche,
-        Long secretariaId
+        Long secretariaId,
+        Long enderecoId
 ) {}

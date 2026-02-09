@@ -2,8 +2,10 @@ package com.gov.ma.saoluis.agendamento.service;
 
 import com.gov.ma.saoluis.agendamento.DTO.GerenciadorDTO;
 import com.gov.ma.saoluis.agendamento.config.UsuarioLogadoUtil;
+import com.gov.ma.saoluis.agendamento.model.Endereco;
 import com.gov.ma.saoluis.agendamento.model.Gerenciador;
 import com.gov.ma.saoluis.agendamento.model.Secretaria;
+import com.gov.ma.saoluis.agendamento.repository.EnderecoRepository;
 import com.gov.ma.saoluis.agendamento.repository.GerenciadorRepository;
 import com.gov.ma.saoluis.agendamento.repository.SecretariaRepository;
 import org.springframework.stereotype.Service;
@@ -16,13 +18,17 @@ public class GerenciadorService {
     private final GerenciadorRepository gerenciadorRepository;
     private final SecretariaRepository secretariaRepository;
     private final LogService logService;
+    private final EnderecoRepository enderecoRepository;
+
 
     public GerenciadorService(GerenciadorRepository gerenciadorRepository,
                             SecretariaRepository secretariaRepository,
-                            LogService logService) {
+                            LogService logService,
+                              EnderecoRepository enderecoRepository) {
         this.gerenciadorRepository = gerenciadorRepository;
         this.secretariaRepository = secretariaRepository;
         this.logService = logService;
+        this.enderecoRepository = enderecoRepository;
     }
 
     // ➤ Criar gerenciador
@@ -31,14 +37,17 @@ public class GerenciadorService {
         Secretaria secretaria = secretariaRepository.findById(dto.secretariaId())
                 .orElseThrow(() -> new RuntimeException("Secretaria não encontrada"));
 
+        Endereco endereco = enderecoRepository.findById(dto.enderecoId())
+                .orElseThrow(() -> new RuntimeException("Endereço não encontrado"));
+
         // 🔒 VALIDAR GUICHÊ ÚNICO
         if (dto.guiche() != null) {
             boolean ocupado = gerenciadorRepository
-                    .existsByGuicheAndSecretariaId(dto.guiche(), secretaria.getId());
+                    .existsByGuicheAndEnderecoId(dto.guiche(), endereco.getId());
 
             if (ocupado) {
                 throw new RuntimeException(
-                        "Guichê " + dto.guiche() + " já está em uso nesta secretaria"
+                        "Guichê " + dto.guiche() + " já está em uso neste endereço"
                 );
             }
         }
@@ -52,6 +61,7 @@ public class GerenciadorService {
         g.setPerfil(dto.perfil());
         g.setGuiche(dto.guiche());
         g.setSecretaria(secretaria);
+        g.setEndereco(endereco);
 
         Gerenciador salvo = gerenciadorRepository.save(g);
 

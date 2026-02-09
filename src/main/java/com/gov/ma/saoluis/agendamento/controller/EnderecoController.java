@@ -7,7 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
@@ -34,5 +36,15 @@ public class EnderecoController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Collections.emptyList());
         }
+    }
+
+    @PostMapping("/{id}/fotos")
+    public ResponseEntity<?> uploadFoto(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(required = false) String descricao
+    ) throws IOException {
+        enderecoService.salvarFoto(id, file, descricao);
+        return ResponseEntity.ok().build();
     }
 }

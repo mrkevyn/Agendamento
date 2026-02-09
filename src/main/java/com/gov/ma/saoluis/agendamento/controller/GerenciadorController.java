@@ -9,6 +9,7 @@ import com.gov.ma.saoluis.agendamento.service.GerenciadorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,9 +32,15 @@ public class GerenciadorController {
 
     // ➤ Criar atendente
     @PostMapping
-    public ResponseEntity<Gerenciador> criar(@RequestBody GerenciadorDTO dto) {
-        Gerenciador novo = gerenciadorService.criar(dto);
-        return ResponseEntity.ok(novo);
+    public ResponseEntity<?> criar(@RequestBody GerenciadorDTO dto) {
+        try {
+            Gerenciador novo = gerenciadorService.criar(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(novo);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(
+                    java.util.Map.of("mensagem", e.getMessage())
+            );
+        }
     }
 
     // ➤ Editar atendente

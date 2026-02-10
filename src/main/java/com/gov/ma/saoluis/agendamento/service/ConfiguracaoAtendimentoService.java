@@ -107,13 +107,15 @@ public class ConfiguracaoAtendimentoService {
     }
 
     // 🔹 Atualizar configuração
+    @Transactional
     public ConfiguracaoAtendimento atualizar(Long id, ConfiguracaoAtendimento novosDados) {
 
         ConfiguracaoAtendimento existente = buscarPorId(id);
 
-        validarConfiguracao(novosDados);
-
+        // aplica no existente (pra validar o estado final)
         existente.setHoraInicio(novosDados.getHoraInicio());
+        existente.setPausaInicio(novosDados.getPausaInicio());
+        existente.setPausaFim(novosDados.getPausaFim());
         existente.setHoraFim(novosDados.getHoraFim());
         existente.setQuantidadeAtendimentos(novosDados.getQuantidadeAtendimentos());
         existente.setIntervaloMinutos(novosDados.getIntervaloMinutos());
@@ -121,23 +123,12 @@ public class ConfiguracaoAtendimentoService {
         existente.setTipoRegra(novosDados.getTipoRegra());
         existente.setAtivo(novosDados.getAtivo());
 
-        // ✅ Atualiza datas sem quebrar a coleção (@ElementCollection)
-        existente.getDatasAtendimento().clear();
-        if (novosDados.getDatasAtendimento() != null) {
-            existente.getDatasAtendimento().addAll(novosDados.getDatasAtendimento());
-        }
+        validarConfiguracao(existente);
 
-        // 🔥 gera sem quebrar a coleção de horários
+        // 🔥 recria horários sem quebrar a coleção
         gerarHorarios(existente);
 
-        ConfiguracaoAtendimento salvo = repository.save(existente);
-
-        // (opcional, mas recomendado) garantir slots para as novas datas
-        for (LocalDate data : salvo.getDatasAtendimento()) {
-            slotService.garantirSlotsDoDia(salvo, data);
-        }
-
-        return salvo;
+        return repository.save(existente);
     }
 
     // 🔹 Buscar por ID
@@ -271,14 +262,11 @@ public class ConfiguracaoAtendimentoService {
     }
 
     private void gerarHorariosPorIntervalo(ConfiguracaoAtendimento cfg) {
-
         cfg.getHorarios().clear();
 
         LocalTime atual = cfg.getHoraInicio();
 
-        while (!atual.isAfter(cfg.getHoraFim())) {
-
-            // ✅ pula horários na pausa
+        while (atual.isBefore(cfg.getHoraFim())) { // ✅ não inclui horaFim
             if (!estaNaPausa(cfg, atual)) {
                 HorarioAtendimento h = new HorarioAtendimento();
                 h.setConfiguracao(cfg);
@@ -286,7 +274,6 @@ public class ConfiguracaoAtendimentoService {
                 h.setOcupado(false);
                 cfg.getHorarios().add(h);
             }
-
             atual = atual.plusMinutes(cfg.getIntervaloMinutos());
         }
 
@@ -313,9 +300,13 @@ public class ConfiguracaoAtendimentoService {
 
         for (int i = 0; i < quantidade; i++) {
 
-            // se cair na pausa, pula pro fim da pausa
             if (estaNaPausa(cfg, atual)) {
                 atual = cfg.getPausaFim();
+            }
+
+            // ✅ não inclui horaFim
+            if (!atual.isBefore(cfg.getHoraFim())) {
+                break;
             }
 
             HorarioAtendimento h = new HorarioAtendimento();
@@ -326,7 +317,6 @@ public class ConfiguracaoAtendimentoService {
 
             atual = atual.plusMinutes(intervalo);
 
-            // se depois de somar cair na pausa, ajusta também
             if (estaNaPausa(cfg, atual)) {
                 atual = cfg.getPausaFim();
             }

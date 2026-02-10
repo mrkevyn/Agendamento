@@ -5,5 +5,6 @@ public record UsuarioLogadoDTO(
         String nome,
         String perfil,
         SecretariaDTO secretaria,
+        EnderecoDTO endereco,
         Integer guiche,
         String token) {}

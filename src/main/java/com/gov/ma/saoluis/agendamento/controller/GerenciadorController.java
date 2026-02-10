@@ -125,10 +125,9 @@ public class GerenciadorController {
         Gerenciador g = gerenciadorRepository.findById(usuarioId)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        // 🔹 Recupera token do header Authorization
+        // 🔹 Token do header
         String authHeader = request.getHeader("Authorization");
         String token = null;
-
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
         }
@@ -139,11 +138,26 @@ public class GerenciadorController {
                 g.getSecretaria().getSigla()
         );
 
+        EnderecoDTO enderecoDTO = null;
+        if (g.getEndereco() != null) {
+            enderecoDTO = new EnderecoDTO(
+                    g.getEndereco().getId(),
+                    g.getEndereco().getLogradouro(),
+                    g.getEndereco().getNumero(),
+                    g.getEndereco().getComplemento(),
+                    g.getEndereco().getBairro(),
+                    g.getEndereco().getCidade(),
+                    g.getEndereco().getUf(),
+                    g.getEndereco().getCep()
+            );
+        }
+
         return new UsuarioLogadoDTO(
                 g.getId(),
                 g.getNome(),
                 g.getPerfil(),
                 secretariaDTO,
+                enderecoDTO,   // 👈 agora completo
                 g.getGuiche(),
                 token
         );

@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoDTO;
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoAppRequest;
 import com.gov.ma.saoluis.agendamento.service.SlotAtendimentoService;
+import com.gov.ma.saoluis.agendamento.DTO.EnderecoDTO;
+import com.gov.ma.saoluis.agendamento.repository.EnderecoRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -41,7 +43,9 @@ public class AgendamentoService {
 
     private final SlotAtendimentoRepository slotAtendimentoRepository;
 
-    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService, ConfiguracaoAtendimentoService configuracaoService, ChamadaAgendamentoRepository chamadaAgendamentoRepository, HorarioAtendimentoRepository horarioRepository, ServicoService servicoService, UsuarioService usuarioService, SlotAtendimentoService slotAtendimentoService, SlotAtendimentoRepository slotAtendimentoRepository) {
+    private final EnderecoRepository enderecoRepository;
+
+    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService, ConfiguracaoAtendimentoService configuracaoService, ChamadaAgendamentoRepository chamadaAgendamentoRepository, HorarioAtendimentoRepository horarioRepository, ServicoService servicoService, UsuarioService usuarioService, SlotAtendimentoService slotAtendimentoService, SlotAtendimentoRepository slotAtendimentoRepository, EnderecoRepository enderecoRepository) {
         this.atendenteRepository = gerenciadorRepository;
         this.agendamentoRepository = agendamentoRepository;
         this.logService = logService;
@@ -52,6 +56,7 @@ public class AgendamentoService {
         this.usuarioService = usuarioService;
         this.slotAtendimentoService = slotAtendimentoService;
         this.slotAtendimentoRepository = slotAtendimentoRepository;
+        this.enderecoRepository = enderecoRepository;
     }
 
     // 🔹 Listar todos COM DETALHES
@@ -200,6 +205,14 @@ public class AgendamentoService {
             throw new RuntimeException("Serviço é obrigatório");
         }
 
+        // ✅ Endereço obrigatório (se seu banco exige)
+        if (agendamento.getEndereco() == null || agendamento.getEndereco().getId() == null) {
+            throw new RuntimeException("Endereço é obrigatório");
+        }
+
+        Endereco endereco = enderecoRepository.findById(agendamento.getEndereco().getId())
+                .orElseThrow(() -> new RuntimeException("Endereço não encontrado"));
+
         Servico servico = servicoService.buscarPorId(agendamento.getServico().getId());
 
         if (servico.getSecretaria() == null || servico.getSecretaria().getId() == null) {
@@ -211,17 +224,15 @@ public class AgendamentoService {
         }
 
         agendamento.setServico(servico);
-
-        // ✅ salva secretaria no agendamento (isso que estava faltando)
         agendamento.setSecretaria(servico.getSecretaria());
 
-        // 🔥 espontâneo não usa configuração
+        // ✅ seta o endereço no agendamento
+        agendamento.setEndereco(endereco);
+
         agendamento.setConfiguracao(null);
-
         agendamento.setTipoAgendamento(TipoAgendamento.ESPONTANEO);
-
         agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
-        // ✅ data/hora e situação
+
         LocalDateTime agora = LocalDateTime.now(ZoneId.of("America/Fortaleza"));
         agendamento.setHoraAgendamento(agora);
 
@@ -238,10 +249,7 @@ public class AgendamentoService {
 
         while (true) {
             tentativas++;
-
-            agendamento.setSenha(
-                    gerarSenhaParaDiaEspontaneo(secretariaId, agendamento.getTipoAtendimento(), hoje)
-            );
+            agendamento.setSenha(gerarSenhaParaDiaEspontaneo(secretariaId, agendamento.getTipoAtendimento(), hoje));
 
             try {
                 return agendamentoRepository.save(agendamento);

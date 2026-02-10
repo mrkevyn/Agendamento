@@ -25,4 +25,14 @@ public interface AgendamentoDTO {
 
     Integer getGuiche();
     Long getGerenciadorId(); // recomendo também retornar, ajuda debug
+
+    // 🔹 Endereço (NOVO)
+    Long getEnderecoId();
+    String getEnderecoLogradouro();
+    String getEnderecoNumero();
+    String getEnderecoBairro();
+    String getEnderecoCidade();
+    String getEnderecoUf();
+    String getEnderecoCep();
+    String getEnderecoComplemento();
 }

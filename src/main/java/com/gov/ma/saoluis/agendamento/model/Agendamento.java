@@ -52,6 +52,10 @@ public class Agendamento {
     @Column(name = "tipo_agendamento", nullable = false)
     private TipoAgendamento tipoAgendamento;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "endereco_id", nullable = false)
+    private Endereco endereco;
+
     // Getters e Setters
     public Long getId() {
         return id;
@@ -149,5 +153,13 @@ public class Agendamento {
 
     public void setTipoAgendamento(TipoAgendamento tipoAgendamento) {
         this.tipoAgendamento = tipoAgendamento;
+    }
+
+    public Endereco getEndereco() {
+        return endereco;
+    }
+
+    public void setEndereco(Endereco endereco) {
+        this.endereco = endereco;
     }
 }

@@ -31,17 +31,16 @@ public interface ChamadaAgendamentoRepository
     FROM chamada_agendamento ca
     JOIN agendamento a       ON ca.agendamento_id = a.id
     JOIN servico s           ON a.servico_id = s.id
-    JOIN secretaria sec      ON s.secretaria_id = sec.id
 
     LEFT JOIN usuario u      ON a.usuario_id = u.id
     LEFT JOIN gerenciador g  ON ca.gerenciador_id = g.id
 
-    WHERE UPPER(sec.sigla) = UPPER(:sigla)   -- ✅ AQUI
+    WHERE g.endereco_id = :enderecoId   -- ✅ ALTERADO AQUI
 
     ORDER BY ca.data_chamada DESC
     LIMIT 5
 """, nativeQuery = true)
-    List<UltimaChamadaDTO> buscarUltimasChamadasPorSecretaria(
-            @Param("sigla") String sigla
+    List<UltimaChamadaDTO> buscarUltimasChamadasPorEndereco(
+            @Param("enderecoId") Long enderecoId
     );
 }

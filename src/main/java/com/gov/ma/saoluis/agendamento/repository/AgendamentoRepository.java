@@ -78,27 +78,40 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         a.tipo_atendimento AS tipoAtendimento,
         a.tipo_agendamento AS tipoAgendamento,
 
-        a.gerenciador_id   AS gerenciadorId,     -- ✅ quem chamou (pode ser null)
-        g.guiche           AS guiche,            -- ✅ guichê vem do gerenciador
+        a.gerenciador_id   AS gerenciadorId,
+        g.guiche           AS guiche,
 
         u.id               AS usuarioId,
         COALESCE(u.nome, a.nome_cidadao) AS usuarioNome,
 
         s.id               AS servicoId,
-        s.nome             AS servicoNome
+        s.nome             AS servicoNome,
+
+        a.endereco_id      AS enderecoId,
+        e.logradouro       AS enderecoLogradouro,
+        e.numero           AS enderecoNumero,
+        e.bairro           AS enderecoBairro,
+        e.cep              AS enderecoCep,
+        e.complemento      AS enderecoComplemento,
+        e.cidade           AS enderecoCidade,
+        e.uf               AS enderecoUf,
+
+        a.secretaria_id    AS secretariaId,
+        sec.nome           AS secretariaNome
 
     FROM agendamento a
     LEFT JOIN usuario u      ON a.usuario_id = u.id
     LEFT JOIN servico s      ON a.servico_id = s.id
-    LEFT JOIN gerenciador g  ON g.id = a.gerenciador_id   -- ✅ JOIN AQUI
+    LEFT JOIN gerenciador g  ON g.id = a.gerenciador_id
+    LEFT JOIN endereco e     ON e.id = a.endereco_id
+    LEFT JOIN secretaria sec ON sec.id = a.secretaria_id
 
-    WHERE s.secretaria_id = :secretariaId
+    WHERE a.endereco_id = :enderecoId
       AND a.hora_agendamento >= CURRENT_DATE
       AND a.hora_agendamento < CURRENT_DATE + INTERVAL '1 day'
     ORDER BY a.hora_agendamento ASC
 """, nativeQuery = true)
-	List<AgendamentoDTO> buscarAgendamentosPorSecretaria(@Param("secretariaId") Long secretariaId);
-
+	List<AgendamentoDTO> buscarAgendamentosPorEndereco(@Param("enderecoId") Long enderecoId);
 
 	long countByTipoAtendimento(String tipoAtendimento);
 
@@ -111,15 +124,15 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 	@Query("""
     SELECT a
     FROM Agendamento a
-    WHERE a.servico.secretaria.id = :secretariaId
+    WHERE a.endereco.id = :enderecoId
       AND a.tipoAtendimento = 'NORMAL'
-      AND a.situacao IN ( 'AGENDADO', 'REAGENDADO')
+      AND a.situacao IN ('AGENDADO', 'REAGENDADO')
       AND a.horaAgendamento >= :inicio
       AND a.horaAgendamento < :fim
     ORDER BY a.horaAgendamento ASC
 """)
 	List<Agendamento> buscarProximoNormalHoje(
-			@Param("secretariaId") Long secretariaId,
+			@Param("enderecoId") Long enderecoId,
 			@Param("inicio") LocalDateTime inicio,
 			@Param("fim") LocalDateTime fim,
 			Pageable pageable
@@ -128,7 +141,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 	@Query("""
     SELECT a
     FROM Agendamento a
-    WHERE a.servico.secretaria.id = :secretariaId
+    WHERE a.endereco.id = :enderecoId
       AND a.tipoAtendimento = 'PRIORIDADE'
       AND a.situacao IN ('AGENDADO', 'REAGENDADO')
       AND a.horaAgendamento >= :inicio
@@ -136,7 +149,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     ORDER BY a.horaAgendamento ASC
 """)
 	List<Agendamento> buscarProximoPrioridadeHoje(
-			@Param("secretariaId") Long secretariaId,
+			@Param("enderecoId") Long enderecoId,
 			@Param("inicio") LocalDateTime inicio,
 			@Param("fim") LocalDateTime fim,
 			Pageable pageable
@@ -187,7 +200,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 	@Query("""
     SELECT a
     FROM Agendamento a
-    WHERE a.servico.secretaria.id = :secretariaId
+    WHERE a.endereco.id = :enderecoId
       AND a.senha = :senha
       AND a.situacao IN ('AGENDADO', 'REAGENDADO')
       AND a.horaAgendamento >= :inicio
@@ -195,7 +208,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     ORDER BY a.horaAgendamento ASC
 """)
 	List<Agendamento> buscarPorSenhaHoje(
-			@Param("secretariaId") Long secretariaId,
+			@Param("enderecoId") Long enderecoId,
 			@Param("senha") String senha,
 			@Param("inicio") LocalDateTime inicio,
 			@Param("fim") LocalDateTime fim,
@@ -227,6 +240,23 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     """)
 	List<String> findUltimaSenhaDoDiaParaEspontaneo(
 			@Param("secretariaId") Long secretariaId,
+			@Param("tipo") String tipo,
+			@Param("inicio") LocalDateTime inicio,
+			@Param("fim") LocalDateTime fim,
+			Pageable pageable
+	);
+
+	@Query("""
+    select a.senha
+    from Agendamento a
+    where a.endereco.id = :enderecoId
+      and upper(a.tipoAtendimento) = upper(:tipo)
+      and a.horaAgendamento >= :inicio
+      and a.horaAgendamento < :fim
+    order by a.id desc
+""")
+	List<String> findUltimaSenhaDoDiaParaEspontaneoPorEndereco(
+			@Param("enderecoId") Long enderecoId,
 			@Param("tipo") String tipo,
 			@Param("inicio") LocalDateTime inicio,
 			@Param("fim") LocalDateTime fim,

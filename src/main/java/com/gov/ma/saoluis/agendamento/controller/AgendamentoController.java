@@ -24,10 +24,9 @@ public class AgendamentoController {
         this.agendamentoService = agendamentoService;
     }
 
-    @GetMapping("/secretaria/{secretariaId}")
-    public ResponseEntity<List<AgendamentoDTO>> listarPorSecretaria(@PathVariable Long secretariaId) {
-        List<AgendamentoDTO> agendamentos = agendamentoService.listarPorSecretaria(secretariaId);
-        return ResponseEntity.ok(agendamentos);
+    @GetMapping("/enderecos/{enderecoId}")
+    public ResponseEntity<List<AgendamentoDTO>> listarPorEndereco(@PathVariable Long enderecoId) {
+        return ResponseEntity.ok(agendamentoService.listarPorEnderecoGerenciador(enderecoId));
     }
 
     @GetMapping("/{id}")
@@ -72,23 +71,23 @@ public class AgendamentoController {
         agendamentoService.deletar(id);
     }
 
-    @PostMapping("/chamar/normal/{secretariaId}/{gerenciadorId}")
+    @PostMapping("/chamar/normal/{enderecoId}/{gerenciadorId}")
     public ResponseEntity<Agendamento> chamarProximaNormal(
-            @PathVariable Long secretariaId,
+            @PathVariable Long enderecoId,
             @PathVariable Long gerenciadorId
     ) {
         return ResponseEntity.ok(
-                agendamentoService.chamarProximaNormal(secretariaId, gerenciadorId)
+                agendamentoService.chamarProximaNormal(enderecoId, gerenciadorId)
         );
     }
 
-    @PostMapping("/chamar/prioridade/{secretariaId}/{gerenciadorId}")
+    @PostMapping("/chamar/prioridade/{enderecoId}/{gerenciadorId}")
     public ResponseEntity<Agendamento> chamarProximaPrioridade(
-            @PathVariable Long secretariaId,
+            @PathVariable Long enderecoId,
             @PathVariable Long gerenciadorId
     ) {
         return ResponseEntity.ok(
-                agendamentoService.chamarProximaPrioridade(secretariaId, gerenciadorId)
+                agendamentoService.chamarProximaPrioridade(enderecoId, gerenciadorId)
         );
     }
 
@@ -102,10 +101,12 @@ public class AgendamentoController {
         );
     }
 
-    @GetMapping("/ultimas-chamadas/{sigla}")
-    public ResponseEntity<List<UltimaChamadaDTO>> getUltimasChamadas(@PathVariable String sigla) {
+    @GetMapping("/ultimas-chamadas/{enderecoId}")
+    public ResponseEntity<List<UltimaChamadaDTO>> buscarUltimasChamadas(
+            @PathVariable Long enderecoId) {
+
         return ResponseEntity.ok(
-                agendamentoService.getUltimasChamadasPorSecretaria(sigla)
+                agendamentoService.getUltimasChamadasPorSecretaria(enderecoId)
         );
     }
 

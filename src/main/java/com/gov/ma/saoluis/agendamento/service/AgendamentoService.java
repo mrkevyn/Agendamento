@@ -60,8 +60,9 @@ public class AgendamentoService {
     }
 
     // 🔹 Listar todos COM DETALHES
-    public List<AgendamentoDTO> listarPorSecretaria(Long secretariaId) {
-        return agendamentoRepository.buscarAgendamentosPorSecretaria(secretariaId);
+    public List<AgendamentoDTO> listarPorEnderecoGerenciador(Long enderecoId) {
+        return agendamentoRepository
+                .buscarAgendamentosPorEndereco(enderecoId);
     }
 
     // 🔹 Buscar todos os agendamentos com detalhes
@@ -156,19 +157,19 @@ public class AgendamentoService {
         }
     }
 
-    private String gerarSenhaParaDiaEspontaneo(Long secretariaId, String tipo, LocalDate data) {
+    private String gerarSenhaParaDiaEspontaneo(Long enderecoId, String tipo, LocalDate data) {
         String prefixo = gerarPrefixo(tipo);
 
         LocalDateTime inicio = data.atStartOfDay();
         LocalDateTime fim = data.plusDays(1).atStartOfDay();
 
-        String ultima = agendamentoRepository.findUltimaSenhaDoDiaParaEspontaneo(
-                secretariaId, tipo, inicio, fim, PageRequest.of(0, 1)
+        String ultima = agendamentoRepository.findUltimaSenhaDoDiaParaEspontaneoPorEndereco(
+                enderecoId, tipo, inicio, fim, PageRequest.of(0, 1)
         ).stream().findFirst().orElse(null);
 
         if (ultima == null) return prefixo + "001";
 
-        return gerarProximaSenha(ultima); // N001 -> N002
+        return gerarProximaSenha(ultima);
     }
 
     private String gerarSenhaParaDia(Long configId, String tipo, LocalDate data) {
@@ -246,10 +247,13 @@ public class AgendamentoService {
 
         int tentativas = 0;
         LocalDate hoje = agora.toLocalDate();
+        Long enderecoId = endereco.getId();
 
         while (true) {
             tentativas++;
-            agendamento.setSenha(gerarSenhaParaDiaEspontaneo(secretariaId, agendamento.getTipoAtendimento(), hoje));
+            agendamento.setSenha(
+                    gerarSenhaParaDiaEspontaneo(enderecoId, agendamento.getTipoAtendimento(), hoje)
+            );
 
             try {
                 return agendamentoRepository.save(agendamento);
@@ -330,17 +334,22 @@ public class AgendamentoService {
     }
     
  // 🔹 Chamar próxima senha normal
-     public Agendamento chamarProximaNormal(Long secretariaId, Long atendenteId) {
+     public Agendamento chamarProximaNormal(Long enderecoId, Long atendenteId) {
 
          Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
                  .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
+
+         // 🔒 Segurança: valida se o gerenciador pertence ao endereço informado
+         if (!gerenciador.getEndereco().getId().equals(enderecoId)) {
+             throw new RuntimeException("Gerenciador não pertence a este endereço");
+         }
 
          LocalDate hoje = LocalDate.now();
          LocalDateTime inicio = hoje.atStartOfDay();
          LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
 
          var lista = agendamentoRepository.buscarProximoNormalHoje(
-                 secretariaId, inicio, fim, PageRequest.of(0, 1)
+                 enderecoId, inicio, fim, PageRequest.of(0, 1)
          );
 
          Agendamento proximo = lista.isEmpty() ? null : lista.get(0);
@@ -348,7 +357,7 @@ public class AgendamentoService {
          return processarChamada(proximo, gerenciador);
      }
 
-    public Agendamento chamarProximaPrioridade(Long secretariaId, Long atendenteId) {
+    public Agendamento chamarProximaPrioridade(Long enderecoId, Long atendenteId) {
 
         Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
                 .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
@@ -358,7 +367,7 @@ public class AgendamentoService {
         LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
 
         var lista = agendamentoRepository.buscarProximoPrioridadeHoje(
-                secretariaId, inicio, fim, PageRequest.of(0, 1)
+                enderecoId, inicio, fim, PageRequest.of(0, 1)
         );
 
         Agendamento proximo = lista.isEmpty() ? null : lista.get(0);
@@ -371,15 +380,21 @@ public class AgendamentoService {
         Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
                 .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
 
-        Long secretariaId = gerenciador.getSecretaria().getId();
+        // ✅ agora é pelo endereço do gerenciador
+        if (gerenciador.getEndereco() == null || gerenciador.getEndereco().getId() == null) {
+            throw new RuntimeException("Atendente não possui endereço vinculado");
+        }
+        Long enderecoId = gerenciador.getEndereco().getId();
 
         LocalDate hoje = LocalDate.now();
         LocalDateTime inicio = hoje.atStartOfDay();
         LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
 
         Pageable pageable = PageRequest.of(0, 1);
+
+        // ✅ troca a chamada do repository
         List<Agendamento> agendamentos = agendamentoRepository.buscarPorSenhaHoje(
-                secretariaId, senha, inicio, fim, pageable
+                enderecoId, senha, inicio, fim, pageable
         );
 
         if (agendamentos.isEmpty()) {
@@ -435,8 +450,8 @@ public class AgendamentoService {
         return agendamentoSalvo;
     }
 
-    public List<UltimaChamadaDTO> getUltimasChamadasPorSecretaria(String sigla) {
-        return chamadaAgendamentoRepository.buscarUltimasChamadasPorSecretaria(sigla);
+    public List<UltimaChamadaDTO> getUltimasChamadasPorSecretaria(Long enderecoId) {
+        return chamadaAgendamentoRepository.buscarUltimasChamadasPorEndereco(enderecoId);
     }
 
     // 🔹 Finalizar atendimento

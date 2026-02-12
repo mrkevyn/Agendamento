@@ -126,7 +126,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     FROM Agendamento a
     WHERE a.endereco.id = :enderecoId
       AND a.tipoAtendimento = 'NORMAL'
-      AND a.situacao IN ('AGENDADO', 'REAGENDADO')
+      AND a.situacao IN ('AGENDADO', 'REAGENDADO', 'EM_ATENDIMENTO')
       AND a.horaAgendamento >= :inicio
       AND a.horaAgendamento < :fim
     ORDER BY a.horaAgendamento ASC
@@ -143,7 +143,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     FROM Agendamento a
     WHERE a.endereco.id = :enderecoId
       AND a.tipoAtendimento = 'PRIORIDADE'
-      AND a.situacao IN ('AGENDADO', 'REAGENDADO')
+      AND a.situacao IN ('AGENDADO', 'REAGENDADO', 'EM_ATENDIMENTO')
       AND a.horaAgendamento >= :inicio
       AND a.horaAgendamento < :fim
     ORDER BY a.horaAgendamento ASC
@@ -202,7 +202,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     FROM Agendamento a
     WHERE a.endereco.id = :enderecoId
       AND a.senha = :senha
-      AND a.situacao IN ('AGENDADO', 'REAGENDADO')
+      AND a.situacao IN ('AGENDADO', 'REAGENDADO', 'EM_ATENDIMENTO')
       AND a.horaAgendamento >= :inicio
       AND a.horaAgendamento < :fim
     ORDER BY a.horaAgendamento ASC

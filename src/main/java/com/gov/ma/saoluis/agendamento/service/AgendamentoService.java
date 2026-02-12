@@ -428,22 +428,40 @@ public class AgendamentoService {
 
         agendamento.setSituacao(SituacaoAgendamento.EM_ATENDIMENTO);
         agendamento.setHoraChamada(LocalDateTime.now());
-        agendamento.setAtendente(gerenciador); // 🔹 AQUI
+        agendamento.setAtendente(gerenciador);
 
         Agendamento agendamentoSalvo = agendamentoRepository.save(agendamento);
-        // 🔹 REGISTRA HISTÓRICO DA CHAMADA
-        ChamadaAgendamento chamada = new ChamadaAgendamento();
-        chamada.setAgendamento(agendamentoSalvo);
-        chamada.setGerenciador(gerenciador);
-        chamada.setSecretaria(
-                agendamentoSalvo.getServico() != null
-                        ? agendamentoSalvo.getServico().getSecretaria()
-                        : null
-        );
-        chamada.setSenha(agendamentoSalvo.getSenha());
-        chamada.setTipoAtendimento(agendamentoSalvo.getTipoAtendimento());
-        chamada.setGuiche(gerenciador.getGuiche());
-        chamada.setDataChamada(LocalDateTime.now());
+
+        LocalDate hoje = LocalDate.now();
+        LocalDateTime inicio = hoje.atStartOfDay();
+        LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
+
+        // 🔹 Verifica se já existe chamada para essa senha hoje
+        List<ChamadaAgendamento> chamadasExistentes = chamadaAgendamentoRepository
+                .findByAgendamentoAndDataChamadaBetween(agendamentoSalvo, inicio, fim);
+
+        ChamadaAgendamento chamada;
+        if (!chamadasExistentes.isEmpty()) {
+            // ✅ já existe → atualiza apenas data/hora
+            chamada = chamadasExistentes.get(0);
+            chamada.setDataChamada(LocalDateTime.now());
+            chamada.setGerenciador(gerenciador);
+            chamada.setGuiche(gerenciador.getGuiche());
+        } else {
+            // ✅ não existe → cria nova chamada
+            chamada = new ChamadaAgendamento();
+            chamada.setAgendamento(agendamentoSalvo);
+            chamada.setGerenciador(gerenciador);
+            chamada.setSecretaria(
+                    agendamentoSalvo.getServico() != null
+                            ? agendamentoSalvo.getServico().getSecretaria()
+                            : null
+            );
+            chamada.setSenha(agendamentoSalvo.getSenha());
+            chamada.setTipoAtendimento(agendamentoSalvo.getTipoAtendimento());
+            chamada.setGuiche(gerenciador.getGuiche());
+            chamada.setDataChamada(LocalDateTime.now());
+        }
 
         chamadaAgendamentoRepository.save(chamada);
 
@@ -451,7 +469,12 @@ public class AgendamentoService {
     }
 
     public List<UltimaChamadaDTO> getUltimasChamadasPorSecretaria(Long enderecoId) {
-        return chamadaAgendamentoRepository.buscarUltimasChamadasPorEndereco(enderecoId);
+        LocalDate hoje = LocalDate.now();
+        LocalDateTime inicio = hoje.atStartOfDay();
+        LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
+
+        return chamadaAgendamentoRepository
+                .buscarUltimasChamadasPorEnderecoEHorario(enderecoId, inicio, fim);
     }
 
     // 🔹 Finalizar atendimento

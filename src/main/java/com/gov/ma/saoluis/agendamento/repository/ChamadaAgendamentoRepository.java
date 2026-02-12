@@ -1,11 +1,13 @@
 package com.gov.ma.saoluis.agendamento.repository;
 
 import com.gov.ma.saoluis.agendamento.DTO.UltimaChamadaDTO;
+import com.gov.ma.saoluis.agendamento.model.Agendamento;
 import com.gov.ma.saoluis.agendamento.model.ChamadaAgendamento;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ChamadaAgendamentoRepository
@@ -16,7 +18,7 @@ public interface ChamadaAgendamentoRepository
         ca.agendamento_id   AS agendamentoId,
         ca.senha            AS senha,
         ca.tipo_atendimento AS tipoAtendimento,
-        ca.data_chamada     AS horaChamada,
+        ca.data_chamada     AS horaChamada, -- alias para horário
 
         a.nome_cidadao      AS nomeCidadao,
 
@@ -35,12 +37,29 @@ public interface ChamadaAgendamentoRepository
     LEFT JOIN usuario u      ON a.usuario_id = u.id
     LEFT JOIN gerenciador g  ON ca.gerenciador_id = g.id
 
-    WHERE g.endereco_id = :enderecoId   -- ✅ ALTERADO AQUI
+    WHERE g.endereco_id = :enderecoId
+      AND ca.data_chamada >= :inicio
+      AND ca.data_chamada < :fim
 
     ORDER BY ca.data_chamada DESC
     LIMIT 5
 """, nativeQuery = true)
-    List<UltimaChamadaDTO> buscarUltimasChamadasPorEndereco(
-            @Param("enderecoId") Long enderecoId
+    List<UltimaChamadaDTO> buscarUltimasChamadasPorEnderecoEHorario(
+            @Param("enderecoId") Long enderecoId,
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fim") LocalDateTime fim
+    );
+
+    @Query("""
+    SELECT c
+    FROM ChamadaAgendamento c
+    WHERE c.agendamento = :agendamento
+      AND c.dataChamada >= :inicio
+      AND c.dataChamada < :fim
+""")
+    List<ChamadaAgendamento> findByAgendamentoAndDataChamadaBetween(
+            @Param("agendamento") Agendamento agendamento,
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fim") LocalDateTime fim
     );
 }

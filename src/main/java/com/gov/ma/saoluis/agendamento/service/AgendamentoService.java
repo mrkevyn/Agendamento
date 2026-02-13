@@ -1,17 +1,13 @@
 package com.gov.ma.saoluis.agendamento.service;
 
-import com.gov.ma.saoluis.agendamento.DTO.AgendamentoResponseDTO;
-import com.gov.ma.saoluis.agendamento.DTO.UltimaChamadaDTO;
+import com.gov.ma.saoluis.agendamento.DTO.*;
 import com.gov.ma.saoluis.agendamento.model.*;
 import com.gov.ma.saoluis.agendamento.repository.*;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import com.gov.ma.saoluis.agendamento.DTO.AgendamentoDTO;
-import com.gov.ma.saoluis.agendamento.DTO.AgendamentoAppRequest;
 import com.gov.ma.saoluis.agendamento.service.SlotAtendimentoService;
-import com.gov.ma.saoluis.agendamento.DTO.EnderecoDTO;
 import com.gov.ma.saoluis.agendamento.repository.EnderecoRepository;
 
 import java.time.LocalDate;
@@ -261,6 +257,40 @@ public class AgendamentoService {
                 if (tentativas >= 5) throw new RuntimeException("Falha ao gerar senha única");
             }
         }
+    }
+
+    @Transactional
+    public AgendamentoUpdateResponseDTO atualizarEspontaneo(Long id, AgendamentoUpdateDTO dto) {
+
+        Agendamento ag = agendamentoRepository.findByIdNativo(id)
+                .orElseThrow(() -> new RuntimeException("Agendamento não encontrado"));
+
+        if (dto.nomeCidadao() != null && !dto.nomeCidadao().isBlank()) {
+            ag.setNomeCidadao(dto.nomeCidadao().trim());
+        }
+
+        if (dto.servicoId() != null) {
+            Servico servico = servicoService.buscarPorId(dto.servicoId());
+            ag.setServico(servico);
+
+            if (servico.getSecretaria() != null) {
+                ag.setSecretaria(servico.getSecretaria());
+            }
+        }
+
+        agendamentoRepository.save(ag);
+
+        // ✅ monta resposta sem proxy
+        return new AgendamentoUpdateResponseDTO(
+                ag.getId(),
+                ag.getNomeCidadao(),
+                ag.getServico() != null ? ag.getServico().getId() : null,
+                ag.getServico() != null ? ag.getServico().getNome() : null,
+                ag.getEndereco() != null ? ag.getEndereco().getId() : null,
+                ag.getSenha(),
+                ag.getSituacao() != null ? ag.getSituacao().name() : null,
+                ag.getTipoAtendimento()
+        );
     }
 
     // 🔹 Atualizar (reagendar)

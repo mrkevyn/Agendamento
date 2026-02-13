@@ -30,14 +30,9 @@ public class SecurityConfig {
                         // 🔓 ROTAS PÚBLICAS
                         .requestMatchers(
                                 "/gerenciador/login",
-                                "/gerenciador/**",
-                                "/agendamentos/**",
-                                "/api/configuracoes-atendimento/**",
-                                "/api/slots/**",
-                                "/secretarias/**",
-                                "/enderecos/**",
-                                "/agendamento/api/servico/**",
+                                "/agendamentos/ultimas-chamadas/**",
                                 "/uploads/**",
+                                "/secretarias/**",
 
                                 // 🔹 Swagger / OpenAPI
                                 "/v3/api-docs/**",

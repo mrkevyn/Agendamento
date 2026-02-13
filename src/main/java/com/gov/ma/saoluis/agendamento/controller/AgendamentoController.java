@@ -1,9 +1,6 @@
 package com.gov.ma.saoluis.agendamento.controller;
 
-import com.gov.ma.saoluis.agendamento.DTO.AgendamentoAppRequest;
-import com.gov.ma.saoluis.agendamento.DTO.AgendamentoDTO;
-import com.gov.ma.saoluis.agendamento.DTO.AgendamentoResponseDTO;
-import com.gov.ma.saoluis.agendamento.DTO.UltimaChamadaDTO;
+import com.gov.ma.saoluis.agendamento.DTO.*;
 import com.gov.ma.saoluis.agendamento.model.Agendamento;
 import com.gov.ma.saoluis.agendamento.service.AgendamentoService;
 import com.gov.ma.saoluis.agendamento.repository.AgendamentoRepository;
@@ -59,6 +56,14 @@ public class AgendamentoController {
     ) {
         Agendamento salvo = agendamentoService.criarEspontaneo(secretariaId, agendamento);
         return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
+    }
+
+    @PutMapping("/atualizar-espontaneo/{id}")
+    public ResponseEntity<AgendamentoUpdateResponseDTO> atualizarEspontaneo(
+            @PathVariable Long id,
+            @RequestBody AgendamentoUpdateDTO dto
+    ) {
+        return ResponseEntity.ok(agendamentoService.atualizarEspontaneo(id, dto));
     }
 
     @PutMapping("/{id}")

@@ -8,6 +8,7 @@ import com.gov.ma.saoluis.agendamento.model.Secretaria;
 import com.gov.ma.saoluis.agendamento.repository.EnderecoRepository;
 import com.gov.ma.saoluis.agendamento.repository.GerenciadorRepository;
 import com.gov.ma.saoluis.agendamento.repository.SecretariaRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,6 +18,7 @@ public class GerenciadorService {
 
     private final GerenciadorRepository gerenciadorRepository;
     private final SecretariaRepository secretariaRepository;
+    private final PasswordEncoder passwordEncoder;
     private final LogService logService;
     private final EnderecoRepository enderecoRepository;
 
@@ -24,11 +26,13 @@ public class GerenciadorService {
     public GerenciadorService(GerenciadorRepository gerenciadorRepository,
                             SecretariaRepository secretariaRepository,
                             LogService logService,
-                              EnderecoRepository enderecoRepository) {
+                              EnderecoRepository enderecoRepository,
+                              PasswordEncoder passwordEncoder) {
         this.gerenciadorRepository = gerenciadorRepository;
         this.secretariaRepository = secretariaRepository;
         this.logService = logService;
         this.enderecoRepository = enderecoRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // ➤ Criar gerenciador
@@ -57,7 +61,8 @@ public class GerenciadorService {
         g.setCpf(dto.cpf());
         g.setContato(dto.contato());
         g.setEmail(dto.email());
-        g.setSenha(dto.senha());
+        String senhaCriptografada = passwordEncoder.encode(dto.senha());
+        g.setSenha(senhaCriptografada);
         g.setPerfil(dto.perfil());
         g.setGuiche(dto.guiche());
         g.setSecretaria(secretaria);
@@ -144,16 +149,19 @@ public class GerenciadorService {
                 .findByCpfOrEmail(login, login)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        if (!gerenciador.getSenha().equals(senha)) {
+        // 🔐 COMPARAÇÃO SEGURA COM HASH
+        if (!passwordEncoder.matches(senha, gerenciador.getSenha())) {
             throw new RuntimeException("Senha inválida");
         }
 
         // 🔹 REGISTRAR LOG DE LOGIN
         logService.registrar(
-                gerenciador.getId(),                // ID do usuário logado
-                gerenciador.getPerfil(),              // Nome do usuário
+                gerenciador.getId(),
+                gerenciador.getPerfil(),
                 "LOGIN",
-                "Nome: " + gerenciador.getNome() + "; Email: " + gerenciador.getEmail() + "; Secretaria: " + gerenciador.getSecretaria().getNome()
+                "Nome: " + gerenciador.getNome() +
+                        "; Email: " + gerenciador.getEmail() +
+                        "; Secretaria: " + gerenciador.getSecretaria().getNome()
         );
 
         return gerenciador;

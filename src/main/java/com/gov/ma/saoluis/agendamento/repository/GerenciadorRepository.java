@@ -22,11 +22,12 @@ public interface GerenciadorRepository extends JpaRepository<Gerenciador, Long> 
             Long id
     );
 
-    boolean existsBySecretariaIdAndGuiche(Long secretariaId, Integer guiche);
 
     boolean existsBySecretariaIdAndGuicheAndIdNot(
             Long secretariaId,
             Integer guiche,
             Long id
     );
+
+    boolean existsByEnderecoIdAndGuicheAndIdNot(Long enderecoId, Integer guiche, Long id);
 }

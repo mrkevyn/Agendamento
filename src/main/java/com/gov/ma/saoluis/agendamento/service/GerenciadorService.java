@@ -184,8 +184,7 @@ public class GerenciadorService {
 
         String perfil = usuarioLogado.getPerfil();
 
-        // ✔ ADMIN pode alterar qualquer guichê
-        // ✔ ATENDENTE só pode alterar o próprio
+        // ✔ Validação de Perfil
         if ("ATENDENTE".equalsIgnoreCase(perfil) && !usuarioLogado.getId().equals(id)) {
             throw new RuntimeException("Atendente só pode alterar o próprio guichê");
         }
@@ -196,8 +195,8 @@ public class GerenciadorService {
 
         // 🔴 Validação de guichê único
         if (novoGuiche != null &&
-                gerenciadorRepository.existsBySecretariaIdAndGuicheAndIdNot(
-                        g.getSecretaria().getId(),
+                gerenciadorRepository.existsByEnderecoIdAndGuicheAndIdNot(
+                        g.getEndereco().getId(),
                         novoGuiche,
                         g.getId()
                 )) {

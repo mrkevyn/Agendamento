@@ -11,9 +11,6 @@ import org.springframework.stereotype.Repository;
 public interface ServicoRepository extends JpaRepository<Servico, Long> {
     
     List<Servico> findAll();
-    
-    // ou filtrando
-    List<Servico> findByNomeContaining(String nome);
 
     List<Servico> findBySecretariaId(Long secretariaId);
 }

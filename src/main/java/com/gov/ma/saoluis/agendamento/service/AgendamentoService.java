@@ -346,19 +346,6 @@ public class AgendamentoService {
         return String.format("%s%03d", prefixo, numero + 1);
     }
 
-    private String gerarSenhaEspontanea(Long secretariaId, String tipoAtendimento) {
-
-        String prefixo = gerarPrefixo(tipoAtendimento);
-
-        long totalHoje = agendamentoRepository.countBySecretariaAndTipoAndData(
-                secretariaId.intValue(),
-                tipoAtendimento,
-                LocalDate.now()
-        );
-
-        return String.format("%s%03d", prefixo, totalHoje + 1);
-    }
-
     public List<AgendamentoDTO> listarAgendamentosComDetalhes(Long agendamentoId) {
         return agendamentoRepository.buscarAgendamentosComDetalhes(agendamentoId);
     }

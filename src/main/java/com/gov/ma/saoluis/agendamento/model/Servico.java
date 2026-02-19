@@ -38,5 +38,4 @@ public class Servico {
             inverseJoinColumns = @JoinColumn(name = "endereco_id")
     )
     private Set<Endereco> enderecos = new HashSet<>();
-
 }

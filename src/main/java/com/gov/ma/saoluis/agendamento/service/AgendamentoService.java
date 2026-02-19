@@ -379,6 +379,10 @@ public class AgendamentoService {
         Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
                 .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
 
+        if (gerenciador.getEndereco() == null || !gerenciador.getEndereco().getId().equals(enderecoId)) {
+            throw new RuntimeException("Gerenciador não pertence a este endereço ou não possui endereço vinculado");
+        }
+
         LocalDate hoje = LocalDate.now();
         LocalDateTime inicio = hoje.atStartOfDay();
         LocalDateTime fim = hoje.plusDays(1).atStartOfDay();

@@ -57,4 +57,8 @@ public class Endereco {
     @OneToMany(mappedBy = "endereco", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private Set<EnderecoFoto> fotos = new HashSet<>();
+
+    // 🔗 UM ENDEREÇO PARA VÁRIOS SETORES
+    @OneToMany(mappedBy = "endereco", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Setor> setores = new HashSet<>();
 }

@@ -1,5 +1,6 @@
 package com.gov.ma.saoluis.agendamento.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -34,6 +35,10 @@ public class Secretaria {
     )
     @JsonIgnoreProperties("secretaria")
     private Set<ConfiguracaoAtendimento> configuracoes = new HashSet<>();
+
+    @OneToMany(mappedBy = "secretaria", cascade = CascadeType.ALL)
+    @JsonIgnore // Para evitar recursão no JSON
+    private Set<Setor> setores = new HashSet<>();
 
     // getters e setters
 }

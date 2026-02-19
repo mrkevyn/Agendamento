@@ -10,6 +10,8 @@ import com.gov.ma.saoluis.agendamento.repository.GerenciadorRepository;
 import com.gov.ma.saoluis.agendamento.repository.SecretariaRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.gov.ma.saoluis.agendamento.model.Setor;
+import com.gov.ma.saoluis.agendamento.repository.SetorRepository;
 
 import java.util.List;
 
@@ -21,18 +23,22 @@ public class GerenciadorService {
     private final PasswordEncoder passwordEncoder;
     private final LogService logService;
     private final EnderecoRepository enderecoRepository;
+    private final SetorRepository setorRepository;
 
 
     public GerenciadorService(GerenciadorRepository gerenciadorRepository,
                             SecretariaRepository secretariaRepository,
                             LogService logService,
                               EnderecoRepository enderecoRepository,
-                              PasswordEncoder passwordEncoder) {
+                              PasswordEncoder passwordEncoder,
+                              SetorRepository setorRepository) {
         this.gerenciadorRepository = gerenciadorRepository;
         this.secretariaRepository = secretariaRepository;
         this.logService = logService;
         this.enderecoRepository = enderecoRepository;
         this.passwordEncoder = passwordEncoder;
+        this.setorRepository = setorRepository;
+
     }
 
     // ➤ Criar gerenciador
@@ -41,13 +47,13 @@ public class GerenciadorService {
         Secretaria secretaria = secretariaRepository.findById(dto.secretariaId())
                 .orElseThrow(() -> new RuntimeException("Secretaria não encontrada"));
 
-        Endereco endereco = enderecoRepository.findById(dto.enderecoId())
-                .orElseThrow(() -> new RuntimeException("Endereço não encontrado"));
+        Setor setor = setorRepository.findById(dto.setorId())
+                .orElseThrow(() -> new RuntimeException("Setor não encontrado"));
 
         // 🔒 VALIDAR GUICHÊ ÚNICO
         if (dto.guiche() != null) {
             boolean ocupado = gerenciadorRepository
-                    .existsByGuicheAndEnderecoId(dto.guiche(), endereco.getId());
+                    .existsByGuicheAndSetorId(dto.guiche(), setor.getId());
 
             if (ocupado) {
                 throw new RuntimeException(
@@ -66,7 +72,7 @@ public class GerenciadorService {
         g.setPerfil(dto.perfil());
         g.setGuiche(dto.guiche());
         g.setSecretaria(secretaria);
-        g.setEndereco(endereco);
+        g.setSetor(setor);
 
         Gerenciador salvo = gerenciadorRepository.save(g);
 
@@ -195,8 +201,8 @@ public class GerenciadorService {
 
         // 🔴 Validação de guichê único
         if (novoGuiche != null &&
-                gerenciadorRepository.existsByEnderecoIdAndGuicheAndIdNot(
-                        g.getEndereco().getId(),
+                gerenciadorRepository.existsBySetorIdAndGuicheAndIdNot(
+                        g.getSetor().getId(),
                         novoGuiche,
                         g.getId()
                 )) {

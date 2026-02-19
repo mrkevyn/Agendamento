@@ -39,9 +39,11 @@ public class AgendamentoService {
 
     private final SlotAtendimentoRepository slotAtendimentoRepository;
 
+    private final SetorRepository setorRepository;
+
     private final EnderecoRepository enderecoRepository;
 
-    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService, ConfiguracaoAtendimentoService configuracaoService, ChamadaAgendamentoRepository chamadaAgendamentoRepository, HorarioAtendimentoRepository horarioRepository, ServicoService servicoService, UsuarioService usuarioService, SlotAtendimentoService slotAtendimentoService, SlotAtendimentoRepository slotAtendimentoRepository, EnderecoRepository enderecoRepository) {
+    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService, ConfiguracaoAtendimentoService configuracaoService, ChamadaAgendamentoRepository chamadaAgendamentoRepository, HorarioAtendimentoRepository horarioRepository, ServicoService servicoService, UsuarioService usuarioService, SlotAtendimentoService slotAtendimentoService, SlotAtendimentoRepository slotAtendimentoRepository, EnderecoRepository enderecoRepository, SetorRepository setorRepository) {
         this.atendenteRepository = gerenciadorRepository;
         this.agendamentoRepository = agendamentoRepository;
         this.logService = logService;
@@ -53,12 +55,12 @@ public class AgendamentoService {
         this.slotAtendimentoService = slotAtendimentoService;
         this.slotAtendimentoRepository = slotAtendimentoRepository;
         this.enderecoRepository = enderecoRepository;
+        this.setorRepository = setorRepository;
     }
 
     // 🔹 Listar todos COM DETALHES
-    public List<AgendamentoDTO> listarPorEnderecoGerenciador(Long enderecoId) {
-        return agendamentoRepository
-                .buscarAgendamentosPorEndereco(enderecoId);
+    public List<AgendamentoDTO> listarPorEnderecoGerenciador(Long setorId) {
+        return agendamentoRepository.buscarAgendamentosPorSetor(setorId);
     }
 
     // 🔹 Buscar todos os agendamentos com detalhes
@@ -153,14 +155,14 @@ public class AgendamentoService {
         }
     }
 
-    private String gerarSenhaParaDiaEspontaneo(Long enderecoId, String tipo, LocalDate data) {
+    private String gerarSenhaParaDiaEspontaneo(Long setorId, String tipo, LocalDate data) {
         String prefixo = gerarPrefixo(tipo);
 
         LocalDateTime inicio = data.atStartOfDay();
         LocalDateTime fim = data.plusDays(1).atStartOfDay();
 
         String ultima = agendamentoRepository.findUltimaSenhaDoDiaParaEspontaneoPorEndereco(
-                enderecoId, tipo, inicio, fim, PageRequest.of(0, 1)
+                setorId, tipo, inicio, fim, PageRequest.of(0, 1)
         ).stream().findFirst().orElse(null);
 
         if (ultima == null) return prefixo + "001";
@@ -195,62 +197,45 @@ public class AgendamentoService {
 
     @Transactional
     public Agendamento criarEspontaneo(Long secretariaId, Agendamento agendamento) {
-
         if (secretariaId == null) throw new RuntimeException("Secretaria é obrigatória");
 
-        if (agendamento.getServico() == null || agendamento.getServico().getId() == null) {
-            throw new RuntimeException("Serviço é obrigatório");
+        // 1. Validar e Buscar Setor (Obrigatório)
+        if (agendamento.getSetor() == null || agendamento.getSetor().getId() == null) {
+            throw new RuntimeException("Setor é obrigatório");
         }
 
-        // ✅ Endereço obrigatório (se seu banco exige)
-        if (agendamento.getEndereco() == null || agendamento.getEndereco().getId() == null) {
-            throw new RuntimeException("Endereço é obrigatório");
-        }
+        Setor setor = setorRepository.findById(agendamento.getSetor().getId())
+                .orElseThrow(() -> new RuntimeException("Setor não encontrado"));
 
-        Endereco endereco = enderecoRepository.findById(agendamento.getEndereco().getId())
-                .orElseThrow(() -> new RuntimeException("Endereço não encontrado"));
-
+        // 3. Validar Serviço
         Servico servico = servicoService.buscarPorId(agendamento.getServico().getId());
-
-        if (servico.getSecretaria() == null || servico.getSecretaria().getId() == null) {
-            throw new RuntimeException("Serviço sem secretaria vinculada");
-        }
-
         if (!servico.getSecretaria().getId().equals(secretariaId)) {
             throw new RuntimeException("Serviço não pertence à secretaria informada");
         }
 
+        // 4. Configurar Agendamento
+        agendamento.setSetor(setor); // ✅ Vínculo principal
+        agendamento.setSecretaria(setor.getSecretaria());
         agendamento.setServico(servico);
-        agendamento.setSecretaria(servico.getSecretaria());
 
-        // ✅ seta o endereço no agendamento
-        agendamento.setEndereco(endereco);
-
-        agendamento.setConfiguracao(null);
-        agendamento.setTipoAgendamento(TipoAgendamento.ESPONTANEO);
+        // Status e Horários
         agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
-
+        agendamento.setTipoAgendamento(TipoAgendamento.ESPONTANEO);
         LocalDateTime agora = LocalDateTime.now(ZoneId.of("America/Fortaleza"));
         agendamento.setHoraAgendamento(agora);
 
-        if (agendamento.getTipoAtendimento() == null || agendamento.getTipoAtendimento().isBlank()) {
-            agendamento.setTipoAtendimento("NORMAL");
-        } else {
-            agendamento.setTipoAtendimento(agendamento.getTipoAtendimento().toUpperCase());
-        }
+        // Normalizar Tipo Atendimento
+        String tipo = agendamento.getTipoAtendimento();
+        agendamento.setTipoAtendimento(tipo == null ? "NORMAL" : tipo.toUpperCase());
 
-        validarAgendamentoEspontaneo(agendamento);
+        // 5. Geração de Senha (usando o endereço que veio do setor)
+        LocalDate hoje = agora.toLocalDate();
+        Long setorId = setor.getId(); // ✅ Extraído do setor
 
         int tentativas = 0;
-        LocalDate hoje = agora.toLocalDate();
-        Long enderecoId = endereco.getId();
-
         while (true) {
             tentativas++;
-            agendamento.setSenha(
-                    gerarSenhaParaDiaEspontaneo(enderecoId, agendamento.getTipoAtendimento(), hoje)
-            );
-
+            agendamento.setSenha(gerarSenhaParaDiaEspontaneo(setorId, agendamento.getTipoAtendimento(), hoje));
             try {
                 return agendamentoRepository.save(agendamento);
             } catch (org.springframework.dao.DataIntegrityViolationException e) {
@@ -286,7 +271,7 @@ public class AgendamentoService {
                 ag.getNomeCidadao(),
                 ag.getServico() != null ? ag.getServico().getId() : null,
                 ag.getServico() != null ? ag.getServico().getNome() : null,
-                ag.getEndereco() != null ? ag.getEndereco().getId() : null,
+                ag.getSetor() != null ? ag.getSetor().getId() : null,
                 ag.getSenha(),
                 ag.getSituacao() != null ? ag.getSituacao().name() : null,
                 ag.getTipoAtendimento()

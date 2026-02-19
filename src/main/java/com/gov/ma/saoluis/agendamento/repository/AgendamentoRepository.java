@@ -87,14 +87,14 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         s.id               AS servicoId,
         s.nome             AS servicoNome,
 
-        a.endereco_id      AS enderecoId,
+        -- Dados do Setor
+        setor.id           AS setorId,
+        setor.nome         AS setorNome,
+
+        -- Dados do Endereço (via Setor)
+        e.id               AS enderecoId,
         e.logradouro       AS enderecoLogradouro,
-        e.numero           AS enderecoNumero,
         e.bairro           AS enderecoBairro,
-        e.cep              AS enderecoCep,
-        e.complemento      AS enderecoComplemento,
-        e.cidade           AS enderecoCidade,
-        e.uf               AS enderecoUf,
 
         a.secretaria_id    AS secretariaId,
         sec.nome           AS secretariaNome
@@ -103,20 +103,22 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     LEFT JOIN usuario u      ON a.usuario_id = u.id
     LEFT JOIN servico s      ON a.servico_id = s.id
     LEFT JOIN gerenciador g  ON g.id = a.gerenciador_id
-    LEFT JOIN endereco e     ON e.id = a.endereco_id
+    INNER JOIN setor setor   ON a.setor_id = setor.id
+    INNER JOIN endereco e    ON setor.endereco_id = e.id
     LEFT JOIN secretaria sec ON sec.id = a.secretaria_id
 
-    WHERE a.endereco_id = :enderecoId
+    -- Filtro agora é direto pelo ID do Setor
+    WHERE a.setor_id = :setorId
       AND a.hora_agendamento >= CURRENT_DATE
       AND a.hora_agendamento < CURRENT_DATE + INTERVAL '1 day'
     ORDER BY a.hora_agendamento ASC
 """, nativeQuery = true)
-	List<AgendamentoDTO> buscarAgendamentosPorEndereco(@Param("enderecoId") Long enderecoId);
+	List<AgendamentoDTO> buscarAgendamentosPorSetor(@Param("setorId") Long setorId);
 
 	@Query("""
     SELECT a
     FROM Agendamento a
-    WHERE a.endereco.id = :enderecoId
+   	WHERE a.setor.id = :setorId
       AND a.tipoAtendimento = 'NORMAL'
       AND a.situacao IN ('AGENDADO', 'REAGENDADO', 'EM_ATENDIMENTO')
       AND a.horaAgendamento >= :inicio
@@ -124,7 +126,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     ORDER BY a.horaAgendamento ASC
 """)
 	List<Agendamento> buscarProximoNormalHoje(
-			@Param("enderecoId") Long enderecoId,
+			@Param("setorId") Long setorId,
 			@Param("inicio") LocalDateTime inicio,
 			@Param("fim") LocalDateTime fim,
 			Pageable pageable
@@ -133,7 +135,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 	@Query("""
     SELECT a
     FROM Agendamento a
-    WHERE a.endereco.id = :enderecoId
+    WHERE a.setor.id = :setorId
       AND a.tipoAtendimento = 'PRIORIDADE'
       AND a.situacao IN ('AGENDADO', 'REAGENDADO', 'EM_ATENDIMENTO')
       AND a.horaAgendamento >= :inicio
@@ -141,7 +143,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     ORDER BY a.horaAgendamento ASC
 """)
 	List<Agendamento> buscarProximoPrioridadeHoje(
-			@Param("enderecoId") Long enderecoId,
+			@Param("setorId") Long setorId,
 			@Param("inicio") LocalDateTime inicio,
 			@Param("fim") LocalDateTime fim,
 			Pageable pageable
@@ -150,7 +152,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 	@Query("""
     SELECT a
     FROM Agendamento a
-    WHERE a.endereco.id = :enderecoId
+    WHERE a.setor.id = :setorId
       AND a.senha = :senha
       AND a.situacao IN ('AGENDADO', 'REAGENDADO', 'EM_ATENDIMENTO')
       AND a.horaAgendamento >= :inicio
@@ -158,7 +160,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     ORDER BY a.horaAgendamento ASC
 """)
 	List<Agendamento> buscarPorSenhaHoje(
-			@Param("enderecoId") Long enderecoId,
+			@Param("setorId") Long setorId,
 			@Param("senha") String senha,
 			@Param("inicio") LocalDateTime inicio,
 			@Param("fim") LocalDateTime fim,
@@ -181,14 +183,14 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 	@Query("""
     select a.senha
     from Agendamento a
-    where a.endereco.id = :enderecoId
+    where a.setor.id = :setorId
       and upper(a.tipoAtendimento) = upper(:tipo)
       and a.horaAgendamento >= :inicio
       and a.horaAgendamento < :fim
     order by a.id desc
 """)
 	List<String> findUltimaSenhaDoDiaParaEspontaneoPorEndereco(
-			@Param("enderecoId") Long enderecoId,
+			@Param("setorId") Long setorId,
 			@Param("tipo") String tipo,
 			@Param("inicio") LocalDateTime inicio,
 			@Param("fim") LocalDateTime fim,

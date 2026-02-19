@@ -12,22 +12,13 @@ public interface GerenciadorRepository extends JpaRepository<Gerenciador, Long> 
 
     Optional<Gerenciador> findByCpfOrEmail(String cpf, String email);
 
-    boolean existsByGuicheAndSecretariaId(Integer guiche, Long secretariaId);
-
-    boolean existsByGuicheAndEnderecoId(Integer guiche, Long enderecoId);
-
     boolean existsByGuicheAndSecretariaIdAndIdNot(
             Integer guiche,
             Long secretariaId,
             Long id
     );
 
+    boolean existsByGuicheAndSetorId(Integer guiche, Long setorId);
 
-    boolean existsBySecretariaIdAndGuicheAndIdNot(
-            Long secretariaId,
-            Integer guiche,
-            Long id
-    );
-
-    boolean existsByEnderecoIdAndGuicheAndIdNot(Long enderecoId, Integer guiche, Long id);
+    boolean existsBySetorIdAndGuicheAndIdNot(Long setorId, Integer guiche, Long id);
 }

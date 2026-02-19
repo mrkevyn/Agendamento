@@ -138,17 +138,11 @@ public class GerenciadorController {
                 g.getSecretaria().getSigla()
         );
 
-        EnderecoDTO enderecoDTO = null;
-        if (g.getEndereco() != null) {
-            enderecoDTO = new EnderecoDTO(
-                    g.getEndereco().getId(),
-                    g.getEndereco().getLogradouro(),
-                    g.getEndereco().getNumero(),
-                    g.getEndereco().getComplemento(),
-                    g.getEndereco().getBairro(),
-                    g.getEndereco().getCidade(),
-                    g.getEndereco().getUf(),
-                    g.getEndereco().getCep()
+        SetorDTO setorDTO = null;
+        if (g.getSetor() != null) {
+            setorDTO = new SetorDTO(
+                    g.getSetor().getId(),
+                    g.getSetor().getNome()
             );
         }
 
@@ -157,7 +151,7 @@ public class GerenciadorController {
                 g.getNome(),
                 g.getPerfil(),
                 secretariaDTO,
-                enderecoDTO,   // 👈 agora completo
+                setorDTO,   // 👈 agora completo
                 g.getGuiche(),
                 token
         );

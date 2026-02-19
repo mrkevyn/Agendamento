@@ -5,7 +5,7 @@ public record AgendamentoUpdateResponseDTO(
         String nomeCidadao,
         Long servicoId,
         String servicoNome,
-        Long enderecoId,
+        Long setorId,
         String senha,
         String situacao,
         String tipoAtendimento

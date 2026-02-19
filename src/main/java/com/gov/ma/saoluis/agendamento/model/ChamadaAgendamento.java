@@ -21,6 +21,10 @@ public class ChamadaAgendamento {
     private Gerenciador gerenciador;
 
     @ManyToOne
+    @JoinColumn(name = "setor_id") // ✅ Novo vínculo
+    private Setor setor;
+
+    @ManyToOne
     @JoinColumn(name = "secretaria_id")
     private Secretaria secretaria;
 
@@ -100,4 +104,11 @@ public class ChamadaAgendamento {
         this.guiche = guiche;
     }
 
+    public Setor getSetor() {
+        return setor;
+    }
+
+    public void setSetor(Setor setor) {
+        this.setor = setor;
+    }
 }

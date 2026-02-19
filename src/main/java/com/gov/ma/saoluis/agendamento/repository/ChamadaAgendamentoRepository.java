@@ -37,7 +37,7 @@ public interface ChamadaAgendamentoRepository
     LEFT JOIN usuario u      ON a.usuario_id = u.id
     LEFT JOIN gerenciador g  ON ca.gerenciador_id = g.id
 
-    WHERE g.endereco_id = :enderecoId
+    WHERE g.setor_id = :setorId
       AND ca.data_chamada >= :inicio
       AND ca.data_chamada < :fim
 
@@ -45,7 +45,7 @@ public interface ChamadaAgendamentoRepository
     LIMIT 5
 """, nativeQuery = true)
     List<UltimaChamadaDTO> buscarUltimasChamadasPorEnderecoEHorario(
-            @Param("enderecoId") Long enderecoId,
+            @Param("setorId") Long setorId,
             @Param("inicio") LocalDateTime inicio,
             @Param("fim") LocalDateTime fim
     );

@@ -21,9 +21,9 @@ public class AgendamentoController {
         this.agendamentoService = agendamentoService;
     }
 
-    @GetMapping("/enderecos/{enderecoId}")
-    public ResponseEntity<List<AgendamentoDTO>> listarPorEndereco(@PathVariable Long enderecoId) {
-        return ResponseEntity.ok(agendamentoService.listarPorEnderecoGerenciador(enderecoId));
+    @GetMapping("/setor/{setorId}")
+    public ResponseEntity<List<AgendamentoDTO>> listarPorSetor(@PathVariable Long setorId) {
+        return ResponseEntity.ok(agendamentoService.listarPorSetorGerenciador(setorId));
     }
 
     @GetMapping("/{id}")
@@ -91,42 +91,46 @@ public class AgendamentoController {
         agendamentoService.deletar(id);
     }
 
-    @PostMapping("/chamar/normal/{enderecoId}/{gerenciadorId}")
+    @PostMapping("/chamar/normal/{setorId}/{gerenciadorId}")
     public ResponseEntity<Agendamento> chamarProximaNormal(
-            @PathVariable Long enderecoId,
+            @PathVariable Long setorId,
             @PathVariable Long gerenciadorId
     ) {
         return ResponseEntity.ok(
-                agendamentoService.chamarProximaNormal(enderecoId, gerenciadorId)
+                agendamentoService.chamarProximaNormal(setorId, gerenciadorId)
         );
     }
 
-    @PostMapping("/chamar/prioridade/{enderecoId}/{gerenciadorId}")
+    @PostMapping("/chamar/prioridade/{setorId}/{gerenciadorId}")
     public ResponseEntity<Agendamento> chamarProximaPrioridade(
-            @PathVariable Long enderecoId,
+            @PathVariable Long setorId,
             @PathVariable Long gerenciadorId
     ) {
+        // ✅ Alterado de enderecoId para setorId
         return ResponseEntity.ok(
-                agendamentoService.chamarProximaPrioridade(enderecoId, gerenciadorId)
+                agendamentoService.chamarProximaPrioridade(setorId, gerenciadorId)
         );
     }
 
-    @PostMapping("/chamar/por-senha/{senha}/{atendenteId}")
+    @PostMapping("/chamar/por-senha/{senha}/{atendenteId}/{setorId}")
     public ResponseEntity<AgendamentoResponseDTO> chamarPorSenha(
             @PathVariable String senha,
-            @PathVariable Long atendenteId
+            @PathVariable Long atendenteId,
+            @PathVariable Long setorId
     ) throws Exception {
+        // ✅ Adicionado setorId no Path pois o atendente agora tem múltiplos setores
         return ResponseEntity.ok(
-                agendamentoService.chamarPorSenha(senha, atendenteId)
+                agendamentoService.chamarPorSenha(senha, atendenteId, setorId)
         );
     }
 
-    @GetMapping("/ultimas-chamadas/{enderecoId}")
+    @GetMapping("/ultimas-chamadas/{setorId}")
     public ResponseEntity<List<UltimaChamadaDTO>> buscarUltimasChamadas(
-            @PathVariable Long enderecoId) {
+            @PathVariable Long setorId) {
 
+        // ✅ Alterado para buscar as últimas chamadas do setor específico
         return ResponseEntity.ok(
-                agendamentoService.getUltimasChamadasPorSecretaria(enderecoId)
+                agendamentoService.getUltimasChamadasPorSecretaria(setorId)
         );
     }
 

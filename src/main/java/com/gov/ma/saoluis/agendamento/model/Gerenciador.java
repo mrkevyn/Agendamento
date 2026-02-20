@@ -1,8 +1,9 @@
 package com.gov.ma.saoluis.agendamento.model;
 
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(
@@ -36,107 +37,68 @@ public class Gerenciador {
     @Column(nullable = false, length = 30)
     private String perfil;
 
-    // ➜ Guichê opcional
     @Column(nullable = true)
     private Integer guiche;
 
-    @Column(name = "criado_em", nullable = false)
+    @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "secretaria_id", nullable = false)
-    private Secretaria secretaria;
+    // 🔴 ESCOPO: N Secretarias
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "gerenciador_secretaria",
+            joinColumns = @JoinColumn(name = "gerenciador_id"),
+            inverseJoinColumns = @JoinColumn(name = "secretaria_id")
+    )
+    private Set<Secretaria> secretarias = new HashSet<>();
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "setor_id", nullable = false)
-    private Setor setor;
+    // 🔴 ESCOPO: N Setores
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "gerenciador_setor",
+            joinColumns = @JoinColumn(name = "gerenciador_id"),
+            inverseJoinColumns = @JoinColumn(name = "setor_id")
+    )
+    private Set<Setor> setores = new HashSet<>();
 
-    // Construtor padrão (Hibernate)
-    public Gerenciador() {
+    public Gerenciador() {}
+
+    @PrePersist
+    protected void onCreate() {
+        this.criadoEm = LocalDateTime.now();
     }
 
-    // Getters e Setters
-    public Long getId() {
-        return id;
-    }
+    // --- Getters e Setters ---
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public String getNome() {
-        return nome;
-    }
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
 
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
+    public String getCpf() { return cpf; }
+    public void setCpf(String cpf) { this.cpf = cpf; }
 
-    public String getCpf() {
-        return cpf;
-    }
+    public String getContato() { return contato; }
+    public void setContato(String contato) { this.contato = contato; }
 
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setContato(String contato){
-        this.contato = contato;
-    }
-
-    public String getContato(){
-        return contato;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getSenha() {
-        return senha;
-    }
-
-    public void setSenha(String senha) {
-        this.senha = senha;
-    }
+    public String getSenha() { return senha; }
+    public void setSenha(String senha) { this.senha = senha; }
 
     public String getPerfil() { return perfil; }
     public void setPerfil(String perfil) { this.perfil = perfil; }
 
-    public Integer getGuiche() {
-        return guiche;
-    }
+    public Integer getGuiche() { return guiche; }
+    public void setGuiche(Integer guiche) { this.guiche = guiche; }
 
-    public void setGuiche(Integer guiche) {
-        this.guiche = guiche;
-    }
+    public Set<Secretaria> getSecretarias() { return secretarias; }
+    public void setSecretarias(Set<Secretaria> secretarias) { this.secretarias = secretarias; }
 
-    public Secretaria getSecretaria() {
-        return secretaria;
-    }
+    public Set<Setor> getSetores() { return setores; }
+    public void setSetores(Set<Setor> setores) { this.setores = setores; }
 
-    public void setSecretaria(Secretaria secretaria) {
-        this.secretaria = secretaria;
-    }
-
-    public Endereco getEndereco() {
-        return this.setor != null ? this.setor.getEndereco() : null;
-    }
-
-    public void setSetor(Setor setor) {
-        this.setor = setor;
-    }
-
-    public Setor getSetor() {
-        return setor;
-    }
-
-    @PrePersist
-    public void prePersist() {
-        this.criadoEm = LocalDateTime.now();
-    }
+    public LocalDateTime getCriadoEm() { return criadoEm; }
 }

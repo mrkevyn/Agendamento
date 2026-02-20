@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.List;
 
 @Service
 public class JwtService {
@@ -17,12 +18,12 @@ public class JwtService {
 
     private final Key key = Keys.hmacShaKeyFor(SECRET.getBytes());
 
-    public String gerarToken(Long usuarioId, String perfil, Long secretariaId) {
+    public String gerarToken(Long usuarioId, String perfil, List<Long> secretariasIds) {
 
         return Jwts.builder()
                 .setSubject(usuarioId.toString())
                 .claim("perfil", perfil)
-                .claim("secretariaId", secretariaId)
+                .claim("secretariasIds", secretariasIds)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRACAO))
                 .signWith(key, SignatureAlgorithm.HS256)

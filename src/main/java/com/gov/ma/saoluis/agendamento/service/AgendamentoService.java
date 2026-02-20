@@ -59,7 +59,7 @@ public class AgendamentoService {
     }
 
     // 🔹 Listar todos COM DETALHES
-    public List<AgendamentoDTO> listarPorEnderecoGerenciador(Long setorId) {
+    public List<AgendamentoDTO> listarPorSetorGerenciador(Long setorId) {
         return agendamentoRepository.buscarAgendamentosPorSetor(setorId);
     }
 
@@ -336,22 +336,26 @@ public class AgendamentoService {
     }
     
  // 🔹 Chamar próxima senha normal
-     public Agendamento chamarProximaNormal(Long enderecoId, Long atendenteId) {
+     public Agendamento chamarProximaNormal(Long setorId, Long atendenteId) {
 
          Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
                  .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
 
-         // 🔒 Segurança: valida se o gerenciador pertence ao endereço informado
-         if (!gerenciador.getEndereco().getId().equals(enderecoId)) {
-             throw new RuntimeException("Gerenciador não pertence a este endereço");
+         // 🔒 Segurança: valida se o atendente está vinculado ao setor informado
+         boolean vinculado = gerenciador.getSetores().stream()
+                 .anyMatch(s -> s.getId().equals(setorId));
+
+         if (!vinculado) {
+             throw new RuntimeException("Gerenciador não pertence a este setor");
          }
 
          LocalDate hoje = LocalDate.now();
          LocalDateTime inicio = hoje.atStartOfDay();
          LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
 
+         // Busca no repository usando setorId
          var lista = agendamentoRepository.buscarProximoNormalHoje(
-                 enderecoId, inicio, fim, PageRequest.of(0, 1)
+                 setorId, inicio, fim, PageRequest.of(0, 1)
          );
 
          Agendamento proximo = lista.isEmpty() ? null : lista.get(0);
@@ -359,13 +363,17 @@ public class AgendamentoService {
          return processarChamada(proximo, gerenciador);
      }
 
-    public Agendamento chamarProximaPrioridade(Long enderecoId, Long atendenteId) {
+    public Agendamento chamarProximaPrioridade(Long setorId, Long atendenteId) {
 
         Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
                 .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
 
-        if (gerenciador.getEndereco() == null || !gerenciador.getEndereco().getId().equals(enderecoId)) {
-            throw new RuntimeException("Gerenciador não pertence a este endereço ou não possui endereço vinculado");
+        // 🔒 Segurança: valida vínculo com o setor
+        boolean vinculado = gerenciador.getSetores().stream()
+                .anyMatch(s -> s.getId().equals(setorId));
+
+        if (!vinculado) {
+            throw new RuntimeException("Gerenciador não pertence a este setor ou não possui setor vinculado");
         }
 
         LocalDate hoje = LocalDate.now();
@@ -373,7 +381,7 @@ public class AgendamentoService {
         LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
 
         var lista = agendamentoRepository.buscarProximoPrioridadeHoje(
-                enderecoId, inicio, fim, PageRequest.of(0, 1)
+                setorId, inicio, fim, PageRequest.of(0, 1)
         );
 
         Agendamento proximo = lista.isEmpty() ? null : lista.get(0);
@@ -381,16 +389,18 @@ public class AgendamentoService {
         return processarChamada(proximo, gerenciador);
     }
 
-    public AgendamentoResponseDTO chamarPorSenha(String senha, Long atendenteId) throws Exception {
+    public AgendamentoResponseDTO chamarPorSenha(String senha, Long atendenteId, Long setorId) throws Exception {
 
         Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
                 .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
 
-        // ✅ agora é pelo endereço do gerenciador
-        if (gerenciador.getEndereco() == null || gerenciador.getEndereco().getId() == null) {
-            throw new RuntimeException("Atendente não possui endereço vinculado");
+        // ✅ Valida se o atendente pode atuar no setor informado
+        boolean vinculado = gerenciador.getSetores().stream()
+                .anyMatch(s -> s.getId().equals(setorId));
+
+        if (!vinculado) {
+            throw new RuntimeException("Atendente não possui vínculo com o setor informado");
         }
-        Long enderecoId = gerenciador.getEndereco().getId();
 
         LocalDate hoje = LocalDate.now();
         LocalDateTime inicio = hoje.atStartOfDay();
@@ -398,18 +408,18 @@ public class AgendamentoService {
 
         Pageable pageable = PageRequest.of(0, 1);
 
-        // ✅ troca a chamada do repository
+        // ✅ Busca por senha dentro do setor específico
         List<Agendamento> agendamentos = agendamentoRepository.buscarPorSenhaHoje(
-                enderecoId, senha, inicio, fim, pageable
+                setorId, senha, inicio, fim, pageable
         );
 
         if (agendamentos.isEmpty()) {
-            throw new Exception("Agendamento não encontrado para a senha " + senha + " (hoje)");
+            throw new Exception("Agendamento não encontrado para a senha " + senha + " neste setor (hoje)");
         }
 
         Agendamento agendamento = agendamentos.get(0);
 
-        // 🔹 Agora chama passando o atendente
+        // 🔹 Processa a chamada
         agendamento = processarChamada(agendamento, gerenciador);
 
         return new AgendamentoResponseDTO(

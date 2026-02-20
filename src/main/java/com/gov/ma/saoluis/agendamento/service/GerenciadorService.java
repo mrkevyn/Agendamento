@@ -13,7 +13,10 @@ import org.springframework.stereotype.Service;
 import com.gov.ma.saoluis.agendamento.model.Setor;
 import com.gov.ma.saoluis.agendamento.repository.SetorRepository;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class GerenciadorService {
@@ -41,87 +44,137 @@ public class GerenciadorService {
 
     }
 
-    // ➤ Criar gerenciador
+    // ➤ Criar gerenciador (N Secretarias : N Setores)
     public Gerenciador criar(GerenciadorDTO dto) {
 
-        Secretaria secretaria = secretariaRepository.findById(dto.secretariaId())
-                .orElseThrow(() -> new RuntimeException("Secretaria não encontrada"));
+        // 1. Busca a lista de Secretarias (Agora plural no DTO)
+        List<Secretaria> secretariasEncontradas = secretariaRepository.findAllById(dto.secretariasIds());
+        if (secretariasEncontradas.isEmpty()) {
+            throw new RuntimeException("Nenhuma secretaria encontrada para os IDs fornecidos");
+        }
+        Set<Secretaria> secretarias = new HashSet<>(secretariasEncontradas);
 
-        Setor setor = setorRepository.findById(dto.setorId())
-                .orElseThrow(() -> new RuntimeException("Setor não encontrado"));
+        // 2. Busca a lista de Setores
+        List<Setor> setoresEncontrados = setorRepository.findAllById(dto.setoresIds());
+        if (setoresEncontrados.isEmpty()) {
+            throw new RuntimeException("Nenhum setor encontrado para os IDs fornecidos");
+        }
+        Set<Setor> setores = new HashSet<>(setoresEncontrados);
 
-        // 🔒 VALIDAR GUICHÊ ÚNICO
+        // 🔒 3. VALIDAR GUICHÊ ÚNICO
+        // O guichê é validado por SETOR, que é o local físico do atendimento
         if (dto.guiche() != null) {
-            boolean ocupado = gerenciadorRepository
-                    .existsByGuicheAndSetorId(dto.guiche(), setor.getId());
-
-            if (ocupado) {
-                throw new RuntimeException(
-                        "Guichê " + dto.guiche() + " já está em uso neste endereço"
-                );
+            for (Setor s : setores) {
+                boolean ocupado = gerenciadorRepository.existsByGuicheAndSetores_Id(dto.guiche(), s.getId());
+                if (ocupado) {
+                    throw new RuntimeException(
+                            "O Guichê " + dto.guiche() + " já está em uso no setor: " + s.getNome()
+                    );
+                }
             }
         }
 
+        // 4. Mapeamento da Entidade
         Gerenciador g = new Gerenciador();
         g.setNome(dto.nome());
         g.setCpf(dto.cpf());
         g.setContato(dto.contato());
         g.setEmail(dto.email());
+
+        // Criptografia obrigatória na criação
         String senhaCriptografada = passwordEncoder.encode(dto.senha());
         g.setSenha(senhaCriptografada);
+
         g.setPerfil(dto.perfil());
         g.setGuiche(dto.guiche());
-        g.setSecretaria(secretaria);
-        g.setSetor(setor);
+
+        // 🔴 RELACIONAMENTOS N:N
+        g.setSecretarias(secretarias);
+        g.setSetores(setores);
 
         Gerenciador salvo = gerenciadorRepository.save(g);
 
+        // 5. Logs e Auditoria
         Long usuarioLogadoId = UsuarioLogadoUtil.getUsuarioId();
 
         String acaoLog = "ATENDENTE".equalsIgnoreCase(salvo.getPerfil())
                 ? "ADMIN_CRIACAO_ATENDENTE"
                 : "GERENCIADOR_CRIADO";
 
+        String nomesSecLog = salvo.getSecretarias().stream()
+                .map(Secretaria::getNome).collect(Collectors.joining(", "));
+
+        String nomesSetoresLog = salvo.getSetores().stream()
+                .map(Setor::getNome).collect(Collectors.joining(", "));
+
         logService.registrar(
                 usuarioLogadoId,
                 "SISTEMA",
                 acaoLog,
-                "Gerenciador ID: " + salvo.getId() + ", Nome: " + salvo.getNome() + ", CPF: " + salvo.getCpf() + ", Secretaria ID: " + salvo.getSecretaria().getId() );
+                "Gerenciador ID: " + salvo.getId() +
+                        ", CPF: " + salvo.getCpf() +
+                        ", Secretarias: [" + nomesSecLog + "]" +
+                        ", Setores: [" + nomesSetoresLog + "]"
+        );
 
         return salvo;
     }
 
-    // ➤ Atualizar atendente
+    // ➤ Atualizar atendente (N Secretarias : N Setores)
     public Gerenciador editar(Long id, GerenciadorDTO dto) {
 
         Gerenciador g = gerenciadorRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Gerenciador não encontrado"));
 
-        Secretaria secretaria = secretariaRepository.findById(dto.secretariaId())
-                .orElseThrow(() -> new RuntimeException("Secretaria não encontrada"));
+        // 1. Busca a lista de Secretarias (Plural no DTO)
+        List<Secretaria> secretariasEncontradas = secretariaRepository.findAllById(dto.secretariasIds());
+        if (secretariasEncontradas.isEmpty()) {
+            throw new RuntimeException("Nenhuma secretaria encontrada para os IDs fornecidos");
+        }
+        Set<Secretaria> novasSecretarias = new java.util.HashSet<>(secretariasEncontradas);
 
-        // 🔒 VALIDAR GUICHÊ ÚNICO (exceto ele mesmo)
+        // 2. Busca a lista de Setores
+        List<Setor> setoresEncontrados = setorRepository.findAllById(dto.setoresIds());
+        if (setoresEncontrados.isEmpty()) {
+            throw new RuntimeException("Nenhum setor encontrado para os IDs fornecidos");
+        }
+        Set<Setor> novosSetores = new java.util.HashSet<>(setoresEncontrados);
+
+        // 🔒 3. VALIDAR GUICHÊ ÚNICO (por setor, exceto para o próprio atendente)
         if (dto.guiche() != null) {
-            boolean ocupado = gerenciadorRepository
-                    .existsByGuicheAndSecretariaIdAndIdNot(
-                            dto.guiche(),
-                            secretaria.getId(),
-                            id
-                    );
+            for (Setor s : novosSetores) {
+                boolean ocupado = gerenciadorRepository
+                        .existsByGuicheAndSetores_IdAndIdNot(
+                                dto.guiche(),
+                                s.getId(),
+                                id
+                        );
 
-            if (ocupado) {
-                throw new RuntimeException(
-                        "Guichê " + dto.guiche() + " já está em uso nesta secretaria"
-                );
+                if (ocupado) {
+                    throw new RuntimeException(
+                            "O Guichê " + dto.guiche() + " já está sendo usado por outro atendente no setor: " + s.getNome()
+                    );
+                }
             }
         }
 
+        // 4. Atualização dos campos básicos
         g.setNome(dto.nome());
         g.setCpf(dto.cpf());
+        g.setContato(dto.contato());
         g.setEmail(dto.email());
-        g.setSenha(dto.senha());
+
+        // Atualiza senha apenas se fornecida
+        if (dto.senha() != null && !dto.senha().isBlank()) {
+            g.setSenha(passwordEncoder.encode(dto.senha()));
+        }
+
         g.setGuiche(dto.guiche());
-        g.setSecretaria(secretaria);
+        g.setPerfil(dto.perfil());
+
+        // 🔴 5. ATUALIZAÇÃO DOS VÍNCULOS (N:N em ambos)
+        g.setSecretarias(novasSecretarias);
+        g.setSetores(novosSetores);
 
         return gerenciadorRepository.save(g);
     }
@@ -133,7 +186,8 @@ public class GerenciadorService {
 
     // ➤ Listar por secretaria
     public List<Gerenciador> listarPorSecretaria(Long secretariaId) {
-        return gerenciadorRepository.findBySecretariaId(secretariaId);
+        // 🔴 Mudou de findBySecretariaId para findBySecretarias_Id
+        return gerenciadorRepository.findBySecretarias_Id(secretariaId);
     }
 
     // ➤ Buscar por ID
@@ -160,6 +214,16 @@ public class GerenciadorService {
             throw new RuntimeException("Senha inválida");
         }
 
+        // 🔴 Agora pegamos os nomes de TODAS as secretarias (N:N)
+        String nomesSecretarias = gerenciador.getSecretarias().stream()
+                .map(Secretaria::getNome)
+                .collect(Collectors.joining(", "));
+
+        // 🟢 Transforma a lista de SETORES em uma String para o log (N:N)
+        String nomesSetores = gerenciador.getSetores().stream()
+                .map(Setor::getNome)
+                .collect(Collectors.joining(", "));
+
         // 🔹 REGISTRAR LOG DE LOGIN
         logService.registrar(
                 gerenciador.getId(),
@@ -167,7 +231,8 @@ public class GerenciadorService {
                 "LOGIN",
                 "Nome: " + gerenciador.getNome() +
                         "; Email: " + gerenciador.getEmail() +
-                        "; Secretaria: " + gerenciador.getSecretaria().getNome()
+                        "; Secretarias: [" + nomesSecretarias + "]" +
+                        "; Setores: [" + nomesSetores + "]"
         );
 
         return gerenciador;
@@ -199,14 +264,20 @@ public class GerenciadorService {
             throw new RuntimeException("Você não tem permissão para alterar o guichê");
         }
 
-        // 🔴 Validação de guichê único
-        if (novoGuiche != null &&
-                gerenciadorRepository.existsBySetorIdAndGuicheAndIdNot(
-                        g.getSetor().getId(),
+        // 🔴 Validação de guichê único em todos os setores vinculados
+        if (novoGuiche != null) {
+            // Percorre todos os setores que este gerenciador atende
+            for (Setor s : g.getSetores()) {
+                boolean ocupado = gerenciadorRepository.existsByGuicheAndSetores_IdAndIdNot(
                         novoGuiche,
+                        s.getId(),
                         g.getId()
-                )) {
-            throw new RuntimeException("Guichê já está sendo utilizado por outro atendente");
+                );
+
+                if (ocupado) {
+                    throw new RuntimeException("Guichê " + novoGuiche + " já está sendo utilizado no setor: " + s.getNome());
+                }
+            }
         }
 
         g.setGuiche(novoGuiche);

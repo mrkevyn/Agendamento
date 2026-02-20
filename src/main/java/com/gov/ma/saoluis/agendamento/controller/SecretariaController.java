@@ -2,6 +2,7 @@ package com.gov.ma.saoluis.agendamento.controller;
 
 import com.gov.ma.saoluis.agendamento.model.Secretaria;
 import com.gov.ma.saoluis.agendamento.model.Servico;
+import com.gov.ma.saoluis.agendamento.model.Setor;
 import com.gov.ma.saoluis.agendamento.service.SecretariaService;
 import com.gov.ma.saoluis.agendamento.service.ServicoService;
 import org.springframework.http.HttpStatus;
@@ -77,6 +78,16 @@ public class SecretariaController {
     ) {
         return ResponseEntity.ok(
                 servicoService.listarPorSecretaria(secretariaId)
+        );
+    }
+
+    @GetMapping("/{secretariaId}/setores")
+    public ResponseEntity<List<Setor>> listarSetoresDaSecretaria(
+            @PathVariable Long secretariaId
+    ) {
+        // Você pode chamar direto do service da secretaria ou do setor
+        return ResponseEntity.ok(
+                secretariaService.listarSetoresPorSecretaria(secretariaId)
         );
     }
 }

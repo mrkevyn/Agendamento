@@ -1,6 +1,7 @@
 package com.gov.ma.saoluis.agendamento.service;
 
 import com.gov.ma.saoluis.agendamento.model.Secretaria;
+import com.gov.ma.saoluis.agendamento.model.Setor;
 import com.gov.ma.saoluis.agendamento.repository.SecretariaRepository;
 import org.springframework.stereotype.Service;
 
@@ -49,5 +50,13 @@ public class SecretariaService {
     // 7. Buscar por sigla
     public Secretaria buscarPorSigla(String sigla) {
         return secretariaRepository.findBySigla(sigla);
+    }
+
+    public List<Setor> listarSetoresPorSecretaria(Long secretariaId) {
+        Secretaria secretaria = secretariaRepository.findById(secretariaId)
+                .orElseThrow(() -> new RuntimeException("Secretaria não encontrada"));
+
+        // Retorna a lista de setores daquela secretaria
+        return secretaria.getSetores().stream().toList();
     }
 }

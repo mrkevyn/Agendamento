@@ -1,5 +1,7 @@
 package com.gov.ma.saoluis.agendamento.DTO;
 
+import java.util.List;
+
 public record GerenciadorDTO(
         String nome,
         String cpf,
@@ -8,6 +10,6 @@ public record GerenciadorDTO(
         String senha,
         String perfil,      // 👈 AQUI
         Integer guiche,
-        Long secretariaId,
-        Long setorId
+        List<Long> secretariasIds,
+        List<Long> setoresIds
 ) {}

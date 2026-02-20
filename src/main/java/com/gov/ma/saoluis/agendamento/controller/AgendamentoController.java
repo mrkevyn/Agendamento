@@ -21,9 +21,9 @@ public class AgendamentoController {
         this.agendamentoService = agendamentoService;
     }
 
-    @GetMapping("/enderecos/{enderecoId}")
-    public ResponseEntity<List<AgendamentoDTO>> listarPorEndereco(@PathVariable Long enderecoId) {
-        return ResponseEntity.ok(agendamentoService.listarPorEnderecoGerenciador(enderecoId));
+    @GetMapping("/setor/{setorId}")
+    public ResponseEntity<List<AgendamentoDTO>> listarPorEndereco(@PathVariable Long setorId) {
+        return ResponseEntity.ok(agendamentoService.listarPorEnderecoGerenciador(setorId));
     }
 
     @GetMapping("/{id}")

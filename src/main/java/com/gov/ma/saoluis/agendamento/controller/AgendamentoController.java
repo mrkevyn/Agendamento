@@ -52,21 +52,20 @@ public class AgendamentoController {
     @PostMapping("/espontaneo/{secretariaId}")
     public ResponseEntity<AgendamentoUpdateResponseDTO> criarEspontaneo(
             @PathVariable Long secretariaId,
-            @RequestBody Agendamento agendamento
+            @RequestBody AgendamentoEspontaneoDTO dto // ✅ Agora recebe o DTO
     ) {
-        // 1. O Service salva no banco (o insert funciona)
-        Agendamento salvo = agendamentoService.criarEspontaneo(secretariaId, agendamento);
+        // Envia o DTO para o service
+        Agendamento salvo = agendamentoService.criarEspontaneo(secretariaId, dto);
 
-        // 2. Convertemos a entidade "suja" com proxies para um DTO "limpo"
+        // Mapeia para o DTO de Resposta (usando o construtor do seu Record)
         AgendamentoUpdateResponseDTO response = new AgendamentoUpdateResponseDTO(
                 salvo.getId(),
                 salvo.getNomeCidadao(),
-                salvo.getServico() != null ? salvo.getServico().getId() : null,
-                salvo.getServico() != null ? salvo.getServico().getNome() : null,
-                salvo.getSetor() != null ? salvo.getSetor().getId() : null,
-
+                salvo.getServico().getId(),
+                salvo.getServico().getNome(),
+                salvo.getSetor().getId(),
                 salvo.getSenha(),
-                salvo.getSituacao() != null ? salvo.getSituacao().name() : null,
+                salvo.getSituacao().name(),
                 salvo.getTipoAtendimento()
         );
 

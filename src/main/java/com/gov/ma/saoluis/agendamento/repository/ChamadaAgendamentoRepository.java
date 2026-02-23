@@ -37,7 +37,7 @@ public interface ChamadaAgendamentoRepository
     LEFT JOIN usuario u      ON a.usuario_id = u.id
     LEFT JOIN gerenciador g  ON ca.gerenciador_id = g.id
 
-    WHERE g.setor_id = :setorId
+    WHERE a.setor_id = :setorId
       AND ca.data_chamada >= :inicio
       AND ca.data_chamada < :fim
 

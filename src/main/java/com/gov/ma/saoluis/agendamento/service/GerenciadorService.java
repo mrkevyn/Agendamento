@@ -54,6 +54,12 @@ public class GerenciadorService {
         }
         Set<Secretaria> secretarias = new HashSet<>(secretariasEncontradas);
 
+        Long idPrincipal = dto.secretariasIds().get(0);
+        Secretaria principal = secretariasEncontradas.stream()
+                .filter(s -> s.getId().equals(idPrincipal))
+                .findFirst()
+                .orElse(secretariasEncontradas.get(0));
+
         // 2. Busca a lista de Setores
         List<Setor> setoresEncontrados = setorRepository.findAllById(dto.setoresIds());
         if (setoresEncontrados.isEmpty()) {
@@ -87,6 +93,9 @@ public class GerenciadorService {
 
         g.setPerfil(dto.perfil());
         g.setGuiche(dto.guiche());
+
+        // 🟢 PREENCHE A COLUNA FÍSICA (Para o outro sistema)
+        g.setSecretariaPrincipal(principal);
 
         // 🔴 RELACIONAMENTOS N:N
         g.setSecretarias(secretarias);

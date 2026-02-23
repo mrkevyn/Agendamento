@@ -10,6 +10,7 @@ public record GerenciadorDTO(
         String senha,
         String perfil,      // 👈 AQUI
         Integer guiche,
+        Long secretariaId,
         List<Long> secretariasIds,
         List<Long> setoresIds
 ) {}

@@ -196,41 +196,50 @@ public class AgendamentoService {
     }
 
     @Transactional
-    public Agendamento criarEspontaneo(Long secretariaId, Agendamento agendamento) {
+    public Agendamento criarEspontaneo(Long secretariaId, AgendamentoEspontaneoDTO dto) { // 🟢 Alterado de Agendamento para o DTO
         if (secretariaId == null) throw new RuntimeException("Secretaria é obrigatória");
 
-        // 1. Validar e Buscar Setor (Obrigatório)
-        if (agendamento.getSetor() == null || agendamento.getSetor().getId() == null) {
+        // 1. Validar e Buscar Setor usando o ID que vem do DTO
+        if (dto.setorId() == null) {
             throw new RuntimeException("Setor é obrigatório");
         }
 
-        Setor setor = setorRepository.findById(agendamento.getSetor().getId())
+        Setor setor = setorRepository.findById(dto.setorId())
                 .orElseThrow(() -> new RuntimeException("Setor não encontrado"));
 
-        // 3. Validar Serviço
-        Servico servico = servicoService.buscarPorId(agendamento.getServico().getId());
+        // 2. Validar Serviço usando o ID que vem do DTO
+        if (dto.servicoId() == null) {
+            throw new RuntimeException("Serviço é obrigatório");
+        }
+
+        Servico servico = servicoService.buscarPorId(dto.servicoId());
         if (!servico.getSecretaria().getId().equals(secretariaId)) {
             throw new RuntimeException("Serviço não pertence à secretaria informada");
         }
 
-        // 4. Configurar Agendamento
-        agendamento.setSetor(setor); // ✅ Vínculo principal
+        // 3. INSTANCIAR a Entidade Agendamento (O banco só entende esta classe)
+        Agendamento agendamento = new Agendamento();
+
+        // Mapear dados do DTO para a Entidade
+        agendamento.setNomeCidadao(dto.nomeCidadao()); // Record acessa como método: campo()
+        agendamento.setSetor(setor);
         agendamento.setSecretaria(setor.getSecretaria());
         agendamento.setServico(servico);
 
         // Status e Horários
         agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
         agendamento.setTipoAgendamento(TipoAgendamento.ESPONTANEO);
+
         LocalDateTime agora = LocalDateTime.now(ZoneId.of("America/Fortaleza"));
         agendamento.setHoraAgendamento(agora);
 
-        // Normalizar Tipo Atendimento
-        String tipo = agendamento.getTipoAtendimento();
+        // Normalizar Tipo Atendimento vindo do DTO
+        String tipo = dto.tipoAtendimento();
         agendamento.setTipoAtendimento(tipo == null ? "NORMAL" : tipo.toUpperCase());
 
-        // 5. Geração de Senha (usando o endereço que veio do setor)
+        // 4. Geração de Senha
         LocalDate hoje = agora.toLocalDate();
-        Long setorId = setor.getId(); // ✅ Extraído do setor
+        Long setorId = setor.getId();
 
         int tentativas = 0;
         while (true) {

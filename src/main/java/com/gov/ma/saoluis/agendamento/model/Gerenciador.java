@@ -43,6 +43,10 @@ public class Gerenciador {
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "secretaria_id", nullable = false) // Mantemos o nullable conforme o banco exige
+    private Secretaria secretariaPrincipal;
+
     // 🔴 ESCOPO: N Secretarias
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -101,4 +105,12 @@ public class Gerenciador {
     public void setSetores(Set<Setor> setores) { this.setores = setores; }
 
     public LocalDateTime getCriadoEm() { return criadoEm; }
+
+    public Secretaria getSecretariaPrincipal() {
+        return secretariaPrincipal;
+    }
+
+    public void setSecretariaPrincipal(Secretaria secretariaPrincipal) {
+        this.secretariaPrincipal = secretariaPrincipal;
+    }
 }

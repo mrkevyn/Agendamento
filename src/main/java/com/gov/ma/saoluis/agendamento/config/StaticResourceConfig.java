@@ -8,7 +8,8 @@ public class StaticResourceConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // No Linux, caminhos absolutos evitam confusão de localização
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:uploads/");
+                .addResourceLocations("file:/var/www/agendamento/uploads/");
     }
 }

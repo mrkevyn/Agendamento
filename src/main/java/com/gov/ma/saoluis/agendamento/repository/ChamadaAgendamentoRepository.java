@@ -28,14 +28,14 @@ public interface ChamadaAgendamentoRepository
         s.id                AS servicoId,
         s.nome              AS servicoNome,
 
-        g.guiche            AS guiche
+        ca.guiche           AS guiche
 
     FROM chamada_agendamento ca
     JOIN agendamento a       ON ca.agendamento_id = a.id
     JOIN servico s           ON a.servico_id = s.id
 
     LEFT JOIN usuario u      ON a.usuario_id = u.id
-    LEFT JOIN gerenciador g  ON ca.gerenciador_id = g.id
+    --LEFT JOIN gerenciador g  ON ca.gerenciador_id = g.id
 
     WHERE a.setor_id = :setorId
       AND ca.data_chamada >= :inicio

@@ -129,7 +129,7 @@ public class AgendamentoController {
 
         // ✅ Alterado para buscar as últimas chamadas do setor específico
         return ResponseEntity.ok(
-                agendamentoService.getUltimasChamadasPorSecretaria(setorId)
+                agendamentoService.getUltimasChamadasPorSetor(setorId)
         );
     }
 

@@ -24,6 +24,10 @@ public class ChamadaAgendamento {
     @JoinColumn(name = "secretaria_id")
     private Secretaria secretaria;
 
+    @ManyToOne
+    @JoinColumn(name = "setor_id")
+    private Setor setor;
+
     private String senha;
 
     @Column(name = "tipo_atendimento")
@@ -66,6 +70,14 @@ public class ChamadaAgendamento {
 
     public void setSecretaria(Secretaria secretaria) {
         this.secretaria = secretaria;
+    }
+
+    public Setor getSetor() {
+        return setor;
+    }
+
+    public void setSetor(Setor setor) {
+        this.setor = setor;
     }
 
     public String getSenha() {

@@ -18,7 +18,7 @@ public interface ChamadaAgendamentoRepository
         ca.agendamento_id   AS agendamentoId,
         ca.senha            AS senha,
         ca.tipo_atendimento AS tipoAtendimento,
-        ca.data_chamada     AS horaChamada,
+        ca.data_chamada     AS horaChamada, -- alias para horário
 
         a.nome_cidadao      AS nomeCidadao,
 
@@ -37,9 +37,7 @@ public interface ChamadaAgendamentoRepository
     LEFT JOIN usuario u      ON a.usuario_id = u.id
     LEFT JOIN gerenciador g  ON ca.gerenciador_id = g.id
 
-    -- 🔴 Alterado de g.endereco_id para a.setor_id ou g.setor_id
-    -- Geralmente usa-se o setor do agendamento para garantir precisão
-    WHERE a.setor_id = :setorId
+    WHERE g.setor_id = :setorId
       AND ca.data_chamada >= :inicio
       AND ca.data_chamada < :fim
 
@@ -47,7 +45,7 @@ public interface ChamadaAgendamentoRepository
     LIMIT 5
 """, nativeQuery = true)
     List<UltimaChamadaDTO> buscarUltimasChamadasPorSetorEHorario(
-            @Param("setorId") Long setorId, // 🔴 Parâmetro renomeado
+            @Param("setorId") Long setorId,
             @Param("inicio") LocalDateTime inicio,
             @Param("fim") LocalDateTime fim
     );

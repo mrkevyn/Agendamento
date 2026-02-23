@@ -196,44 +196,41 @@ public class AgendamentoService {
     }
 
     @Transactional
-    public Agendamento criarEspontaneo(Long secretariaId, AgendamentoEspontaneoDTO dto) {
+    public Agendamento criarEspontaneo(Long secretariaId, Agendamento agendamento) {
         if (secretariaId == null) throw new RuntimeException("Secretaria é obrigatória");
 
-        // 1. Validar e Buscar Setor usando o ID do DTO
-        if (dto.setorId() == null) throw new RuntimeException("Setor é obrigatório");
+        // 1. Validar e Buscar Setor (Obrigatório)
+        if (agendamento.getSetor() == null || agendamento.getSetor().getId() == null) {
+            throw new RuntimeException("Setor é obrigatório");
+        }
 
-        Setor setor = setorRepository.findById(dto.setorId())
+        Setor setor = setorRepository.findById(agendamento.getSetor().getId())
                 .orElseThrow(() -> new RuntimeException("Setor não encontrado"));
 
-        // 2. Validar Serviço usando o ID do DTO
-        if (dto.servicoId() == null) throw new RuntimeException("Serviço é obrigatório");
-
-        Servico servico = servicoService.buscarPorId(dto.servicoId());
+        // 3. Validar Serviço
+        Servico servico = servicoService.buscarPorId(agendamento.getServico().getId());
         if (!servico.getSecretaria().getId().equals(secretariaId)) {
             throw new RuntimeException("Serviço não pertence à secretaria informada");
         }
 
-        // 3. CRIAR A ENTIDADE (Conversão DTO -> Entity)
-        Agendamento agendamento = new Agendamento();
-        agendamento.setNomeCidadao(dto.nomeCidadao());
-        agendamento.setSetor(setor);
+        // 4. Configurar Agendamento
+        agendamento.setSetor(setor); // ✅ Vínculo principal
         agendamento.setSecretaria(setor.getSecretaria());
         agendamento.setServico(servico);
 
-        // Configurações fixas
+        // Status e Horários
         agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
         agendamento.setTipoAgendamento(TipoAgendamento.ESPONTANEO);
-
         LocalDateTime agora = LocalDateTime.now(ZoneId.of("America/Fortaleza"));
         agendamento.setHoraAgendamento(agora);
 
         // Normalizar Tipo Atendimento
-        String tipo = dto.tipoAtendimento();
+        String tipo = agendamento.getTipoAtendimento();
         agendamento.setTipoAtendimento(tipo == null ? "NORMAL" : tipo.toUpperCase());
 
-        // 4. Geração de Senha
+        // 5. Geração de Senha (usando o endereço que veio do setor)
         LocalDate hoje = agora.toLocalDate();
-        Long setorId = setor.getId();
+        Long setorId = setor.getId(); // ✅ Extraído do setor
 
         int tentativas = 0;
         while (true) {
@@ -337,7 +334,7 @@ public class AgendamentoService {
     public List<AgendamentoDTO> listarAgendamentosComDetalhes(Long agendamentoId) {
         return agendamentoRepository.buscarAgendamentosComDetalhes(agendamentoId);
     }
-    
+
  // 🔹 Chamar próxima senha normal
      public Agendamento chamarProximaNormal(Long setorId, Long atendenteId) {
 
@@ -466,11 +463,13 @@ public class AgendamentoService {
             chamada.setDataChamada(LocalDateTime.now());
             chamada.setGerenciador(gerenciador);
             chamada.setGuiche(gerenciador.getGuiche());
+            chamada.setSetor(agendamentoSalvo.getSetor());
         } else {
             // ✅ não existe → cria nova chamada
             chamada = new ChamadaAgendamento();
             chamada.setAgendamento(agendamentoSalvo);
             chamada.setGerenciador(gerenciador);
+            chamada.setSetor(agendamentoSalvo.getSetor());
             chamada.setSecretaria(
                     agendamentoSalvo.getServico() != null
                             ? agendamentoSalvo.getServico().getSecretaria()
@@ -487,7 +486,7 @@ public class AgendamentoService {
         return agendamentoSalvo;
     }
 
-    public List<UltimaChamadaDTO> getUltimasChamadasPorSecretaria(Long setorId) {
+    public List<UltimaChamadaDTO> getUltimasChamadasPorSetor(Long setorId) {
         LocalDate hoje = LocalDate.now();
         LocalDateTime inicio = hoje.atStartOfDay();
         LocalDateTime fim = hoje.plusDays(1).atStartOfDay();

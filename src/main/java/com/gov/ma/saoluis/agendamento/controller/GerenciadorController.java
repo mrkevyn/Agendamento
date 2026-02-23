@@ -48,7 +48,6 @@ public class GerenciadorController {
         }
     }
 
-    // ➤ Editar atendente (1 Secretaria : N Setores)
     // ➤ Editar atendente (N Secretarias : N Setores)
     @PutMapping("/{id}")
     public ResponseEntity<?> editar(@PathVariable Long id, @RequestBody GerenciadorDTO dto) {
@@ -62,7 +61,11 @@ public class GerenciadorController {
         resposta.put("nome", atualizado.getNome());
         resposta.put("cpf", atualizado.getCpf());
         resposta.put("email", atualizado.getEmail());
-        resposta.put("guiche", atualizado.getGuiche());
+
+        // 🟢 Ajuste no Guichê: Extraindo apenas o número para o JSON
+        // Se o seu Vue precisar do ID para formulários, você pode adicionar resposta.put("guicheId", ...)
+        resposta.put("guiche", atualizado.getGuiche() != null ? atualizado.getGuiche().getNumero() : null);
+
         resposta.put("perfil", atualizado.getPerfil());
 
         // ✅ Agora extrai a lista de nomes das SECRETARIAS (plural)
@@ -191,23 +194,22 @@ public class GerenciadorController {
                 ))
                 .collect(Collectors.toList());
 
+        Integer numeroGuiche = (g.getGuiche() != null) ? g.getGuiche().getNumero() : null;
+
         return new UsuarioLogadoDTO(
                 g.getId(),
                 g.getNome(),
                 g.getPerfil(),
                 secretariasDTO,
                 setoresDTO, // 👈 Agora enviando a lista completa de setores
-                g.getGuiche(),
+                numeroGuiche,
                 token
         );
     }
 
-    @PutMapping("/{id}/guiche")
-    public ResponseEntity<Gerenciador> atualizarGuiche(
-            @PathVariable Long id,
-            @RequestBody AtualizarGuicheDTO dto
-    ) {
-        Gerenciador atualizado = gerenciadorService.atualizarGuiche(id, dto.guiche());
-        return ResponseEntity.ok(atualizado);
+    @PatchMapping("/{id}/guiche")
+    public ResponseEntity<?> atualizarGuiche(@PathVariable Long id, @RequestBody Map<String, Long> payload) {
+        Long guicheId = payload.get("guicheId");
+        return ResponseEntity.ok(gerenciadorService.atualizarGuiche(id, guicheId));
     }
 }

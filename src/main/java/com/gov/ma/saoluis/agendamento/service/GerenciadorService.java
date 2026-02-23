@@ -2,16 +2,11 @@ package com.gov.ma.saoluis.agendamento.service;
 
 import com.gov.ma.saoluis.agendamento.DTO.GerenciadorDTO;
 import com.gov.ma.saoluis.agendamento.config.UsuarioLogadoUtil;
-import com.gov.ma.saoluis.agendamento.model.Endereco;
-import com.gov.ma.saoluis.agendamento.model.Gerenciador;
-import com.gov.ma.saoluis.agendamento.model.Secretaria;
-import com.gov.ma.saoluis.agendamento.repository.EnderecoRepository;
-import com.gov.ma.saoluis.agendamento.repository.GerenciadorRepository;
-import com.gov.ma.saoluis.agendamento.repository.SecretariaRepository;
+import com.gov.ma.saoluis.agendamento.model.*;
+import com.gov.ma.saoluis.agendamento.repository.*;
+import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import com.gov.ma.saoluis.agendamento.model.Setor;
-import com.gov.ma.saoluis.agendamento.repository.SetorRepository;
 
 import java.util.HashSet;
 import java.util.List;
@@ -27,20 +22,22 @@ public class GerenciadorService {
     private final LogService logService;
     private final EnderecoRepository enderecoRepository;
     private final SetorRepository setorRepository;
-
+    private final GuicheRepository guicheRepository;
 
     public GerenciadorService(GerenciadorRepository gerenciadorRepository,
                             SecretariaRepository secretariaRepository,
                             LogService logService,
                               EnderecoRepository enderecoRepository,
                               PasswordEncoder passwordEncoder,
-                              SetorRepository setorRepository) {
+                              SetorRepository setorRepository,
+                            GuicheRepository guicheRepository) {
         this.gerenciadorRepository = gerenciadorRepository;
         this.secretariaRepository = secretariaRepository;
         this.logService = logService;
         this.enderecoRepository = enderecoRepository;
         this.passwordEncoder = passwordEncoder;
         this.setorRepository = setorRepository;
+        this.guicheRepository = guicheRepository;
 
     }
 
@@ -69,15 +66,16 @@ public class GerenciadorService {
 
         // 🔒 3. VALIDAR GUICHÊ ÚNICO
         // O guichê é validado por SETOR, que é o local físico do atendimento
-        if (dto.guiche() != null) {
-            for (Setor s : setores) {
-                boolean ocupado = gerenciadorRepository.existsByGuicheAndSetores_Id(dto.guiche(), s.getId());
-                if (ocupado) {
-                    throw new RuntimeException(
-                            "O Guichê " + dto.guiche() + " já está em uso no setor: " + s.getNome()
-                    );
-                }
+        Guiche guicheEntidade = null;
+        if (dto.guicheId() != null) {
+            // Validação de ocupação usando a Query customizada que fizemos
+            boolean ocupado = gerenciadorRepository.existsByGuicheId(dto.guicheId());
+            if (ocupado) {
+                throw new RuntimeException("O guichê selecionado já está ocupado por outro atendente.");
             }
+
+            guicheEntidade = guicheRepository.findById(dto.guicheId())
+                    .orElseThrow(() -> new RuntimeException("Guichê não encontrado no cadastro auxiliar."));
         }
 
         // 4. Mapeamento da Entidade
@@ -92,7 +90,12 @@ public class GerenciadorService {
         g.setSenha(senhaCriptografada);
 
         g.setPerfil(dto.perfil());
-        g.setGuiche(dto.guiche());
+        // 🟢 Sincronização de Guichê
+        if (guicheEntidade != null) {
+            g.setGuiche(guicheEntidade); // Define o Objeto (Sistema Novo)
+            // Se o outro sistema exigir o número na coluna Integer 'guiche' da tabela 'gerenciador':
+            // g.setGuicheNumero(guicheEntidade.getNumero());
+        }
 
         // 🟢 PREENCHE A COLUNA FÍSICA (Para o outro sistema)
         g.setSecretariaPrincipal(principal);
@@ -149,22 +152,22 @@ public class GerenciadorService {
         }
         Set<Setor> novosSetores = new java.util.HashSet<>(setoresEncontrados);
 
-        // 🔒 3. VALIDAR GUICHÊ ÚNICO (por setor, exceto para o próprio atendente)
-        if (dto.guiche() != null) {
-            for (Setor s : novosSetores) {
-                boolean ocupado = gerenciadorRepository
-                        .existsByGuicheAndSetores_IdAndIdNot(
-                                dto.guiche(),
-                                s.getId(),
-                                id
-                        );
-
-                if (ocupado) {
-                    throw new RuntimeException(
-                            "O Guichê " + dto.guiche() + " já está sendo usado por outro atendente no setor: " + s.getNome()
-                    );
-                }
+        // 🟢 3. VALIDAR GUICHÊ ÚNICO (Entidade Guiche)
+        if (dto.guicheId() != null) {
+            // Valida se o guichê já está ocupado por OUTRO atendente (IdNot)
+            boolean ocupado = gerenciadorRepository.existsByGuicheIdAndIdNot(dto.guicheId(), id);
+            if (ocupado) {
+                throw new RuntimeException("O Guichê selecionado já está sendo usado por outro atendente.");
             }
+
+            Guiche guicheEntidade = guicheRepository.findById(dto.guicheId())
+                    .orElseThrow(() -> new RuntimeException("Guichê não encontrado no cadastro auxiliar."));
+
+            // Atualiza tanto o objeto (FK) quanto o número (Integer legado)
+            g.setGuiche(guicheEntidade);
+            // g.setGuicheNumero(guicheEntidade.getNumero()); // Descomente se tiver a coluna Integer
+        } else {
+            g.setGuiche(null);
         }
 
         // 4. Atualização dos campos básicos
@@ -178,12 +181,14 @@ public class GerenciadorService {
             g.setSenha(passwordEncoder.encode(dto.senha()));
         }
 
-        g.setGuiche(dto.guiche());
         g.setPerfil(dto.perfil());
 
-        // 🔴 5. ATUALIZAÇÃO DOS VÍNCULOS (N:N em ambos)
-        g.setSecretarias(novasSecretarias);
-        g.setSetores(novosSetores);
+        // 🔴 5. ATUALIZAÇÃO DOS VÍNCULOS N:N
+        g.getSecretarias().clear();
+        g.getSecretarias().addAll(secretariasEncontradas);
+
+        g.getSetores().clear();
+        g.getSetores().addAll(setoresEncontrados);
 
         return gerenciadorRepository.save(g);
     }
@@ -247,14 +252,13 @@ public class GerenciadorService {
         return gerenciador;
     }
 
-    // ➤ Atualizar guichê (Sistema ou Atendente)
-    public Gerenciador atualizarGuiche(Long id, Integer novoGuiche) {
+    @Transactional
+    public Gerenciador atualizarGuiche(Long id, Long guicheId) { // 🟢 Agora recebe Long guicheId
 
         Gerenciador g = gerenciadorRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Gerenciador não encontrado"));
 
         Long usuarioLogadoId = UsuarioLogadoUtil.getUsuarioId();
-
         if (usuarioLogadoId == null) {
             throw new RuntimeException("Usuário não autenticado");
         }
@@ -273,23 +277,25 @@ public class GerenciadorService {
             throw new RuntimeException("Você não tem permissão para alterar o guichê");
         }
 
-        // 🔴 Validação de guichê único em todos os setores vinculados
-        if (novoGuiche != null) {
-            // Percorre todos os setores que este gerenciador atende
-            for (Setor s : g.getSetores()) {
-                boolean ocupado = gerenciadorRepository.existsByGuicheAndSetores_IdAndIdNot(
-                        novoGuiche,
-                        s.getId(),
-                        g.getId()
-                );
+        // 🟢 Nova Lógica de Guichê Único
+        if (guicheId != null) {
+            // Valida se o ID do guichê já está associado a outro atendente
+            boolean ocupado = gerenciadorRepository.existsByGuicheIdAndIdNot(guicheId, g.getId());
 
-                if (ocupado) {
-                    throw new RuntimeException("Guichê " + novoGuiche + " já está sendo utilizado no setor: " + s.getNome());
-                }
+            Guiche guicheEntidade = guicheRepository.findById(guicheId)
+                    .orElseThrow(() -> new RuntimeException("Guichê não encontrado no cadastro auxiliar."));
+
+            if (ocupado) {
+                throw new RuntimeException("O Guichê " + guicheEntidade.getNumero() + " já está sendo utilizado.");
             }
+
+            // ✔ Sincroniza o objeto e o número (se necessário para sistema legado)
+            g.setGuiche(guicheEntidade);
+            // g.setGuicheNumero(guicheEntidade.getNumero());
+        } else {
+            g.setGuiche(null);
         }
 
-        g.setGuiche(novoGuiche);
         Gerenciador salvo = gerenciadorRepository.save(g);
 
         logService.registrar(
@@ -298,7 +304,7 @@ public class GerenciadorService {
                 "GUICHE_ALTERADO",
                 "Atendente ID: " + salvo.getId() +
                         ", Nome: " + salvo.getNome() +
-                        ", Novo Guichê: " + salvo.getGuiche()
+                        ", Novo Guichê: " + (salvo.getGuiche() != null ? salvo.getGuiche().getNumero() : "Nenhum")
         );
 
         return salvo;

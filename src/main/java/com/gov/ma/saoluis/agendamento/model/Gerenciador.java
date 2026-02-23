@@ -37,8 +37,9 @@ public class Gerenciador {
     @Column(nullable = false, length = 30)
     private String perfil;
 
-    @Column(nullable = true)
-    private Integer guiche;
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "guiche_id") // Coluna que guardará a FK no banco
+    private Guiche guiche;
 
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
@@ -95,8 +96,8 @@ public class Gerenciador {
     public String getPerfil() { return perfil; }
     public void setPerfil(String perfil) { this.perfil = perfil; }
 
-    public Integer getGuiche() { return guiche; }
-    public void setGuiche(Integer guiche) { this.guiche = guiche; }
+    public Guiche getGuiche() { return guiche; }
+    public void setGuiche(Guiche guiche) { this.guiche = guiche; }
 
     public Set<Secretaria> getSecretarias() { return secretarias; }
     public void setSecretarias(Set<Secretaria> secretarias) { this.secretarias = secretarias; }

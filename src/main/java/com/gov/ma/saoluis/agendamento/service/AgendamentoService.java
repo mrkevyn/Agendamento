@@ -461,6 +461,10 @@ public class AgendamentoService {
         LocalDateTime inicio = hoje.atStartOfDay();
         LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
 
+        Integer numeroGuiche = (gerenciador.getGuiche() != null)
+                ? gerenciador.getGuiche().getNumero()
+                : null;
+
         // 🔹 Verifica se já existe chamada para essa senha hoje
         List<ChamadaAgendamento> chamadasExistentes = chamadaAgendamentoRepository
                 .findByAgendamentoAndDataChamadaBetween(agendamentoSalvo, inicio, fim);
@@ -471,7 +475,7 @@ public class AgendamentoService {
             chamada = chamadasExistentes.get(0);
             chamada.setDataChamada(LocalDateTime.now());
             chamada.setGerenciador(gerenciador);
-            chamada.setGuiche(gerenciador.getGuiche());
+            chamada.setGuiche(numeroGuiche);
             chamada.setSetor(agendamentoSalvo.getSetor());
         } else {
             // ✅ não existe → cria nova chamada
@@ -486,7 +490,7 @@ public class AgendamentoService {
             );
             chamada.setSenha(agendamentoSalvo.getSenha());
             chamada.setTipoAtendimento(agendamentoSalvo.getTipoAtendimento());
-            chamada.setGuiche(gerenciador.getGuiche());
+            chamada.setGuiche(numeroGuiche);
             chamada.setDataChamada(LocalDateTime.now());
         }
 

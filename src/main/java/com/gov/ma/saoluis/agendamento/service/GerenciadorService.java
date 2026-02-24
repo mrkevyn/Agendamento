@@ -309,4 +309,15 @@ public class GerenciadorService {
 
         return salvo;
     }
+
+    @Transactional
+    public void deslogarGuiche(Long id) {
+        if (id == null) {
+            throw new RuntimeException("ID do gerenciador não pode ser nulo para logout");
+        }
+        // Aqui garante que APENAS o ID passado será afetado
+        gerenciadorRepository.desvincularGuiche(id);
+
+        logService.registrar(id, "SISTEMA", "GUICHE_LOGOUT", "Logout do guichê realizado.");
+    }
 }

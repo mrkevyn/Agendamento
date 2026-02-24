@@ -212,4 +212,10 @@ public class GerenciadorController {
         Long guicheId = payload.get("guicheId");
         return ResponseEntity.ok(gerenciadorService.atualizarGuiche(id, guicheId));
     }
+
+    @PostMapping("/{id}/logout-guiche")
+    public ResponseEntity<?> logoutGuiche(@PathVariable Long id) {
+        gerenciadorService.deslogarGuiche(id);
+        return ResponseEntity.ok().build();
+    }
 }

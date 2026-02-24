@@ -25,4 +25,6 @@ public interface GerenciadorRepository extends JpaRepository<Gerenciador, Long> 
     // ✅ NOVO: Validação por ID da entidade Guiche (exceto o próprio ID para edição)
     @Query("SELECT COUNT(g) > 0 FROM Gerenciador g WHERE g.guiche.id = :guicheId AND g.id <> :id")
     boolean existsByGuicheIdAndIdNot(@Param("guicheId") Long guicheId, @Param("id") Long id);
+
+    Optional<Gerenciador> findByGuicheId(Long guicheId);
 }

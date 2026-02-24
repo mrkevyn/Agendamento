@@ -277,21 +277,24 @@ public class GerenciadorService {
             throw new RuntimeException("Você não tem permissão para alterar o guichê");
         }
 
-        // 🟢 Nova Lógica de Guichê Único
+        // 🟢 Nova Lógica "Trava-Tudo"
         if (guicheId != null) {
-            // Valida se o ID do guichê já está associado a outro atendente
-            boolean ocupado = gerenciadorRepository.existsByGuicheIdAndIdNot(guicheId, g.getId());
-
+            // 1. Primeiro buscamos a entidade para saber o número dela (para a mensagem)
             Guiche guicheEntidade = guicheRepository.findById(guicheId)
                     .orElseThrow(() -> new RuntimeException("Guichê não encontrado no cadastro auxiliar."));
 
+            // 2. Verificamos se já está ocupado
+            boolean ocupado = gerenciadorRepository.existsByGuicheIdAndIdNot(guicheId, g.getId());
+
+            // 3. SE ESTIVER OCUPADO, LANÇAMOS A EXCEÇÃO IMEDIATAMENTE
+            // Isso faz o Rollback da transação e nada é salvo no banco.
             if (ocupado) {
                 throw new RuntimeException("O Guichê " + guicheEntidade.getNumero() + " já está sendo utilizado.");
             }
 
-            // ✔ Sincroniza o objeto e o número (se necessário para sistema legado)
+            // 4. SÓ CHEGA AQUI SE NÃO ESTIVER OCUPADO
+            // Agora sim, alteramos o objeto com segurança
             g.setGuiche(guicheEntidade);
-            // g.setGuicheNumero(guicheEntidade.getNumero());
         } else {
             g.setGuiche(null);
         }

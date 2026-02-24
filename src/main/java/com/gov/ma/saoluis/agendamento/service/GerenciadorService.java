@@ -4,6 +4,8 @@ import com.gov.ma.saoluis.agendamento.DTO.GerenciadorDTO;
 import com.gov.ma.saoluis.agendamento.config.UsuarioLogadoUtil;
 import com.gov.ma.saoluis.agendamento.model.*;
 import com.gov.ma.saoluis.agendamento.repository.*;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -252,11 +254,17 @@ public class GerenciadorService {
         return gerenciador;
     }
 
-    @Transactional
-    public Gerenciador atualizarGuiche(Long id, Long guicheId) { // 🟢 Agora recebe Long guicheId
+    @PersistenceContext
+    private EntityManager entityManager; // Adicione esta injeção no topo da classe
 
+    @Transactional
+    public Gerenciador atualizarGuiche(Long id, Long guicheId) {
         Gerenciador g = gerenciadorRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Gerenciador não encontrado"));
+
+        // 🛡️ SEGURANÇA EXTRA: Desconecta o objeto do Hibernate.
+        // Assim, o Hibernate não salva nada sozinho via "dirty checking" se o método falhar.
+        entityManager.detach(g);
 
         Long usuarioLogadoId = UsuarioLogadoUtil.getUsuarioId();
         if (usuarioLogadoId == null) {
@@ -277,26 +285,23 @@ public class GerenciadorService {
             throw new RuntimeException("Você não tem permissão para alterar o guichê");
         }
 
-        // 🟢 Nova Lógica "Trava-Tudo"
-        if (guicheId != null) {
-            // 1. Primeiro buscamos a entidade para saber o número dela (para a mensagem)
-            Guiche guicheEntidade = guicheRepository.findById(guicheId)
-                    .orElseThrow(() -> new RuntimeException("Guichê não encontrado no cadastro auxiliar."));
-
-            // 2. Verificamos se já está ocupado
-            boolean ocupado = gerenciadorRepository.existsByGuicheIdAndIdNot(guicheId, g.getId());
-
-            // 3. SE ESTIVER OCUPADO, LANÇAMOS A EXCEÇÃO IMEDIATAMENTE
-            // Isso faz o Rollback da transação e nada é salvo no banco.
-            if (ocupado) {
-                throw new RuntimeException("O Guichê " + guicheEntidade.getNumero() + " já está sendo utilizado.");
-            }
-
-            // 4. SÓ CHEGA AQUI SE NÃO ESTIVER OCUPADO
-            // Agora sim, alteramos o objeto com segurança
-            g.setGuiche(guicheEntidade);
-        } else {
+        // 2. Se o guicheId for nulo, apenas limpamos e salvamos
+        if (guicheId == null) {
             g.setGuiche(null);
+            return gerenciadorRepository.save(g);
+        }
+
+        // 3. Se houver um ID, buscamos a entidade ANTES de alterar o Gerenciador
+        Guiche guicheEntidade = guicheRepository.findById(guicheId)
+                .orElseThrow(() -> new RuntimeException("Guichê não encontrado no sistema."));
+
+        // 4. TRAVA DE SEGURANÇA: Verifica se OUTRO atendente usa este guichê
+        // Passamos o ID do guichê e o ID do atendente atual para ele não se auto-bloquear
+        boolean ocupado = gerenciadorRepository.existsByGuicheIdAndIdNot(guicheId, id);
+
+        if (ocupado) {
+            // LANÇA EXCEÇÃO: O Hibernate cancela a transação e NADA é salvo
+            throw new RuntimeException("O Guichê " + guicheEntidade.getNumero() + " já está sendo utilizado.");
         }
 
         Gerenciador salvo = gerenciadorRepository.save(g);

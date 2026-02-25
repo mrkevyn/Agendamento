@@ -277,21 +277,26 @@ public class GerenciadorService {
             throw new RuntimeException("Você não tem permissão para alterar o guichê");
         }
 
-        // 🟢 Nova Lógica de Guichê Único
         if (guicheId != null) {
-            // Valida se o ID do guichê já está associado a outro atendente
-            boolean ocupado = gerenciadorRepository.existsByGuicheIdAndIdNot(guicheId, g.getId());
-
+            // 2. Busca o Guichê alvo
             Guiche guicheEntidade = guicheRepository.findById(guicheId)
-                    .orElseThrow(() -> new RuntimeException("Guichê não encontrado no cadastro auxiliar."));
+                    .orElseThrow(() -> new RuntimeException("Guichê não encontrado no cadastro."));
 
-            if (ocupado) {
-                throw new RuntimeException("O Guichê " + guicheEntidade.getNumero() + " já está sendo utilizado.");
-            }
+            // 3. A MÁGICA: Se alguém estiver usando esse guichê, tiramos essa pessoa de lá
+            // Em vez de 'exists', usamos 'findBy' para agir sobre o ocupante
+            gerenciadorRepository.findByGuicheId(guicheId).ifPresent(ocupante -> {
+                if (!ocupante.getId().equals(id)) {
+                    ocupante.setGuiche(null);
+                    gerenciadorRepository.saveAndFlush(ocupante); // Salva o outro como "Sem Guichê"
+                }
+            });
 
-            // ✔ Sincroniza o objeto e o número (se necessário para sistema legado)
+            // 4. Limpa o vínculo antigo do próprio atendente 'g' (Evita conflito de OneToOne)
+            g.setGuiche(null);
+            gerenciadorRepository.saveAndFlush(g);
+
+            // 5. Atribui o novo guichê livre
             g.setGuiche(guicheEntidade);
-            // g.setGuicheNumero(guicheEntidade.getNumero());
         } else {
             g.setGuiche(null);
         }

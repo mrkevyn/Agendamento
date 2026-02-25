@@ -32,7 +32,6 @@ public class SecurityConfig {
                         // 🔓 ROTAS PÚBLICAS
                         .requestMatchers(
                                 "/gerenciador/**",
-                                "/agendamentos/**",
                                 "/uploads/**",
                                 "/secretarias/**",
                                 "/setores/**",

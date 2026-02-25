@@ -1,5 +1,6 @@
 package com.gov.ma.saoluis.agendamento.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -13,6 +14,7 @@ import java.util.Set;
                 @UniqueConstraint(columnNames = "email")
         }
 )
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Gerenciador {
 
     @Id

@@ -210,7 +210,10 @@ public class GerenciadorController {
     @PatchMapping("/{id}/guiche")
     public ResponseEntity<?> atualizarGuiche(@PathVariable Long id, @RequestBody Map<String, Long> payload) {
         Long guicheId = payload.get("guicheId");
-        return ResponseEntity.ok(gerenciadorService.atualizarGuiche(id, guicheId));
+        gerenciadorService.atualizarGuiche(id, guicheId); // Apenas executa
+
+        // Retorna um JSON simples de sucesso em vez da entidade Gerenciador
+        return ResponseEntity.ok(Map.of("mensagem", "Guichê atualizado com sucesso!"));
     }
 
     @PostMapping("/{id}/logout-guiche")

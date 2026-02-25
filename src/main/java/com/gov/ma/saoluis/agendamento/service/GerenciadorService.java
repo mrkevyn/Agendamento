@@ -278,24 +278,19 @@ public class GerenciadorService {
         }
 
         if (guicheId != null) {
-            // 2. Busca o Guichê alvo
+            // 1. Busca a entidade do Guichê
             Guiche guicheEntidade = guicheRepository.findById(guicheId)
                     .orElseThrow(() -> new RuntimeException("Guichê não encontrado no cadastro."));
 
-            // 3. A MÁGICA: Se alguém estiver usando esse guichê, tiramos essa pessoa de lá
-            // Em vez de 'exists', usamos 'findBy' para agir sobre o ocupante
+            // 2. VERIFICAÇÃO: Se algum gerenciador já possui este guichê (e não é o próprio usuário atual)
             gerenciadorRepository.findByGuicheId(guicheId).ifPresent(ocupante -> {
                 if (!ocupante.getId().equals(id)) {
-                    ocupante.setGuiche(null);
-                    gerenciadorRepository.saveAndFlush(ocupante); // Salva o outro como "Sem Guichê"
+                    // Se encontrou alguém e não é o próprio 'g', lança a exceção
+                    throw new RuntimeException("Guichê sendo usado, escolha outro. (Ocupante: " + ocupante.getNome() + ")");
                 }
             });
 
-            // 4. Limpa o vínculo antigo do próprio atendente 'g' (Evita conflito de OneToOne)
-            g.setGuiche(null);
-            gerenciadorRepository.saveAndFlush(g);
-
-            // 5. Atribui o novo guichê livre
+            // 3. Se passou pela verificação, atribui o guichê
             g.setGuiche(guicheEntidade);
         } else {
             g.setGuiche(null);

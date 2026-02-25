@@ -10,8 +10,8 @@ public class Agendamento {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "configuracao_atendimento_id", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = true)
+    @JoinColumn(name = "configuracao_atendimento_id", nullable = true)
     private ConfiguracaoAtendimento configuracao;
 
     @ManyToOne(fetch = FetchType.EAGER)

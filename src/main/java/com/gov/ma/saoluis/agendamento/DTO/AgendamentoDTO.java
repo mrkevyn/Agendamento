@@ -23,7 +23,7 @@ public interface AgendamentoDTO {
     Long getSecretariaId();
     String getSecretariaNome();
 
-    Integer getGuiche();
+    String getGuiche();
     Long getGerenciadorId(); // recomendo também retornar, ajuda debug
 
     // 🔹 Endereço (NOVO)

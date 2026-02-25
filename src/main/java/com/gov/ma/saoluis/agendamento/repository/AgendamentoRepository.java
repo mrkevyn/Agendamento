@@ -79,7 +79,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         a.tipo_agendamento AS tipoAgendamento,
 
         a.gerenciador_id   AS gerenciadorId,
-        g.guiche           AS guiche,
+        gui.numero AS guiche,
 
         u.id               AS usuarioId,
         COALESCE(u.nome, a.nome_cidadao) AS usuarioNome,
@@ -103,6 +103,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     LEFT JOIN usuario u      ON a.usuario_id = u.id
     LEFT JOIN servico s      ON a.servico_id = s.id
     LEFT JOIN gerenciador g  ON g.id = a.gerenciador_id
+    LEFT JOIN guiche gui     ON gui.id = g.guiche_id
     INNER JOIN setor setor   ON a.setor_id = setor.id
     INNER JOIN endereco e    ON setor.endereco_id = e.id
     LEFT JOIN secretaria sec ON sec.id = a.secretaria_id

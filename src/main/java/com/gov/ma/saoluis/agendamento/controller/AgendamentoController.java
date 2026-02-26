@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/agendamentos")
@@ -134,12 +135,16 @@ public class AgendamentoController {
     }
 
     @PutMapping("/finalizar/{id}")
-    public ResponseEntity<Agendamento> finalizar(@PathVariable Long id) {
-        return ResponseEntity.ok(agendamentoService.finalizarAtendimento(id));
+    public ResponseEntity<?> finalizar(@PathVariable Long id) {
+        agendamentoService.finalizarAtendimento(id);
+        // Retorne apenas uma mensagem de sucesso
+        return ResponseEntity.ok(Map.of("mensagem", "Atendimento finalizado com sucesso"));
     }
 
     @PutMapping("/cancelar/{id}")
-    public ResponseEntity<Agendamento> cancelar(@PathVariable Long id) {
-        return ResponseEntity.ok(agendamentoService.cancelarAtendimento(id));
+    public ResponseEntity<?> cancelar(@PathVariable Long id) {
+        agendamentoService.cancelarAtendimento(id);
+        // Retorne apenas uma mensagem de sucesso
+        return ResponseEntity.ok(Map.of("mensagem", "Atendimento cancelado com sucesso"));
     }
 }

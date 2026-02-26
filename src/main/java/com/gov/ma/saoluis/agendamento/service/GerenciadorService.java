@@ -277,6 +277,9 @@ public class GerenciadorService {
             throw new RuntimeException("Você não tem permissão para alterar o guichê");
         }
 
+        // Variável para guardar o nome da secretaria selecionada para o log
+        String nomeSecretariaLog = "Nenhum";
+
         if (guicheId != null) {
             // 1. Busca a entidade do Guichê
             Guiche guicheEntidade = guicheRepository.findById(guicheId)
@@ -289,6 +292,11 @@ public class GerenciadorService {
                     throw new RuntimeException("Guichê sendo usado, escolha outro. (Ocupante: " + ocupante.getNome() + ")");
                 }
             });
+
+            // 🟢 CAPTURA A SECRETARIA ESPECÍFICA DO GUICHÊ
+            if (guicheEntidade.getSetor() != null && guicheEntidade.getSetor().getSecretaria() != null) {
+                nomeSecretariaLog = guicheEntidade.getSetor().getSecretaria().getNome();
+            }
 
             // 3. Se passou pela verificação, atribui o guichê
             g.setGuiche(guicheEntidade);
@@ -304,6 +312,7 @@ public class GerenciadorService {
                 "GUICHE_ALTERADO",
                 "Atendente ID: " + salvo.getId() +
                         ", Nome: " + salvo.getNome() +
+                        ", Secretaria: " + nomeSecretariaLog + // <--- Aqui entra a secretaria única
                         ", Novo Guichê: " + (salvo.getGuiche() != null ? salvo.getGuiche().getNumero() : "Nenhum")
         );
 
@@ -312,12 +321,31 @@ public class GerenciadorService {
 
     @Transactional
     public void deslogarGuiche(Long id) {
-        if (id == null) {
-            throw new RuntimeException("ID do gerenciador não pode ser nulo para logout");
+        Gerenciador g = gerenciadorRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Gerenciador não encontrado"));
+
+        // Pegamos os dados ANTES de limpar a FK
+        String infoAtendimento = "Sem guichê vinculado";
+
+        if (g.getGuiche() != null) {
+            Guiche guicheAtivo = g.getGuiche();
+            String secretaria = (guicheAtivo.getSetor() != null && guicheAtivo.getSetor().getSecretaria() != null)
+                    ? guicheAtivo.getSetor().getSecretaria().getNome()
+                    : "N/A";
+
+            infoAtendimento = String.format("Secretaria: %s | Setor: %s | Guichê: %s",
+                    secretaria,
+                    guicheAtivo.getSetor().getNome(),
+                    guicheAtivo.getNumero());
         }
-        // Aqui garante que APENAS o ID passado será afetado
+
         gerenciadorRepository.desvincularGuiche(id);
 
-        logService.registrar(id, "SISTEMA", "GUICHE_LOGOUT", "Logout do guichê realizado.");
+        logService.registrar(
+                id,
+                g.getPerfil(),
+                "GUICHE_LOGOUT",
+                "Atendente: " + g.getNome() + " | " + infoAtendimento
+        );
     }
 }

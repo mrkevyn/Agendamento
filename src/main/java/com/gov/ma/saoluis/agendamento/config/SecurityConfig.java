@@ -38,6 +38,7 @@ public class SecurityConfig {
                                 "/agendamentos/ultimas-chamadas/**",
                                 "/agendamento/api/servico/**",
                                 "/api/configuracoes-atendimento/**",
+                                "/api/slots/**",
 
                                 // 🔹 Swagger / OpenAPI
                                 "/v3/api-docs/**",

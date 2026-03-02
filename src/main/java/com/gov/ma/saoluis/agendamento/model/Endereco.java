@@ -48,11 +48,6 @@ public class Endereco {
     @Column(precision = 10, scale = 7)
     private BigDecimal longitude;
 
-    // 🔁 LADO INVERSO (evita loop no JSON)
-    @JsonIgnore
-    @ManyToMany(mappedBy = "enderecos")
-    private Set<Servico> servicos = new HashSet<>();
-
     // 🔗 Fotos do endereço
     @OneToMany(mappedBy = "endereco", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference

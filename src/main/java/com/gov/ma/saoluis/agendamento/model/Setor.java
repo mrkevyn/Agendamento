@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Getter
 @Setter
 @Entity
@@ -31,4 +34,8 @@ public class Setor {
     @JoinColumn(name = "secretaria_id")
     @JsonIgnore
     private Secretaria secretaria;
+
+    // ✅ Lado inverso do N:N
+    @ManyToMany(mappedBy = "setores")
+    private Set<Servico> servicos = new HashSet<>();
 }

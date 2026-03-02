@@ -1,6 +1,8 @@
 package com.gov.ma.saoluis.agendamento.controller;
 
+import com.gov.ma.saoluis.agendamento.DTO.ServicoResponseDTO;
 import com.gov.ma.saoluis.agendamento.DTO.VincularEnderecosDTO;
+import com.gov.ma.saoluis.agendamento.DTO.VincularSetoresDTO;
 import com.gov.ma.saoluis.agendamento.model.Servico;
 import com.gov.ma.saoluis.agendamento.service.ServicoService;
 import org.springframework.http.HttpStatus;
@@ -48,19 +50,40 @@ public class ServicoController {
         }
     }
 
-    @PutMapping("/servicos/{id}/enderecos")
-    public ResponseEntity<Servico> vincularEnderecos(
+    @PutMapping("/servicos/{id}/setores")
+    public ResponseEntity<ServicoResponseDTO> vincularSetores(
             @PathVariable Long id,
-            @RequestBody VincularEnderecosDTO dto
+            @RequestBody VincularSetoresDTO dto
     ) {
-        return ResponseEntity.ok(servicoService.vincularEnderecos(id, dto.enderecoIds()));
+        Servico servico = servicoService.vincularSetores(id, dto.setorIds());
+
+        return ResponseEntity.ok(
+                new ServicoResponseDTO(
+                        servico.getId(),
+                        servico.getNome(),
+                        servico.getDescricao()
+                )
+        );
     }
 
-    @PutMapping("/servicos/{id}/enderecos/remover")
-    public ResponseEntity<Servico> desvincularEnderecos(
+    @PutMapping("/servicos/{id}/setores/remover")
+    public ResponseEntity<ServicoResponseDTO> desvincularSetores(
             @PathVariable Long id,
-            @RequestBody VincularEnderecosDTO dto
+            @RequestBody VincularSetoresDTO dto
     ) {
-        return ResponseEntity.ok(servicoService.desvincularEnderecos(id, dto.enderecoIds()));
+        Servico servico = servicoService.desvincularSetores(id, dto.setorIds());
+
+        return ResponseEntity.ok(
+                new ServicoResponseDTO(
+                        servico.getId(),
+                        servico.getNome(),
+                        servico.getDescricao()
+                )
+        );
+    }
+
+    @GetMapping("/setor/{setorId}")
+    public ResponseEntity<List<ServicoResponseDTO>> listarPorSetor(@PathVariable Long setorId) {
+        return ResponseEntity.ok(servicoService.listarPorSetor(setorId));
     }
 }

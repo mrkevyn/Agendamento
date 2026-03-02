@@ -30,12 +30,12 @@ public class Servico {
     @JoinColumn(name = "secretaria_id", nullable = false)
     private Secretaria secretaria;
 
-    // 🔗 RELAÇÃO N:N COM ENDEREÇO
+    // ✅ N:N com Setor
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-            name = "servico_endereco",
+            name = "servico_setor",
             joinColumns = @JoinColumn(name = "servico_id"),
-            inverseJoinColumns = @JoinColumn(name = "endereco_id")
+            inverseJoinColumns = @JoinColumn(name = "setor_id")
     )
-    private Set<Endereco> enderecos = new HashSet<>();
+    private Set<Setor> setores = new HashSet<>();
 }

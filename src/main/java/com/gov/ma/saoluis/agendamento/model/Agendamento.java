@@ -1,6 +1,8 @@
 package com.gov.ma.saoluis.agendamento.model;
 
 import jakarta.persistence.*;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 @Entity
 @Table(name = "agendamento")
@@ -43,6 +45,18 @@ public class Agendamento {
 
     @Column(name = "nome_cidadao", length = 255)
     private String nome_cidadao;
+
+    @Column(name = "cpf", length = 11, nullable = false)
+    private String cpf;
+
+    @Column(name = "data_nascimento", nullable = false)
+    private LocalDate dataNascimento;
+
+    @Column(name = "celular", length = 20)
+    private String celular;
+
+    @Column(name = "email", length = 255)
+    private String email;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "secretaria_id", nullable = false)
@@ -137,6 +151,38 @@ public class Agendamento {
 
     public void setNomeCidadao(String nome_cidadao){
         this.nome_cidadao = nome_cidadao;
+    }
+
+    public String getCpf() {
+        return cpf;
+    }
+
+    public void setCpf(String cpf) {
+        this.cpf = cpf;
+    }
+
+    public LocalDate getDataNascimento() {
+        return dataNascimento;
+    }
+
+    public void setDataNascimento(LocalDate dataNascimento) {
+        this.dataNascimento = dataNascimento;
+    }
+
+    public String getCelular() {
+        return celular;
+    }
+
+    public void setCelular(String celular) {
+        this.celular = celular;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public void setSecretaria(Secretaria secretaria) {

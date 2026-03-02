@@ -1,5 +1,6 @@
 package com.gov.ma.saoluis.agendamento.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
@@ -16,10 +17,10 @@ public class ConfiguracaoAtendimento {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Secretaria dona do horário
+    // 🔹 Agora o setor é o dono da configuração
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "secretaria_id", nullable = false)
-    private Secretaria secretaria;
+    @JoinColumn(name = "setor_id", nullable = false)
+    private Setor setor;
 
     // ⏰ Bloco
     private LocalTime horaInicio;
@@ -56,6 +57,7 @@ public class ConfiguracaoAtendimento {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
+    @JsonIgnore
     private Set<HorarioAtendimento> horarios = new HashSet<>();
 
     private Boolean ativo = true;
@@ -70,12 +72,12 @@ public class ConfiguracaoAtendimento {
         this.id = id;
     }
 
-    public Secretaria getSecretaria() {
-        return secretaria;
+    public Setor getSetor() {
+        return setor;
     }
 
-    public void setSecretaria(Secretaria secretaria) {
-        this.secretaria = secretaria;
+    public void setSetor(Setor setor) {
+        this.setor = setor;
     }
 
     public LocalTime getHoraInicio() {

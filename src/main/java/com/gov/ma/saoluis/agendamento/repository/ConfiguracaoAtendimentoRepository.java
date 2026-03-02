@@ -12,32 +12,32 @@ import java.util.List;
 public interface ConfiguracaoAtendimentoRepository
         extends JpaRepository<ConfiguracaoAtendimento, Long> {
 
-    List<ConfiguracaoAtendimento> findBySecretariaIdAndAtivoTrue(Long secretariaId);
+    List<ConfiguracaoAtendimento> findBySetorId(Long setorId);
 
-    List<ConfiguracaoAtendimento> findBySecretariaId(Long secretariaId);
-    List<ConfiguracaoAtendimento> findBySecretariaIdAndAtivo(Long secretariaId, boolean ativo);
+    List<ConfiguracaoAtendimento> findBySetorIdAndAtivoTrue(Long setorId);
 
+    List<ConfiguracaoAtendimento> findBySetorIdAndAtivo(Long setorId, Boolean ativo);
 
     @Query("""
-        SELECT c
-        FROM ConfiguracaoAtendimento c
-        WHERE c.secretaria.id = :secretariaId
-          AND c.ativo = true
+        select a.senha
+        from Agendamento a
+        where a.configuracao.setor.id = :setorId
+          and upper(a.tipoAtendimento) = upper(:tipo)
+          and date(a.horaAgendamento) = :data
+        order by a.id desc
     """)
-    List<ConfiguracaoAtendimento> findAtivasPorSecretaria(Long secretariaId);
-
-    @Query("""
-    select a.senha
-    from Agendamento a
-    where a.configuracao.secretaria.id = :secretariaId
-      and upper(a.tipoAtendimento) = upper(:tipo)
-      and date(a.horaAgendamento) = :data
-    order by a.id desc
-""")
     List<String> findUltimaSenhaDoDia(
-            @Param("secretariaId") Long secretariaId,
-            @Param("tipo") String tipo,
-            @Param("data") LocalDate data,
+            Long setorId,
+            String tipo,
+            LocalDate data,
             Pageable pageable
     );
+
+    @Query("""
+       SELECT c
+       FROM ConfiguracaoAtendimento c
+       WHERE c.setor.id = :setorId
+       AND c.ativo = true
+       """)
+    List<ConfiguracaoAtendimento> findAtivasPorSetor(@Param("setorId") Long setorId);
 }

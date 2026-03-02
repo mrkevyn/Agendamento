@@ -22,9 +22,9 @@ public class SetorController {
         return ResponseEntity.status(HttpStatus.CREATED).body(setorService.salvar(dto));
     }
 
-    @GetMapping("/endereco/{enderecoId}")
-    public ResponseEntity<List<SetorResponseDTO>> listarPorEndereco(@PathVariable Long enderecoId) {
-        return ResponseEntity.ok(setorService.listarPorEndereco(enderecoId));
+    @GetMapping("/setor/{setorId}")
+    public ResponseEntity<List<SetorResponseDTO>> listarPorEndereco(@PathVariable Long setorId) {
+        return ResponseEntity.ok(setorService.listarPorSetor(setorId));
     }
 
     @DeleteMapping("/{id}")

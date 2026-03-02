@@ -37,5 +37,10 @@ public class Setor {
 
     // ✅ Lado inverso do N:N
     @ManyToMany(mappedBy = "setores")
+    @JsonIgnore
     private Set<Servico> servicos = new HashSet<>();
+
+    @OneToMany(mappedBy = "setor", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private Set<ConfiguracaoAtendimento> configuracoes;
 }

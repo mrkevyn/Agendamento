@@ -36,14 +36,14 @@ public class SlotAtendimentoController {
 
     @GetMapping("/horarios-disponiveis")
     public ResponseEntity<List<HorarioDisponivelResponse>> listarHorariosDisponiveis(
-            @RequestParam Long secretariaId,
+            @RequestParam Long setorId,
             @RequestParam Long configuracaoId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data
     ) {
         ConfiguracaoAtendimento cfg = configuracaoService.buscarPorId(configuracaoId);
 
         // (opcional mas recomendado) trava config errada/secretaria errada
-        if (!cfg.getSecretaria().getId().equals(secretariaId)) {
+        if (!cfg.getSetor().getId().equals(setorId)) {
             throw new RuntimeException("Configuração não pertence a esta secretaria");
         }
 
@@ -71,13 +71,13 @@ public class SlotAtendimentoController {
 
     @GetMapping("/horarios-do-dia")
     public ResponseEntity<List<HorarioDiaResponse>> listarHorariosDoDia(
-            @RequestParam Long secretariaId,
+            @RequestParam Long setorId,
             @RequestParam Long configuracaoId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data
     ) {
         ConfiguracaoAtendimento cfg = configuracaoService.buscarPorId(configuracaoId);
 
-        if (!cfg.getSecretaria().getId().equals(secretariaId)) {
+        if (!cfg.getSetor().getId().equals(setorId)) {
             throw new RuntimeException("Configuração não pertence a esta secretaria");
         }
 
@@ -109,14 +109,14 @@ public class SlotAtendimentoController {
 
     @DeleteMapping("/horarios-do-dia")
     public ResponseEntity<Void> excluirHorarioDoDia(
-            @RequestParam Long secretariaId,
+            @RequestParam Long setorId,
             @RequestParam Long configuracaoId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime hora
     ) {
         ConfiguracaoAtendimento cfg = configuracaoService.buscarPorId(configuracaoId);
 
-        if (!cfg.getSecretaria().getId().equals(secretariaId)) {
+        if (!cfg.getSetor().getId().equals(setorId)) {
             throw new RuntimeException("Configuração não pertence a esta secretaria");
         }
 
@@ -126,19 +126,19 @@ public class SlotAtendimentoController {
 
     @GetMapping("/validar")
     public ResponseEntity<SlotAtendimento> validarSlot(
-            @RequestParam Long secretariaId,
+            @RequestParam Long setorId,
             @RequestParam Long configuracaoId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime hora
     ) {
         ConfiguracaoAtendimento cfg = configuracaoService.buscarPorId(configuracaoId);
 
-        if (!cfg.getSecretaria().getId().equals(secretariaId)) {
+        if (!cfg.getSetor().getId().equals(setorId)) {
             throw new RuntimeException("Configuração não pertence a esta secretaria");
         }
 
         // valida data/hora dentro do bloco e data vinculada
-        configuracaoService.validarDisponibilidade(secretariaId, data, hora);
+        configuracaoService.validarDisponibilidade(setorId, data, hora);
 
         // só cria se data é vinculada (garantir já sabe disso)
         //slotService.garantirSlotsDoDia(cfg, data);
@@ -156,21 +156,21 @@ public class SlotAtendimentoController {
 
     @GetMapping("/datas-disponiveis")
     public ResponseEntity<List<LocalDate>> datasDisponiveis(
-            @RequestParam Long secretariaId,
+            @RequestParam Long setorId,
             @RequestParam Long configuracaoId
     ) {
         return ResponseEntity.ok(
-                configuracaoService.listarDatasVinculadas(secretariaId, configuracaoId)
+                configuracaoService.listarDatasVinculadas(setorId, configuracaoId)
         );
     }
 
     @GetMapping("/secretaria/{secretariaId}/slots")
     public ResponseEntity<List<SlotAtendimento>> listarSlotsPorSecretaria(
-            @PathVariable Long secretariaId,
+            @PathVariable Long setorId,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate data
     ) {
-        return ResponseEntity.ok(slotService.listarSlotsPorSecretaria(secretariaId, data));
+        return ResponseEntity.ok(slotService.listarSlotsPorSetor(setorId, data));
     }
 }

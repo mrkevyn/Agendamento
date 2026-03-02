@@ -45,8 +45,8 @@ public class SetorService {
         return new SetorResponseDTO(setor.getId(), setor.getNome(), setor.getDescricao());
     }
 
-    public List<SetorResponseDTO> listarPorEndereco(Long enderecoId) {
-        return setorRepository.findByEnderecoId(enderecoId)
+    public List<SetorResponseDTO> listarPorSetor(Long setorId) {
+        return setorRepository.findByEnderecoId(setorId)
                 .stream()
                 .map(s -> new SetorResponseDTO(s.getId(), s.getNome(), s.getDescricao()))
                 .toList();

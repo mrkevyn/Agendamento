@@ -85,7 +85,7 @@ public class AgendamentoService {
 
         // 1) valida se dia/hora é permitido pra secretaria
         configuracaoService.validarDisponibilidade(
-                cfg.getSecretaria().getId(),
+                cfg.getSetor().getId(),
                 req.data(),
                 req.hora()
         );

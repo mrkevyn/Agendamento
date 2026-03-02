@@ -27,14 +27,6 @@ public class Secretaria {
     private boolean ativo = true;
     private boolean visivel = true;
 
-    @OneToMany(
-            mappedBy = "secretaria",
-            fetch = FetchType.EAGER,
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
-    @JsonIgnoreProperties("secretaria")
-    private Set<ConfiguracaoAtendimento> configuracoes = new HashSet<>();
 
     @OneToMany(mappedBy = "secretaria", cascade = CascadeType.ALL)
     @JsonIgnore // Para evitar recursão no JSON

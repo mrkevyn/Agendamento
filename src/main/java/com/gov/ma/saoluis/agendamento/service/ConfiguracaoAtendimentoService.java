@@ -138,14 +138,14 @@ public class ConfiguracaoAtendimentoService {
     }
 
     // 🔹 Listar por secretaria
-    public List<ConfiguracaoAtendimento> listarPorSecretaria(Long secretariaId) {
-        System.out.print(repository.findBySecretariaIdAndAtivoTrue(secretariaId));
-        return repository.findBySecretariaId(secretariaId);
+    public List<ConfiguracaoAtendimento> listarPorSecretaria(Long setorId) {
+        System.out.print(repository.findBySetorIdAndAtivoTrue(setorId));
+        return repository.findBySetorId(setorId);
     }
 
-    public List<ConfiguracaoAtendimento> listarPorSecretariaAtivas(Long secretariaId, Boolean ativo) {
-        if (ativo == null) return repository.findBySecretariaId(secretariaId);
-        return repository.findBySecretariaIdAndAtivo(secretariaId, ativo);
+    public List<ConfiguracaoAtendimento> listarPorSecretariaAtivas(Long setorId, Boolean ativo) {
+        if (ativo == null) return repository.findBySetorId(setorId);
+        return repository.findBySetorIdAndAtivo(setorId, ativo);
     }
 
     public DatasResponse listarDatas(Long id){
@@ -173,12 +173,12 @@ public class ConfiguracaoAtendimentoService {
 
     // 🔹 Verifica se uma data/horário é permitido
     public ConfiguracaoAtendimento validarDisponibilidade(
-            Long secretariaId,
+            Long setorId,
             LocalDate data,
             LocalTime hora
     ) {
         List<ConfiguracaoAtendimento> configuracoes =
-                repository.findAtivasPorSecretaria(secretariaId);
+                repository.findAtivasPorSetor(setorId);
 
         return configuracoes.stream()
                 // 📆 valida por data específica
@@ -354,7 +354,7 @@ public class ConfiguracaoAtendimentoService {
         };
     }
 
-    public List<LocalDate> listarDatasDisponiveis(Long secretariaId, Long configuracaoId, int dias) {
+    public List<LocalDate> listarDatasDisponiveis(Long setorId, Long configuracaoId, int dias) {
         ConfiguracaoAtendimento cfg = buscarPorId(configuracaoId);
 
         LocalDate hoje = LocalDate.now();
@@ -369,10 +369,10 @@ public class ConfiguracaoAtendimentoService {
                 .toList();
     }
 
-    public List<LocalDate> listarDatasVinculadas(Long secretariaId, Long configuracaoId) {
+    public List<LocalDate> listarDatasVinculadas(Long setorId, Long configuracaoId) {
         ConfiguracaoAtendimento cfg = buscarPorId(configuracaoId);
 
-        if (!cfg.getSecretaria().getId().equals(secretariaId)) {
+        if (!cfg.getSetor().getId().equals(setorId)) {
             throw new RuntimeException("Configuração não pertence a esta secretaria");
         }
 
@@ -393,10 +393,10 @@ public class ConfiguracaoAtendimentoService {
         return !hora.isBefore(cfg.getPausaInicio()) && hora.isBefore(cfg.getPausaFim());
     }
 
-    public ConfiguracaoAtendimento buscarConfigAtivaPorSecretaria(Long secretariaId) {
+    public ConfiguracaoAtendimento buscarConfigAtivaPorSecretaria(Long setorId) {
 
         List<ConfiguracaoAtendimento> configs =
-                repository.findBySecretariaIdAndAtivoTrue(secretariaId);
+                repository.findBySetorIdAndAtivoTrue(setorId);
 
         if (configs.isEmpty()) {
             throw new RuntimeException("Não existe configuração ativa para esta secretaria");

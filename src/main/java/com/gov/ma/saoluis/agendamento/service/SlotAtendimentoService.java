@@ -68,13 +68,16 @@ public class SlotAtendimentoService {
         };
     }
 
-    public List<SlotAtendimento> listarSlotsPorSecretaria(Long secretariaId, LocalDate data) {
+    public List<SlotAtendimento> listarSlotsPorSetor(Long setorId, LocalDate data) {
+
         if (data != null) {
-            return slotRepo.findByConfiguracaoSecretariaIdAndAtivoTrueAndDataOrderByHoraAsc(secretariaId, data);
+            return slotRepo.findByConfiguracaoSetorIdAndAtivoTrueAndDataOrderByHoraAsc(
+                    setorId, data
+            );
         }
-        // exemplo: hoje (ou os próximos 7 dias, se preferir)
-        return slotRepo.findByConfiguracaoSecretariaIdAndAtivoTrueAndDataGreaterThanEqualOrderByDataAscHoraAsc(
-                secretariaId, LocalDate.now()
+
+        return slotRepo.findByConfiguracaoSetorIdAndAtivoTrueAndDataGreaterThanEqualOrderByDataAscHoraAsc(
+                setorId, LocalDate.now()
         );
     }
 
@@ -85,5 +88,4 @@ public class SlotAtendimentoService {
             throw new RuntimeException("Horário não encontrado para excluir.");
         }
     }
-
 }

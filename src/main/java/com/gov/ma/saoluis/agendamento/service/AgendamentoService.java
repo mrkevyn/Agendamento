@@ -81,7 +81,8 @@ public class AgendamentoService {
         Usuario usuario = usuarioService.buscarPorId(req.usuarioId());
         Servico servico = servicoService.buscarPorId(req.servicoId());
 
-        ConfiguracaoAtendimento cfg = configuracaoService.buscarPorId(req.configuracaoId());
+        ConfiguracaoAtendimento cfg =
+                configuracaoService.buscarPorSetorId(req.setorId());
 
         // 1) valida se dia/hora é permitido pra secretaria
         configuracaoService.validarDisponibilidade(
@@ -123,6 +124,7 @@ public class AgendamentoService {
         agendamento.setUsuario(usuario);
         agendamento.setServico(servico);
         agendamento.setConfiguracao(cfg);
+        agendamento.setSetor(cfg.getSetor());
 
         agendamento.setHoraAgendamento(
                 java.time.LocalDateTime.of(req.data(), req.hora())
@@ -151,6 +153,86 @@ public class AgendamentoService {
                     throw new RuntimeException("Falha ao gerar senha única");
                 }
                 // tenta de novo
+            }
+        }
+    }
+
+    // 🔹 Criar novo agendamento pelo app externo (sem login)
+    @Transactional
+    public Agendamento salvarExterno(AgendamentoExternoRequest req) {
+
+        if (req.email() == null || req.email().isBlank()) {
+            throw new RuntimeException("Email é obrigatório");
+        }
+
+        Servico servico = servicoService.buscarPorId(req.servicoId());
+
+        // 🔥 AGORA BUSCA CONFIGURAÇÃO PELO SETOR
+        ConfiguracaoAtendimento cfg =
+                configuracaoService.buscarPorSetorId(req.setorId());
+
+        configuracaoService.validarDisponibilidade(
+                req.setorId(),
+                req.data(),
+                req.hora()
+        );
+
+        slotAtendimentoService.garantirSlotsDoDia(cfg, req.data());
+
+        SlotAtendimento slot = slotAtendimentoRepository.lockSlot(
+                cfg.getId(),
+                req.data(),
+                req.hora()
+        ).orElseThrow(() -> new RuntimeException("Horário indisponível"));
+
+        if (!slot.temVaga()) {
+            throw new RuntimeException("Horário lotado");
+        }
+
+        slot.setReservados(slot.getReservados() + 1);
+        slotAtendimentoRepository.save(slot);
+
+        Agendamento agendamento = new Agendamento();
+
+        agendamento.setServico(servico);
+        agendamento.setConfiguracao(cfg);
+        agendamento.setSetor(cfg.getSetor());
+
+        agendamento.setNomeCidadao(req.nome());
+        agendamento.setCpf(req.cpf());
+        agendamento.setDataNascimento(req.dataNascimento());
+        agendamento.setCelular(req.celular());
+        agendamento.setEmail(req.email());
+
+        agendamento.setHoraAgendamento(
+                LocalDateTime.of(req.data(), req.hora())
+        );
+
+        agendamento.setTipoAgendamento(TipoAgendamento.AGENDADO);
+        agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
+
+        agendamento.setTipoAtendimento(
+                req.tipoAtendimento() == null ? "NORMAL" : req.tipoAtendimento()
+        );
+
+        int tentativas = 0;
+        while (true) {
+            tentativas++;
+
+            agendamento.setSenha(
+                    gerarSenhaParaDia(
+                            cfg.getId(),
+                            agendamento.getTipoAtendimento(),
+                            req.data()
+                    )
+            );
+
+            try {
+                return agendamentoRepository.save(agendamento);
+            } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                if (tentativas >= 5) {
+                    throw new RuntimeException("Falha ao gerar senha única");
+                }
             }
         }
     }

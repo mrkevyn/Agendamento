@@ -76,4 +76,9 @@ public interface SlotAtendimentoRepository extends JpaRepository<SlotAtendimento
             @Param("data") LocalDate data,
             @Param("hora") LocalTime hora
     );
+
+    List<SlotAtendimento> findByConfiguracaoSetorIdAndDataAndAtivoTrue(
+            Long setorId,
+            LocalDate data
+    );
 }

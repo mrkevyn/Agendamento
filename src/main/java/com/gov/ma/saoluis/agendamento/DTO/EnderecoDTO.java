@@ -1,7 +1,6 @@
 package com.gov.ma.saoluis.agendamento.DTO;
 
 public record EnderecoDTO(
-        Long id,
         String logradouro,
         String numero,
         String complemento,

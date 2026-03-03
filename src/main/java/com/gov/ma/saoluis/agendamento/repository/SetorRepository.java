@@ -10,4 +10,6 @@ public interface SetorRepository extends JpaRepository<Setor, Long> {
 
     // Este método buscará todos os setores que pertencem a um ID de endereço específico
     List<Setor> findByEnderecoId(Long enderecoId);
+
+    List<Setor> findBySecretariaId(Long secretariaId);
 }

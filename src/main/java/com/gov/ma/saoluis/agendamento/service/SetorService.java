@@ -1,5 +1,6 @@
 package com.gov.ma.saoluis.agendamento.service;
 
+import com.gov.ma.saoluis.agendamento.DTO.EnderecoDTO;
 import com.gov.ma.saoluis.agendamento.DTO.SetorCreateDTO;
 import com.gov.ma.saoluis.agendamento.DTO.SetorResponseDTO;
 import com.gov.ma.saoluis.agendamento.model.Endereco;
@@ -42,13 +43,39 @@ public class SetorService {
 
         setor = setorRepository.save(setor);
 
-        return new SetorResponseDTO(setor.getId(), setor.getNome(), setor.getDescricao());
+        return new SetorResponseDTO(
+                setor.getId(),
+                setor.getNome(),
+                setor.getDescricao(),
+                new EnderecoDTO(
+                        setor.getEndereco().getLogradouro(),
+                        setor.getEndereco().getNumero(),
+                        setor.getEndereco().getComplemento(),
+                        setor.getEndereco().getBairro(),
+                        setor.getEndereco().getCidade(),
+                        setor.getEndereco().getUf(),
+                        setor.getEndereco().getCep()
+                )
+        );
     }
 
     public List<SetorResponseDTO> listarPorSetor(Long setorId) {
         return setorRepository.findByEnderecoId(setorId)
                 .stream()
-                .map(s -> new SetorResponseDTO(s.getId(), s.getNome(), s.getDescricao()))
+                .map(setor -> new SetorResponseDTO(
+                        setor.getId(),
+                        setor.getNome(),
+                        setor.getDescricao(),
+                        new EnderecoDTO(
+                                setor.getEndereco().getLogradouro(),
+                                setor.getEndereco().getNumero(),
+                                setor.getEndereco().getComplemento(),
+                                setor.getEndereco().getBairro(),
+                                setor.getEndereco().getCidade(),
+                                setor.getEndereco().getUf(),
+                                setor.getEndereco().getCep()
+                        )
+                ))
                 .toList();
     }
 
@@ -58,5 +85,26 @@ public class SetorService {
             throw new RuntimeException("Setor não encontrado");
         }
         setorRepository.deleteById(id);
+    }
+
+    public List<SetorResponseDTO> listarPorSecretaria(Long secretariaId) {
+        return setorRepository
+                .findBySecretariaId(secretariaId)
+                .stream()
+                .map(setor -> new SetorResponseDTO(
+                        setor.getId(),
+                        setor.getNome(),
+                        setor.getDescricao(),
+                        new EnderecoDTO(
+                                setor.getEndereco().getLogradouro(),
+                                setor.getEndereco().getNumero(),
+                                setor.getEndereco().getComplemento(),
+                                setor.getEndereco().getBairro(),
+                                setor.getEndereco().getCidade(),
+                                setor.getEndereco().getUf(),
+                                setor.getEndereco().getCep()
+                        )
+                ))
+                .toList();
     }
 }

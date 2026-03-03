@@ -5,6 +5,7 @@ import com.gov.ma.saoluis.agendamento.model.Agendamento;
 import com.gov.ma.saoluis.agendamento.service.AgendamentoService;
 import com.gov.ma.saoluis.agendamento.repository.AgendamentoRepository;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -48,6 +49,14 @@ public class AgendamentoController {
     @PostMapping("/agendar-app")
     public Agendamento criarApp(@RequestBody AgendamentoAppRequest req) {
         return agendamentoService.salvarApp(req);
+    }
+
+    @PostMapping("/externo")
+    public ResponseEntity<Agendamento> criarAgendamentoExterno(
+            @RequestBody @Valid AgendamentoExternoRequest request
+    ) {
+        Agendamento agendamento = agendamentoService.salvarExterno(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(agendamento);
     }
 
     @PostMapping("/espontaneo/{secretariaId}")

@@ -404,4 +404,16 @@ public class ConfiguracaoAtendimentoService {
 
         return configs.get(0); // ⚠️ perigoso se tiver mais de uma
     }
+
+    public ConfiguracaoAtendimento buscarPorSetorId(Long setorId) {
+
+        List<ConfiguracaoAtendimento> configs =
+                repository.findBySetorId(setorId);
+
+        if (configs.isEmpty()) {
+            throw new RuntimeException("Configuração não encontrada");
+        }
+
+        return configs.get(0); // pega a primeira
+    }
 }

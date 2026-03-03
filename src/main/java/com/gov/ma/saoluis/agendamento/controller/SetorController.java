@@ -32,4 +32,11 @@ public class SetorController {
         setorService.deletar(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/por-secretaria/{secretariaId}")
+    public ResponseEntity<List<SetorResponseDTO>> listarPorSecretaria(
+            @PathVariable Long secretariaId) {
+
+        return ResponseEntity.ok(setorService.listarPorSecretaria(secretariaId));
+    }
 }

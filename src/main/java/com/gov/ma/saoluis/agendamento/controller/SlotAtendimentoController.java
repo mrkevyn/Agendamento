@@ -2,6 +2,7 @@ package com.gov.ma.saoluis.agendamento.controller;
 
 import com.gov.ma.saoluis.agendamento.DTO.HorarioDiaResponse;
 import com.gov.ma.saoluis.agendamento.DTO.HorarioDisponivelResponse;
+import com.gov.ma.saoluis.agendamento.DTO.SlotResponseDTO;
 import com.gov.ma.saoluis.agendamento.model.ConfiguracaoAtendimento;
 import com.gov.ma.saoluis.agendamento.model.SlotAtendimento;
 import com.gov.ma.saoluis.agendamento.repository.SlotAtendimentoRepository;
@@ -37,26 +38,24 @@ public class SlotAtendimentoController {
     @GetMapping("/horarios-disponiveis")
     public ResponseEntity<List<HorarioDisponivelResponse>> listarHorariosDisponiveis(
             @RequestParam Long setorId,
-            @RequestParam Long configuracaoId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data
     ) {
-        ConfiguracaoAtendimento cfg = configuracaoService.buscarPorId(configuracaoId);
 
-        // (opcional mas recomendado) trava config errada/secretaria errada
-        if (!cfg.getSetor().getId().equals(setorId)) {
-            throw new RuntimeException("Configuração não pertence a esta secretaria");
+        // 🔹 Busca configuração pelo setor
+        ConfiguracaoAtendimento cfg =
+                configuracaoService.buscarPorSetorId(setorId);
+
+        if (cfg == null) {
+            throw new RuntimeException("Configuração não encontrada para este setor");
         }
 
-        // ✅ regra nova: data precisa estar vinculada
-        if (cfg.getDatasAtendimento() == null || !cfg.getDatasAtendimento().contains(data)) {
-            return ResponseEntity.ok(List.of()); // ou lança erro, veja abaixo
-            // throw new RuntimeException("Data não vinculada a esta configuração");
+        if (cfg.getDatasAtendimento() == null ||
+                !cfg.getDatasAtendimento().contains(data)) {
+            return ResponseEntity.ok(List.of());
         }
-
-        //slotService.garantirSlotsDoDia(cfg, data);
 
         List<SlotAtendimento> slots =
-                slotRepo.findByConfiguracaoIdAndDataOrderByHora(configuracaoId, data);
+                slotRepo.findByConfiguracaoIdAndDataOrderByHora(cfg.getId(), data);
 
         List<HorarioDisponivelResponse> response = slots.stream()
                 .filter(SlotAtendimento::temVaga)
@@ -172,5 +171,22 @@ public class SlotAtendimentoController {
             LocalDate data
     ) {
         return ResponseEntity.ok(slotService.listarSlotsPorSetor(setorId, data));
+    }
+
+    @GetMapping("/slots")
+    public List<SlotResponseDTO> buscarSlots(
+            @RequestParam Long setorId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data
+    ) {
+
+        List<SlotAtendimento> slots =
+                slotRepo.findByConfiguracaoSetorIdAndDataAndAtivoTrue(setorId, data);
+
+        return slots.stream()
+                .map(slot -> new SlotResponseDTO(
+                        slot.getHora(),
+                        slot.getCapacidade() - slot.getReservados()
+                ))
+                .toList();
     }
 }

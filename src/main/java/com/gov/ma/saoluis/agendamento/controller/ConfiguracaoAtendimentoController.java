@@ -65,20 +65,6 @@ public class ConfiguracaoAtendimentoController {
         return ResponseEntity.ok(service.buscarPorId(id));
     }
 
-    // 🔹 Listar configurações ativas por secretaria
-    @GetMapping("/secretaria/todas/{secretariaId}")
-    public ResponseEntity<List<ConfiguracaoAtendimento>> listarPorSecretaria(@PathVariable Long secretariaId) {
-        return ResponseEntity.ok(service.listarPorSecretaria(secretariaId));
-    }
-
-    @GetMapping("/secretaria/{secretariaId}")
-    public ResponseEntity<List<ConfiguracaoAtendimento>> listarPorSecretaria(
-            @PathVariable Long secretariaId,
-            @RequestParam(required = false) Boolean ativo
-    ) {
-        return ResponseEntity.ok(service.listarPorSecretariaAtivas(secretariaId, ativo));
-    }
-
     // 🔹 Desativar configuração
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> desativar(

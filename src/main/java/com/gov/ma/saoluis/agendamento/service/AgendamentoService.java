@@ -243,7 +243,7 @@ public class AgendamentoService {
         LocalDateTime inicio = data.atStartOfDay();
         LocalDateTime fim = data.plusDays(1).atStartOfDay();
 
-        String ultima = agendamentoRepository.findUltimaSenhaDoDiaParaEspontaneoPorEndereco(
+        String ultima = agendamentoRepository.findUltimaSenhaDoDiaParaEspontaneoPorSetor(
                 setorId, tipo, inicio, fim, PageRequest.of(0, 1)
         ).stream().findFirst().orElse(null);
 

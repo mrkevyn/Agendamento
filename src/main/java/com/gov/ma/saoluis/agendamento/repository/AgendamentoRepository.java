@@ -190,7 +190,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
       and a.horaAgendamento < :fim
     order by a.id desc
 """)
-	List<String> findUltimaSenhaDoDiaParaEspontaneoPorEndereco(
+	List<String> findUltimaSenhaDoDiaParaEspontaneoPorSetor(
 			@Param("setorId") Long setorId,
 			@Param("tipo") String tipo,
 			@Param("inicio") LocalDateTime inicio,

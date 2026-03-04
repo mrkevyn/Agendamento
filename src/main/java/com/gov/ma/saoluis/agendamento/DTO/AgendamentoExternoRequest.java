@@ -13,5 +13,5 @@ public record AgendamentoExternoRequest(
         LocalDate dataNascimento,
         String celular,
         String email,
-        String tipoAtendimento
+        Long tipoAtendimentoId
 ) {}

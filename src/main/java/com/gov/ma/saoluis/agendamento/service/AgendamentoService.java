@@ -43,7 +43,11 @@ public class AgendamentoService {
 
     private final EnderecoRepository enderecoRepository;
 
-    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService, ConfiguracaoAtendimentoService configuracaoService, ChamadaAgendamentoRepository chamadaAgendamentoRepository, HorarioAtendimentoRepository horarioRepository, ServicoService servicoService, UsuarioService usuarioService, SlotAtendimentoService slotAtendimentoService, SlotAtendimentoRepository slotAtendimentoRepository, EnderecoRepository enderecoRepository, SetorRepository setorRepository) {
+    private final ServicoRepository servicoRepository;
+
+    private TipoAtendimentoRepository tipoAtendimentoRepository;
+
+    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService, ConfiguracaoAtendimentoService configuracaoService, ChamadaAgendamentoRepository chamadaAgendamentoRepository, HorarioAtendimentoRepository horarioRepository, ServicoService servicoService, UsuarioService usuarioService, SlotAtendimentoService slotAtendimentoService, SlotAtendimentoRepository slotAtendimentoRepository, EnderecoRepository enderecoRepository, SetorRepository setorRepository, ServicoRepository servicoRepository, TipoAtendimentoRepository tipoAtendimentoRepository) {
         this.atendenteRepository = gerenciadorRepository;
         this.agendamentoRepository = agendamentoRepository;
         this.logService = logService;
@@ -56,6 +60,8 @@ public class AgendamentoService {
         this.slotAtendimentoRepository = slotAtendimentoRepository;
         this.enderecoRepository = enderecoRepository;
         this.setorRepository = setorRepository;
+        this.servicoRepository = servicoRepository;
+        this.tipoAtendimentoRepository = tipoAtendimentoRepository;
     }
 
     // 🔹 Listar todos COM DETALHES
@@ -123,7 +129,6 @@ public class AgendamentoService {
         Agendamento agendamento = new Agendamento();
         agendamento.setUsuario(usuario);
         agendamento.setServico(servico);
-        agendamento.setConfiguracao(cfg);
         agendamento.setSetor(cfg.getSetor());
 
         agendamento.setHoraAgendamento(
@@ -134,16 +139,25 @@ public class AgendamentoService {
 
         agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
 
-        agendamento.setTipoAtendimento(
-                req.tipoAtendimento() == null ? "NORMAL" : req.tipoAtendimento()
-        );
+        // 👇 MUDANÇA 1: Buscar o TipoAtendimento no banco
+        TipoAtendimento tipoAtendimento;
+        if (req.tipoAtendimentoId() != null) {
+            tipoAtendimento = tipoAtendimentoRepository.findById(req.tipoAtendimentoId())
+                    .orElseThrow(() -> new RuntimeException("Tipo de atendimento não encontrado"));
+        } else {
+            // Caso o App não envie nada, busca o tipo padrão cadastrado no banco
+            tipoAtendimento = tipoAtendimentoRepository.findByNome("NORMAL")
+                    .orElseThrow(() -> new RuntimeException("Tipo de atendimento padrão não configurado no sistema"));
+        }
+
+        agendamento.setTipoAtendimento(tipoAtendimento);
 
         int tentativas = 0;
         while (true) {
             tentativas++;
 
             agendamento.setSenha(
-                    gerarSenhaParaDia(cfg.getId(), agendamento.getTipoAtendimento(), req.data())
+                    gerarSenhaParaDia(req.setorId(), agendamento.getTipoAtendimento(), req.data())
             );
 
             try {
@@ -195,7 +209,6 @@ public class AgendamentoService {
         Agendamento agendamento = new Agendamento();
 
         agendamento.setServico(servico);
-        agendamento.setConfiguracao(cfg);
         agendamento.setSetor(cfg.getSetor());
 
         agendamento.setNomeCidadao(req.nome());
@@ -211,9 +224,17 @@ public class AgendamentoService {
         agendamento.setTipoAgendamento(TipoAgendamento.AGENDADO);
         agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
 
-        agendamento.setTipoAtendimento(
-                req.tipoAtendimento() == null ? "NORMAL" : req.tipoAtendimento()
-        );
+        TipoAtendimento tipoAtendimento;
+        if (req.tipoAtendimentoId() != null) {
+            tipoAtendimento = tipoAtendimentoRepository.findById(req.tipoAtendimentoId())
+                    .orElseThrow(() -> new RuntimeException("Tipo de atendimento não encontrado"));
+        } else {
+            // Caso o App não envie nada, busca o tipo padrão cadastrado no banco
+            tipoAtendimento = tipoAtendimentoRepository.findByNome("NORMAL")
+                    .orElseThrow(() -> new RuntimeException("Tipo de atendimento padrão não configurado no sistema"));
+        }
+
+        agendamento.setTipoAtendimento(tipoAtendimento);
 
         int tentativas = 0;
         while (true) {
@@ -221,7 +242,7 @@ public class AgendamentoService {
 
             agendamento.setSenha(
                     gerarSenhaParaDia(
-                            cfg.getId(),
+                            req.setorId(),
                             agendamento.getTipoAtendimento(),
                             req.data()
                     )
@@ -237,30 +258,23 @@ public class AgendamentoService {
         }
     }
 
-    private String gerarSenhaParaDiaEspontaneo(Long setorId, String tipo, LocalDate data) {
-        String prefixo = gerarPrefixo(tipo);
+    private String gerarSenhaParaDia(Long setorId, TipoAtendimento tipoAtendimento, LocalDate data) {
+        // Pega a sigla (Ex: "P") e o nome (Ex: "PRIORIDADE") direto do banco
+        String sigla = tipoAtendimento.getSigla();
+        String nomeTipo = tipoAtendimento.getNome();
 
-        LocalDateTime inicio = data.atStartOfDay();
-        LocalDateTime fim = data.plusDays(1).atStartOfDay();
+        // Busca no banco a última senha gerada para esse nome de tipo hoje
+        String ultima = agendamentoRepository.findUltimaSenhaDoDia(setorId, nomeTipo, data);
 
-        String ultima = agendamentoRepository.findUltimaSenhaDoDiaParaEspontaneoPorSetor(
-                setorId, tipo, inicio, fim, PageRequest.of(0, 1)
-        ).stream().findFirst().orElse(null);
+        // Se não houver nenhuma, cria a número 001 usando a sigla do banco
+        if (ultima == null || ultima.isBlank()) {
+            return sigla + "001";
+        }
 
-        if (ultima == null) return prefixo + "001";
-
-        return gerarProximaSenha(ultima);
+        // Se já tiver, passa para a função de incremento
+        return gerarProximaSenha(ultima, sigla);
     }
 
-    private String gerarSenhaParaDia(Long configId, String tipo, LocalDate data) {
-        String prefixo = gerarPrefixo(tipo);
-
-        String ultima = agendamentoRepository.findUltimaSenhaDoDia(configId, tipo, data);
-
-        if (ultima == null) return prefixo + "001";
-
-        return gerarProximaSenha(ultima);
-    }
 
     @Transactional
     public Agendamento criarEspontaneo(Long secretariaId, AgendamentoEspontaneoDTO dto) { // 🟢 Alterado de Agendamento para o DTO
@@ -274,15 +288,16 @@ public class AgendamentoService {
         Setor setor = setorRepository.findById(dto.setorId())
                 .orElseThrow(() -> new RuntimeException("Setor não encontrado"));
 
-        // 2. Validar Serviço usando o ID que vem do DTO
+        // 2. Validar Serviço
         if (dto.servicoId() == null) {
             throw new RuntimeException("Serviço é obrigatório");
         }
 
-        Servico servico = servicoService.buscarPorId(dto.servicoId());
-        if (!servico.getSecretaria().getId().equals(secretariaId)) {
-            throw new RuntimeException("Serviço não pertence à secretaria informada");
+        if (!servicoRepository.existsByIdAndSetores_Id(dto.servicoId(), setor.getId())) {
+            throw new RuntimeException("Serviço não pertence ao setor informado");
         }
+
+        Servico servico = servicoService.buscarPorId(dto.servicoId());
 
         // 3. INSTANCIAR a Entidade Agendamento (O banco só entende esta classe)
         Agendamento agendamento = new Agendamento();
@@ -300,9 +315,16 @@ public class AgendamentoService {
         LocalDateTime agora = LocalDateTime.now(ZoneId.of("America/Fortaleza"));
         agendamento.setHoraAgendamento(agora);
 
-        // Normalizar Tipo Atendimento vindo do DTO
-        String tipo = dto.tipoAtendimento();
-        agendamento.setTipoAtendimento(tipo == null ? "NORMAL" : tipo.toUpperCase());
+        // 👇 MUDANÇA AQUI: Buscar a entidade TipoAtendimento em vez da String
+        TipoAtendimento tipoAtendimento;
+        if (dto.tipoAtendimentoId() != null) {
+            tipoAtendimento = tipoAtendimentoRepository.findById(dto.tipoAtendimentoId())
+                    .orElseThrow(() -> new RuntimeException("Tipo de atendimento não encontrado"));
+        } else {
+            tipoAtendimento = tipoAtendimentoRepository.findByNome("NORMAL")
+                    .orElseThrow(() -> new RuntimeException("Tipo de atendimento padrão não configurado"));
+        }
+        agendamento.setTipoAtendimento(tipoAtendimento);
 
         // 4. Geração de Senha
         ZoneId zoneFortaleza = ZoneId.of("America/Fortaleza");
@@ -312,7 +334,13 @@ public class AgendamentoService {
         int tentativas = 0;
         while (true) {
             tentativas++;
-            agendamento.setSenha(gerarSenhaParaDiaEspontaneo(setorId, agendamento.getTipoAtendimento(), hoje));
+            agendamento.setSenha(
+                    gerarSenhaParaDia(
+                            setor.getId(),
+                            agendamento.getTipoAtendimento(),
+                            hoje
+                    )
+            );
             try {
                 return agendamentoRepository.save(agendamento);
             } catch (org.springframework.dao.DataIntegrityViolationException e) {
@@ -351,13 +379,23 @@ public class AgendamentoService {
                 ag.getSetor() != null ? ag.getSetor().getId() : null,
                 ag.getSenha(),
                 ag.getSituacao() != null ? ag.getSituacao().name() : null,
-                ag.getTipoAtendimento()
+                ag.getTipoAtendimento() != null ? ag.getTipoAtendimento().getNome() : null
         );
     }
 
     // 🔹 Atualizar (reagendar)
     public Agendamento atualizar(Long id, Agendamento novosDados) {
         Agendamento existente = buscarPorId(id);
+
+        boolean precisaNovaSenha = false;
+
+        // 1. Verifica se a data do agendamento mudou
+        LocalDate dataAntiga = existente.getHoraAgendamento().toLocalDate();
+        LocalDate dataNova = novosDados.getHoraAgendamento().toLocalDate();
+
+        if (!dataAntiga.equals(dataNova)) {
+            precisaNovaSenha = true;
+        }
 
         existente.setHoraAgendamento(novosDados.getHoraAgendamento());
 
@@ -369,11 +407,25 @@ public class AgendamentoService {
             existente.setServico(novosDados.getServico());
         }
 
-        if (novosDados.getTipoAtendimento() != null && !novosDados.getTipoAtendimento().isEmpty()) {
+        // 2. Verifica se o tipo de atendimento mudou
+        if (novosDados.getTipoAtendimento() != null) {
+            // Compara os IDs para saber se é um tipo diferente do atual
+            if (!existente.getTipoAtendimento().getId().equals(novosDados.getTipoAtendimento().getId())) {
+                precisaNovaSenha = true;
+            }
             existente.setTipoAtendimento(novosDados.getTipoAtendimento());
         }
 
-        existente.setSenha(gerarProximaSenha(existente.getSenha()));
+        // 3. Se mudou a fila (data ou tipo), gera a senha correta buscando no banco
+        if (precisaNovaSenha) {
+            String novaSenha = gerarSenhaParaDia(
+                    existente.getSetor().getId(),
+                    existente.getTipoAtendimento(),
+                    dataNova
+            );
+            existente.setSenha(novaSenha);
+        }
+
         existente.setSituacao(SituacaoAgendamento.REAGENDADO);
 
         return agendamentoRepository.save(existente);
@@ -395,17 +447,22 @@ public class AgendamentoService {
     }
 
     // 🔹 Incrementar senha anterior (ex: N001 → N002)
-    private String gerarProximaSenha(String senhaAntiga) {
-
+    private String gerarProximaSenha(String senhaAntiga, String siglaFallback) {
         if (senhaAntiga == null || senhaAntiga.length() < 2) {
-            return "N001";
+            return siglaFallback + "001";
         }
 
         String prefixo = senhaAntiga.substring(0, 1);
         String numeroStr = senhaAntiga.substring(1);
-        int numero = Integer.parseInt(numeroStr);
 
-        return String.format("%s%03d", prefixo, numero + 1);
+        try {
+            int numero = Integer.parseInt(numeroStr);
+            return String.format("%s%03d", prefixo, numero + 1);
+        } catch (NumberFormatException e) {
+            // Se por acaso alguém salvou "TESTE" na coluna de senha no banco,
+            // ele recomeça do zero com a sigla correta em vez de quebrar a API.
+            return siglaFallback + "001";
+        }
     }
 
     public List<AgendamentoDTO> listarAgendamentosComDetalhes(Long agendamentoId) {
@@ -511,7 +568,7 @@ public class AgendamentoService {
                 agendamento.getHoraAgendamento(),
                 agendamento.getSituacao(),
                 agendamento.getSenha(),
-                agendamento.getTipoAtendimento(),
+                agendamento.getTipoAtendimento().getNome(),
                 agendamento.getUsuario() != null ? agendamento.getUsuario().getId() : null,
                 agendamento.getUsuario() != null ? agendamento.getUsuario().getNome() : null,
                 agendamento.getServico() != null ? agendamento.getServico().getId() : null,
@@ -566,7 +623,7 @@ public class AgendamentoService {
                             : null
             );
             chamada.setSenha(agendamentoSalvo.getSenha());
-            chamada.setTipoAtendimento(agendamentoSalvo.getTipoAtendimento());
+            chamada.setTipoAtendimento(agendamentoSalvo.getTipoAtendimento().getNome());
             chamada.setGuiche(numeroGuiche);
             chamada.setDataChamada(LocalDateTime.now());
         }

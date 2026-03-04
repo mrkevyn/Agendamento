@@ -76,7 +76,7 @@ public class AgendamentoController {
                 salvo.getSetor().getId(),
                 salvo.getSenha(),
                 salvo.getSituacao().name(),
-                salvo.getTipoAtendimento()
+                salvo.getTipoAtendimento().getNome()
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

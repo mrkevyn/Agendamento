@@ -26,7 +26,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             a.hora_agendamento AS horaAgendamento,
             a.situacao         AS situacao,
             a.senha            AS senha,
-            a.tipo_atendimento AS tipoAtendimento,
+            ta.nome            AS tipoAtendimento,
 
             u.id               AS usuarioId,
             u.nome             AS usuarioNome,
@@ -38,6 +38,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             sec.nome           AS secretariaNome
 
         FROM agendamento a
+        LEFT JOIN tipo_atendimento ta ON a.tipo_atendimento_id = ta.id
         LEFT JOIN usuario u ON a.usuario_id = u.id
         LEFT JOIN servico s ON a.servico_id = s.id
         LEFT JOIN secretaria sec ON s.secretaria_id = sec.id
@@ -51,7 +52,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             a.hora_agendamento AS horaAgendamento,
             a.situacao         AS situacao,
             a.senha            AS senha,
-            a.tipo_atendimento AS tipoAtendimento,
+            ta.nome            AS tipoAtendimento,
 
             u.id               AS usuarioId,
             u.nome             AS usuarioNome,
@@ -63,6 +64,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             sec.nome           AS secretariaNome
 
         FROM agendamento a
+        LEFT JOIN tipo_atendimento ta ON a.tipo_atendimento_id = ta.id
         LEFT JOIN usuario u ON a.usuario_id = u.id
         LEFT JOIN servico s ON a.servico_id = s.id
         LEFT JOIN secretaria sec ON s.secretaria_id = sec.id
@@ -75,7 +77,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         a.hora_agendamento AS horaAgendamento,
         a.situacao         AS situacao,
         a.senha            AS senha,
-        a.tipo_atendimento AS tipoAtendimento,
+        ta.nome            AS tipoAtendimento,
         a.tipo_agendamento AS tipoAgendamento,
 
         a.gerenciador_id   AS gerenciadorId,
@@ -100,6 +102,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         sec.nome           AS secretariaNome
 
     FROM agendamento a
+    LEFT JOIN tipo_atendimento ta ON a.tipo_atendimento_id = ta.id
     LEFT JOIN usuario u      ON a.usuario_id = u.id
     LEFT JOIN servico s      ON a.servico_id = s.id
     LEFT JOIN gerenciador g  ON g.id = a.gerenciador_id
@@ -120,7 +123,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     SELECT a
     FROM Agendamento a
    	WHERE a.setor.id = :setorId
-      AND a.tipoAtendimento = 'NORMAL'
+      AND a.tipoAtendimento.nome = 'NORMAL'
       AND a.situacao IN ('AGENDADO', 'REAGENDADO', 'EM_ATENDIMENTO')
       AND a.horaAgendamento >= :inicio
       AND a.horaAgendamento < :fim
@@ -137,7 +140,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     SELECT a
     FROM Agendamento a
     WHERE a.setor.id = :setorId
-      AND a.tipoAtendimento = 'PRIORIDADE'
+      AND a.tipoAtendimento.nome = 'PRIORIDADE'
       AND a.situacao IN ('AGENDADO', 'REAGENDADO', 'EM_ATENDIMENTO')
       AND a.horaAgendamento >= :inicio
       AND a.horaAgendamento < :fim
@@ -169,15 +172,16 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 	);
 
 	@Query(value = """
-    select senha
-    from agendamento
-    where configuracao_atendimento_id = :configId
-      and tipo_atendimento = :tipo
-      and date(hora_agendamento) = :data
-    order by id desc
+    select a.senha
+    from agendamento a
+    join tipo_atendimento ta on ta.id = a.tipo_atendimento_id 
+    where a.setor_id = :setorId
+      and ta.nome = :tipo
+      and date(a.hora_agendamento) = :data
+    order by a.id desc
     limit 1
 """, nativeQuery = true)
-	String findUltimaSenhaDoDia(@Param("configId") Long configId,
+	String findUltimaSenhaDoDia(@Param("setorId") Long setorId,
 								@Param("tipo") String tipo,
 								@Param("data") LocalDate data);
 
@@ -185,7 +189,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     select a.senha
     from Agendamento a
     where a.setor.id = :setorId
-      and upper(a.tipoAtendimento) = upper(:tipo)
+      and upper(a.tipoAtendimento.nome) = upper(:tipo)
       and a.horaAgendamento >= :inicio
       and a.horaAgendamento < :fim
     order by a.id desc

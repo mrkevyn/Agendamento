@@ -9,5 +9,5 @@ public record AgendamentoAppRequest(
         Long setorId,
         LocalDate data,
         LocalTime hora,
-        String tipoAtendimento
+        Long tipoAtendimentoId
 ) {}

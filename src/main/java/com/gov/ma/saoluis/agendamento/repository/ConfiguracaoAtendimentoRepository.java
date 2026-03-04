@@ -21,7 +21,7 @@ public interface ConfiguracaoAtendimentoRepository
     @Query("""
         select a.senha
         from Agendamento a
-        where a.configuracao.setor.id = :setorId
+        where a.setor.id = :setorId
           and upper(a.tipoAtendimento) = upper(:tipo)
           and date(a.horaAgendamento) = :data
         order by a.id desc

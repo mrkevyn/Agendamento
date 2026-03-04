@@ -12,10 +12,6 @@ public class Agendamento {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = true)
-    @JoinColumn(name = "configuracao_atendimento_id", nullable = true)
-    private ConfiguracaoAtendimento configuracao;
-
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "usuario_id", nullable = true)
     private Usuario usuario;
@@ -31,8 +27,9 @@ public class Agendamento {
     @Column(nullable = false, length = 20)
     private SituacaoAgendamento situacao;
 
-    @Column(name = "tipo_atendimento", nullable = false, length = 30)
-    private String tipoAtendimento; // NORMAL, PRIORIDADE, PREFERENCIAL
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "tipo_atendimento_id", nullable = false)
+    private TipoAtendimento tipoAtendimento; // NORMAL, PRIORIDADE, PREFERENCIAL
 
     @Column(nullable = false, length = 10)
     private String senha; // Ex: P001, N002, F003
@@ -109,11 +106,12 @@ public class Agendamento {
         this.situacao = situacao;
     }
 
-    public String getTipoAtendimento() {
-        return tipoAtendimento;
-    }
-    public void setTipoAtendimento(String tipoAtendimento) {
+    public void setTipoAtendimento(TipoAtendimento tipoAtendimento) {
         this.tipoAtendimento = tipoAtendimento;
+    }
+
+    public TipoAtendimento getTipoAtendimento() {
+        return tipoAtendimento;
     }
 
     public String getSenha() {
@@ -135,14 +133,6 @@ public class Agendamento {
 
     public void setAtendente(Gerenciador gerenciador) {
         this.gerenciador = gerenciador;
-    }
-
-    public ConfiguracaoAtendimento getConfiguracao() {
-        return configuracao;
-    }
-
-    public void setConfiguracao(ConfiguracaoAtendimento configuracao) {
-        this.configuracao = configuracao;
     }
 
     public String getNomeCidadao(){

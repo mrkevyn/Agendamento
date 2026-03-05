@@ -7,13 +7,13 @@ import com.gov.ma.saoluis.agendamento.repository.SlotAtendimentoRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
-import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ConfiguracaoAtendimentoService {
@@ -50,16 +50,28 @@ public class ConfiguracaoAtendimentoService {
     public ConfiguracaoAtendimento adicionarDatas(Long configuracaoId, Set<LocalDate> datas) {
 
         if (datas == null || datas.isEmpty()) {
-            throw new RuntimeException("Informe ao menos uma data de atendimento");
+            throw new RuntimeException("Informe ao menos uma data de atendimento.");
         }
 
         ConfiguracaoAtendimento cfg = buscarPorId(configuracaoId);
 
-        cfg.getDatasAtendimento().addAll(datas);
+        // 🟢 1. Filtra as datas: pega a lista que chegou e mantém APENAS as que não existem no banco
+        Set<LocalDate> novasDatas = datas.stream()
+                .filter(data -> !cfg.getDatasAtendimento().contains(data))
+                .collect(Collectors.toSet());
+
+        // 🟢 2. Se depois de filtrar não sobrar nenhuma data nova, avisa o usuário
+        if (novasDatas.isEmpty()) {
+            throw new RuntimeException("Todas as datas informadas já estão cadastradas para este setor.");
+        }
+
+        // 3. Adiciona apenas as datas inéditas na coleção da entidade
+        cfg.getDatasAtendimento().addAll(novasDatas);
 
         ConfiguracaoAtendimento salvo = repository.save(cfg);
 
-        for (LocalDate data : datas) {
+        // 4. Gera os slots APENAS para as novas datas, economizando processamento e evitando bugs
+        for (LocalDate data : novasDatas) {
             slotService.garantirSlotsDoDia(salvo, data);
         }
 
@@ -128,7 +140,14 @@ public class ConfiguracaoAtendimentoService {
         // 🔥 recria horários sem quebrar a coleção
         gerarHorarios(existente);
 
-        return repository.save(existente);
+        // Salva a configuração (o "molde") atualizada
+        ConfiguracaoAtendimento salvo = repository.save(existente);
+
+        // 👇 A MÁGICA AQUI: Vai no banco e atualiza a capacidade física dos slots futuros!
+        // (Lembre-se de garantir que o SlotAtendimentoService esteja injetado nesta classe)
+        slotService.sincronizarCapacidadeFutura(salvo.getId(), salvo.getNumeroGuiches());
+
+        return salvo;
     }
 
     // 🔹 Buscar por ID
@@ -341,19 +360,6 @@ public class ConfiguracaoAtendimentoService {
         }
     }
 
-    // 🔹 Converte DayOfWeek → DiaSemana (PT-BR)
-    private DiaSemana converterDia(DayOfWeek dayOfWeek) {
-        return switch (dayOfWeek) {
-            case MONDAY -> DiaSemana.SEGUNDA;
-            case TUESDAY -> DiaSemana.TERCA;
-            case WEDNESDAY -> DiaSemana.QUARTA;
-            case THURSDAY -> DiaSemana.QUINTA;
-            case FRIDAY -> DiaSemana.SEXTA;
-            case SATURDAY -> DiaSemana.SABADO;
-            case SUNDAY -> DiaSemana.DOMINGO;
-        };
-    }
-
     public List<LocalDate> listarDatasDisponiveis(Long setorId, Long configuracaoId, int dias) {
         ConfiguracaoAtendimento cfg = buscarPorId(configuracaoId);
 
@@ -393,7 +399,7 @@ public class ConfiguracaoAtendimentoService {
         return !hora.isBefore(cfg.getPausaInicio()) && hora.isBefore(cfg.getPausaFim());
     }
 
-    public ConfiguracaoAtendimento buscarConfigAtivaPorSecretaria(Long setorId) {
+    public ConfiguracaoAtendimento buscarConfigAtivaPorSetor(Long setorId) {
 
         List<ConfiguracaoAtendimento> configs =
                 repository.findBySetorIdAndAtivoTrue(setorId);

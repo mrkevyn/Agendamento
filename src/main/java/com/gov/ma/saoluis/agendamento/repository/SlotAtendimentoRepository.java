@@ -81,4 +81,16 @@ public interface SlotAtendimentoRepository extends JpaRepository<SlotAtendimento
             Long setorId,
             LocalDate data
     );
+
+    @Modifying
+    @Query("""
+        UPDATE SlotAtendimento s 
+        SET s.capacidade = :novaCapacidade 
+        WHERE s.configuracao.id = :configuracaoId 
+          AND s.data >= CURRENT_DATE
+    """)
+    void atualizarCapacidadeFutura(
+            @Param("configuracaoId") Long configuracaoId,
+            @Param("novaCapacidade") int novaCapacidade
+    );
 }

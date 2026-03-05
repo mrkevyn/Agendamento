@@ -77,8 +77,13 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         a.hora_agendamento AS horaAgendamento,
         a.situacao         AS situacao,
         a.senha            AS senha,
-        ta.nome            AS tipoAtendimento,
         a.tipo_agendamento AS tipoAgendamento,
+        
+        -- DADOS DO TIPO DE ATENDIMENTO COMPLETOS
+        ta.id              AS tipoAtendimentoId,
+        ta.nome            AS tipoAtendimento,
+        ta.sigla           AS tipoAtendimentoSigla,
+        ta.peso            AS tipoAtendimentoPeso,
 
         a.gerenciador_id   AS gerenciadorId,
         gui.numero AS guiche,
@@ -120,15 +125,15 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 	List<AgendamentoDTO> buscarAgendamentosPorSetor(@Param("setorId") Long setorId);
 
 	@Query("""
-    SELECT a
-    FROM Agendamento a
-   	WHERE a.setor.id = :setorId
-      AND a.tipoAtendimento.nome = 'NORMAL'
-      AND a.situacao IN ('AGENDADO', 'REAGENDADO', 'EM_ATENDIMENTO')
-      AND a.horaAgendamento >= :inicio
-      AND a.horaAgendamento < :fim
-    ORDER BY a.horaAgendamento ASC
-""")
+        SELECT a
+        FROM Agendamento a
+        WHERE a.setor.id = :setorId
+          AND a.tipoAtendimento.peso = 0 
+          AND a.situacao IN ('AGENDADO', 'REAGENDADO', 'EM_ATENDIMENTO')
+          AND a.horaAgendamento >= :inicio
+          AND a.horaAgendamento < :fim
+        ORDER BY a.horaAgendamento ASC
+    """)
 	List<Agendamento> buscarProximoNormalHoje(
 			@Param("setorId") Long setorId,
 			@Param("inicio") LocalDateTime inicio,
@@ -137,15 +142,15 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 	);
 
 	@Query("""
-    SELECT a
-    FROM Agendamento a
-    WHERE a.setor.id = :setorId
-      AND a.tipoAtendimento.nome = 'PRIORIDADE'
-      AND a.situacao IN ('AGENDADO', 'REAGENDADO', 'EM_ATENDIMENTO')
-      AND a.horaAgendamento >= :inicio
-      AND a.horaAgendamento < :fim
-    ORDER BY a.horaAgendamento ASC
-""")
+        SELECT a
+        FROM Agendamento a
+        WHERE a.setor.id = :setorId
+          AND a.tipoAtendimento.peso > 0 
+          AND a.situacao IN ('AGENDADO', 'REAGENDADO', 'EM_ATENDIMENTO')
+          AND a.horaAgendamento >= :inicio
+          AND a.horaAgendamento < :fim
+        ORDER BY a.tipoAtendimento.peso DESC, a.horaAgendamento ASC
+    """)
 	List<Agendamento> buscarProximoPrioridadeHoje(
 			@Param("setorId") Long setorId,
 			@Param("inicio") LocalDateTime inicio,

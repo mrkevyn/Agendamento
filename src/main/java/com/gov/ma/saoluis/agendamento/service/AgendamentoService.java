@@ -131,6 +131,10 @@ public class AgendamentoService {
         agendamento.setServico(servico);
         agendamento.setSetor(cfg.getSetor());
 
+        // 🟢 NOVO: Pega a secretaria através do setor (ou serviço) para usar nas validações e já salva no agendamento
+        Secretaria secretaria = cfg.getSetor().getSecretaria();
+        agendamento.setSecretaria(secretaria);
+
         agendamento.setHoraAgendamento(
                 java.time.LocalDateTime.of(req.data(), req.hora())
         );
@@ -139,15 +143,19 @@ public class AgendamentoService {
 
         agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
 
-        // 👇 MUDANÇA 1: Buscar o TipoAtendimento no banco
         TipoAtendimento tipoAtendimento;
         if (req.tipoAtendimentoId() != null) {
             tipoAtendimento = tipoAtendimentoRepository.findById(req.tipoAtendimentoId())
                     .orElseThrow(() -> new RuntimeException("Tipo de atendimento não encontrado"));
+
+            // 🟢 VALIDAÇÃO DE SEGURANÇA: Garante que o tipo escolhido pertence à secretaria do agendamento
+            if (!tipoAtendimento.getSecretaria().getId().equals(secretaria.getId())) {
+                throw new RuntimeException("O tipo de atendimento escolhido não pertence a esta secretaria.");
+            }
         } else {
-            // Caso o App não envie nada, busca o tipo padrão cadastrado no banco
-            tipoAtendimento = tipoAtendimentoRepository.findByNome("NORMAL")
-                    .orElseThrow(() -> new RuntimeException("Tipo de atendimento padrão não configurado no sistema"));
+            // 🟢 MUDANÇA AQUI: Busca o tipo padrão "NORMAL" cadastrado APENAS para esta secretaria
+            tipoAtendimento = tipoAtendimentoRepository.findByNomeAndSecretaria_Id("NORMAL", secretaria.getId())
+                    .orElseThrow(() -> new RuntimeException("Tipo de atendimento padrão não configurado para esta secretaria"));
         }
 
         agendamento.setTipoAtendimento(tipoAtendimento);
@@ -217,6 +225,10 @@ public class AgendamentoService {
         agendamento.setCelular(req.celular());
         agendamento.setEmail(req.email());
 
+        // 🟢 NOVO: Pega a secretaria através do setor (ou serviço) para usar nas validações e já salva no agendamento
+        Secretaria secretaria = cfg.getSetor().getSecretaria();
+        agendamento.setSecretaria(secretaria);
+
         agendamento.setHoraAgendamento(
                 LocalDateTime.of(req.data(), req.hora())
         );
@@ -228,10 +240,15 @@ public class AgendamentoService {
         if (req.tipoAtendimentoId() != null) {
             tipoAtendimento = tipoAtendimentoRepository.findById(req.tipoAtendimentoId())
                     .orElseThrow(() -> new RuntimeException("Tipo de atendimento não encontrado"));
+
+            // 🟢 VALIDAÇÃO DE SEGURANÇA: Garante que o tipo escolhido pertence à secretaria do agendamento
+            if (!tipoAtendimento.getSecretaria().getId().equals(secretaria.getId())) {
+                throw new RuntimeException("O tipo de atendimento escolhido não pertence a esta secretaria.");
+            }
         } else {
-            // Caso o App não envie nada, busca o tipo padrão cadastrado no banco
-            tipoAtendimento = tipoAtendimentoRepository.findByNome("NORMAL")
-                    .orElseThrow(() -> new RuntimeException("Tipo de atendimento padrão não configurado no sistema"));
+            // 🟢 MUDANÇA AQUI: Busca o tipo padrão "NORMAL" cadastrado APENAS para esta secretaria
+            tipoAtendimento = tipoAtendimentoRepository.findByNomeAndSecretaria_Id("NORMAL", secretaria.getId())
+                    .orElseThrow(() -> new RuntimeException("Tipo de atendimento padrão não configurado para esta secretaria"));
         }
 
         agendamento.setTipoAtendimento(tipoAtendimento);
@@ -306,6 +323,10 @@ public class AgendamentoService {
         agendamento.setNomeCidadao(dto.nomeCidadao()); // Record acessa como método: campo()
         agendamento.setSetor(setor);
         agendamento.setSecretaria(setor.getSecretaria());
+
+        // 🟢 Pegamos a secretaria real do setor para garantir a consistência
+        Secretaria secretariaDoSetor = setor.getSecretaria();
+        agendamento.setSecretaria(secretariaDoSetor);
         agendamento.setServico(servico);
 
         // Status e Horários
@@ -315,15 +336,22 @@ public class AgendamentoService {
         LocalDateTime agora = LocalDateTime.now(ZoneId.of("America/Fortaleza"));
         agendamento.setHoraAgendamento(agora);
 
-        // 👇 MUDANÇA AQUI: Buscar a entidade TipoAtendimento em vez da String
+        // 👇 MUDANÇA AQUI: Busca considerando a Secretaria
         TipoAtendimento tipoAtendimento;
         if (dto.tipoAtendimentoId() != null) {
             tipoAtendimento = tipoAtendimentoRepository.findById(dto.tipoAtendimentoId())
                     .orElseThrow(() -> new RuntimeException("Tipo de atendimento não encontrado"));
+
+            // 🟢 VALIDAÇÃO DE SEGURANÇA: Impede cruzar dados de secretarias diferentes
+            if (!tipoAtendimento.getSecretaria().getId().equals(secretariaDoSetor.getId())) {
+                throw new RuntimeException("O tipo de atendimento escolhido não pertence à secretaria deste setor.");
+            }
         } else {
-            tipoAtendimento = tipoAtendimentoRepository.findByNome("NORMAL")
-                    .orElseThrow(() -> new RuntimeException("Tipo de atendimento padrão não configurado"));
+            // 🟢 MUDANÇA: Busca o "NORMAL" filtrando pela secretaria do setor
+            tipoAtendimento = tipoAtendimentoRepository.findByNomeAndSecretaria_Id("NORMAL", secretariaDoSetor.getId())
+                    .orElseThrow(() -> new RuntimeException("Tipo de atendimento padrão não configurado para esta secretaria"));
         }
+
         agendamento.setTipoAtendimento(tipoAtendimento);
 
         // 4. Geração de Senha

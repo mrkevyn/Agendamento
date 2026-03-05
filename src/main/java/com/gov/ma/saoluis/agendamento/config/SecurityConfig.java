@@ -43,6 +43,7 @@ public class SecurityConfig {
                                 "/agendamentos/agendar-app",
                                 "/agendamentos/espontaneo/**",
                                 "/api/tipos-atendimento/**",
+                                "/agendamentos/**",
 
                                 // 🔹 Swagger / OpenAPI
                                 "/v3/api-docs/**",

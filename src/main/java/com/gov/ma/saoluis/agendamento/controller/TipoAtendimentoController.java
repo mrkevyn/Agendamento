@@ -26,15 +26,24 @@ public class TipoAtendimentoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
     }
 
-    // Rota para o cidadão/aplicativo ver apenas as opções ativas no <select>
-    @GetMapping("/ativos")
-    public ResponseEntity<List<TipoAtendimento>> listarAtivos() {
-        return ResponseEntity.ok(service.listarAtivos());
+    @PutMapping("/{id}")
+    public ResponseEntity<TipoAtendimento> atualizar(
+            @PathVariable Long id,
+            @RequestBody TipoAtendimentoDTO dto) {
+
+        TipoAtendimento atualizado = service.atualizar(id, dto);
+        return ResponseEntity.ok(atualizado);
     }
 
-    // Rota para o painel do ADMIN listar todos
-    @GetMapping
-    public ResponseEntity<List<TipoAtendimento>> listarTodos() {
-        return ResponseEntity.ok(service.listarTodos());
+    // 🟢 Rota para o cidadão/app ver opções ativas de uma secretaria específica
+    @GetMapping("/secretaria/{secretariaId}/ativos")
+    public ResponseEntity<List<TipoAtendimento>> listarAtivosPorSecretaria(@PathVariable Long secretariaId) {
+        return ResponseEntity.ok(service.listarAtivosPorSecretaria(secretariaId));
+    }
+
+    // 🟢 Rota para o painel do ADMIN listar todos de uma secretaria específica
+    @GetMapping("/secretaria/{secretariaId}")
+    public ResponseEntity<List<TipoAtendimento>> listarTodosPorSecretaria(@PathVariable Long secretariaId) {
+        return ResponseEntity.ok(service.listarTodosPorSecretaria(secretariaId));
     }
 }

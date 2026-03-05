@@ -56,18 +56,6 @@ public class SlotAtendimentoService {
                 .toList();
     }
 
-    private DiaSemana converterDia(DayOfWeek dayOfWeek) {
-        return switch (dayOfWeek) {
-            case MONDAY -> DiaSemana.SEGUNDA;
-            case TUESDAY -> DiaSemana.TERCA;
-            case WEDNESDAY -> DiaSemana.QUARTA;
-            case THURSDAY -> DiaSemana.QUINTA;
-            case FRIDAY -> DiaSemana.SEXTA;
-            case SATURDAY -> DiaSemana.SABADO;
-            case SUNDAY -> DiaSemana.DOMINGO;
-        };
-    }
-
     public List<SlotAtendimento> listarSlotsPorSetor(Long setorId, LocalDate data) {
 
         if (data != null) {
@@ -87,5 +75,11 @@ public class SlotAtendimentoService {
         if (total == 0) {
             throw new RuntimeException("Horário não encontrado para excluir.");
         }
+    }
+
+    // 🟢 Novo método para sincronizar os slots já gerados com a nova capacidade
+    @Transactional
+    public void sincronizarCapacidadeFutura(Long configuracaoId, int novaCapacidade) {
+        slotRepo.atualizarCapacidadeFutura(configuracaoId, novaCapacidade);
     }
 }

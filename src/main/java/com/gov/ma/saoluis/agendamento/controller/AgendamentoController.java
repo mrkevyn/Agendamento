@@ -52,11 +52,13 @@ public class AgendamentoController {
     }
 
     @PostMapping("/externo")
-    public ResponseEntity<Agendamento> criarAgendamentoExterno(
+    public ResponseEntity<Map<String, String>> criarAgendamentoExterno(
             @RequestBody @Valid AgendamentoExternoRequest request
     ) {
         Agendamento agendamento = agendamentoService.salvarExterno(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(agendamento);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of("senha", agendamento.getSenha()));
     }
 
     @PostMapping("/espontaneo/{secretariaId}")

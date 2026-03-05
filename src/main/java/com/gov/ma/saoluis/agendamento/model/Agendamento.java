@@ -1,5 +1,6 @@
 package com.gov.ma.saoluis.agendamento.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -59,6 +60,7 @@ public class Agendamento {
     private String email;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
     @JoinColumn(name = "secretaria_id", nullable = false)
     private Secretaria secretaria;
 

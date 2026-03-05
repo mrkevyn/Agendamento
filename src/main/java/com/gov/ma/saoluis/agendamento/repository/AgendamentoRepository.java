@@ -206,4 +206,14 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 			@Param("fim") LocalDateTime fim,
 			Pageable pageable
 	);
+
+	@Query("""
+    SELECT a 
+    FROM Agendamento a 
+    LEFT JOIN a.usuario u
+    WHERE a.cpf = :cpf 
+       OR u.login = :cpf 
+    ORDER BY a.horaAgendamento DESC
+""")
+	List<Agendamento> buscarHistoricoPorCpf(@Param("cpf") String cpf);
 }

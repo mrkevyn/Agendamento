@@ -47,6 +47,8 @@ public class AgendamentoService {
 
     private TipoAtendimentoRepository tipoAtendimentoRepository;
 
+    private static final ZoneId ZONE_SLZ = ZoneId.of("America/Fortaleza");
+
     public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService, ConfiguracaoAtendimentoService configuracaoService, ChamadaAgendamentoRepository chamadaAgendamentoRepository, HorarioAtendimentoRepository horarioRepository, ServicoService servicoService, UsuarioService usuarioService, SlotAtendimentoService slotAtendimentoService, SlotAtendimentoRepository slotAtendimentoRepository, EnderecoRepository enderecoRepository, SetorRepository setorRepository, ServicoRepository servicoRepository, TipoAtendimentoRepository tipoAtendimentoRepository) {
         this.atendenteRepository = gerenciadorRepository;
         this.agendamentoRepository = agendamentoRepository;
@@ -333,7 +335,7 @@ public class AgendamentoService {
         agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
         agendamento.setTipoAgendamento(TipoAgendamento.ESPONTANEO);
 
-        LocalDateTime agora = LocalDateTime.now(ZoneId.of("America/Fortaleza"));
+        LocalDateTime agora = LocalDateTime.now(ZONE_SLZ);
         agendamento.setHoraAgendamento(agora);
 
         // 👇 MUDANÇA AQUI: Busca considerando a Secretaria
@@ -355,8 +357,7 @@ public class AgendamentoService {
         agendamento.setTipoAtendimento(tipoAtendimento);
 
         // 4. Geração de Senha
-        ZoneId zoneFortaleza = ZoneId.of("America/Fortaleza");
-        LocalDate hoje = LocalDate.now(zoneFortaleza);
+        LocalDate hoje = LocalDate.now(ZONE_SLZ);
         Long setorId = setor.getId();
 
         int tentativas = 0;
@@ -511,10 +512,7 @@ public class AgendamentoService {
              throw new RuntimeException("Gerenciador não pertence a este setor");
          }
 
-         // Define o fuso de Fortaleza
-         ZoneId zoneFortaleza = ZoneId.of("America/Fortaleza");
-
-         LocalDate hoje = LocalDate.now(zoneFortaleza);
+         LocalDate hoje = LocalDate.now(ZONE_SLZ);
          LocalDateTime inicio = hoje.atStartOfDay();
          LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
 
@@ -541,9 +539,7 @@ public class AgendamentoService {
             throw new RuntimeException("Gerenciador não pertence a este setor ou não possui setor vinculado");
         }
 
-        ZoneId zoneFortaleza = ZoneId.of("America/Fortaleza");
-
-        LocalDate hoje = LocalDate.now(zoneFortaleza);
+        LocalDate hoje = LocalDate.now(ZONE_SLZ);
         LocalDateTime inicio = hoje.atStartOfDay();
         LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
 
@@ -569,9 +565,7 @@ public class AgendamentoService {
             throw new RuntimeException("Atendente não possui vínculo com o setor informado");
         }
 
-        ZoneId zoneFortaleza = ZoneId.of("America/Fortaleza");
-
-        LocalDate hoje = LocalDate.now(zoneFortaleza);
+        LocalDate hoje = LocalDate.now(ZONE_SLZ);
         LocalDateTime inicio = hoje.atStartOfDay();
         LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
 
@@ -617,9 +611,7 @@ public class AgendamentoService {
 
         Agendamento agendamentoSalvo = agendamentoRepository.save(agendamento);
 
-        ZoneId zoneFortaleza = ZoneId.of("America/Fortaleza");
-
-        LocalDate hoje = LocalDate.now(zoneFortaleza);
+        LocalDate hoje = LocalDate.now(ZONE_SLZ);
         LocalDateTime inicio = hoje.atStartOfDay();
         LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
 
@@ -663,8 +655,7 @@ public class AgendamentoService {
 
     public List<UltimaChamadaDTO> getUltimasChamadasPorSetor(Long setorId) {
 
-        ZoneId zoneFortaleza = ZoneId.of("America/Fortaleza");
-        LocalDate hoje = LocalDate.now(zoneFortaleza);
+        LocalDate hoje = LocalDate.now(ZONE_SLZ);
         LocalDateTime inicio = hoje.atStartOfDay();
         LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
 
@@ -673,19 +664,22 @@ public class AgendamentoService {
     }
 
     // 🔹 Finalizar atendimento
+    @Transactional
     public Agendamento finalizarAtendimento(Long id) {
 
         Agendamento agendamento = buscarPorId(id);
 
+        // Validação de segurança
         if (agendamento.getSituacao() != SituacaoAgendamento.EM_ATENDIMENTO) {
             throw new RuntimeException("Este agendamento não está em atendimento.");
         }
 
+        // 🟢 Define a situação e carimba o horário de término com o fuso correto
         agendamento.setSituacao(SituacaoAgendamento.ATENDIDO);
+        agendamento.setHoraFinalizado(LocalDateTime.now(ZONE_SLZ));
 
         return agendamentoRepository.save(agendamento);
     }
-
     // 🔹 Cancelar atendimento (não compareceu)
     public Agendamento cancelarAtendimento(Long id) {
 
@@ -696,8 +690,24 @@ public class AgendamentoService {
         }
 
         agendamento.setSituacao(SituacaoAgendamento.FALTOU);
-        agendamento.setHoraChamada(LocalDateTime.now());
+        agendamento.setHoraChamada(LocalDateTime.now(ZONE_SLZ));
 
         return agendamentoRepository.save(agendamento);
+    }
+
+    public List<HistoricoDTO> buscarHistorico(String cpf) {
+        String cpfLimpo = cpf.replaceAll("\\D", ""); // Tira a máscara
+
+        List<Agendamento> agendamentos = agendamentoRepository.buscarHistoricoPorCpf(cpfLimpo);
+
+        // Converte a entidade pesada para o DTO leve
+        return agendamentos.stream().map(a -> new HistoricoDTO(
+                a.getId(),
+                a.getSenha(),
+                a.getSituacao().name(), // Ex: "AGUARDANDO", "FINALIZADO"
+                a.getHoraAgendamento(),
+                a.getServico() != null ? a.getServico().getNome() : "Serviço não informado",
+                a.getSetor() != null ? a.getSetor().getNome() : "Setor não informado"
+        )).toList();
     }
 }

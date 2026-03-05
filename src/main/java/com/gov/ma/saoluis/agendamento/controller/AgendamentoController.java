@@ -62,21 +62,22 @@ public class AgendamentoController {
     @PostMapping("/espontaneo/{secretariaId}")
     public ResponseEntity<AgendamentoUpdateResponseDTO> criarEspontaneo(
             @PathVariable Long secretariaId,
-            @RequestBody AgendamentoEspontaneoDTO dto // ✅ Agora recebe o DTO
+            @RequestBody AgendamentoEspontaneoDTO dto
     ) {
-        // Envia o DTO para o service
+        // 1. O service processa a regra de negócio e salva
         Agendamento salvo = agendamentoService.criarEspontaneo(secretariaId, dto);
 
-        // Mapeia para o DTO de Resposta (usando o construtor do seu Record)
+        // 2. Mapeamento Manual para o DTO de Resposta
+        // Isso blinda o Jackson contra os Proxies do Hibernate
         AgendamentoUpdateResponseDTO response = new AgendamentoUpdateResponseDTO(
                 salvo.getId(),
                 salvo.getNomeCidadao(),
-                salvo.getServico().getId(),
-                salvo.getServico().getNome(),
-                salvo.getSetor().getId(),
+                salvo.getServico() != null ? salvo.getServico().getId() : null,
+                salvo.getServico() != null ? salvo.getServico().getNome() : "Não informado",
+                salvo.getSetor() != null ? salvo.getSetor().getId() : null,
                 salvo.getSenha(),
-                salvo.getSituacao().name(),
-                salvo.getTipoAtendimento().getNome()
+                salvo.getSituacao() != null ? salvo.getSituacao().name() : "AGENDADO",
+                salvo.getTipoAtendimento() != null ? salvo.getTipoAtendimento().getNome() : "NORMAL"
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -155,5 +156,16 @@ public class AgendamentoController {
         agendamentoService.cancelarAtendimento(id);
         // Retorne apenas uma mensagem de sucesso
         return ResponseEntity.ok(Map.of("mensagem", "Atendimento cancelado com sucesso"));
+    }
+
+    @GetMapping("/historico/{cpf}")
+    public ResponseEntity<List<HistoricoDTO>> consultarHistorico(@PathVariable String cpf) {
+        List<HistoricoDTO> historico = agendamentoService.buscarHistorico(cpf);
+
+        if (historico.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        return ResponseEntity.ok(historico);
     }
 }

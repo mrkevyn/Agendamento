@@ -36,6 +36,9 @@ public class Agendamento {
     
     private LocalDateTime horaChamada;
 
+    @Column(name = "hora_finalizado") // 🟢 Novo campo
+    private LocalDateTime horaFinalizado;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "gerenciador_id")
     private Gerenciador gerenciador;
@@ -126,6 +129,14 @@ public class Agendamento {
 	public void setHoraChamada(LocalDateTime horaChamada) {
 		this.horaChamada = horaChamada;
 	}
+
+    public LocalDateTime getHoraFinalizado() {
+        return horaFinalizado;
+    }
+
+    public void setHoraFinalizado(LocalDateTime horaFinalizado) {
+        this.horaFinalizado = horaFinalizado;
+    }
 
     public Gerenciador getAtendente() {
         return gerenciador;

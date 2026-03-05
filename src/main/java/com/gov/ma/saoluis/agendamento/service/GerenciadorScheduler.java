@@ -1,9 +1,11 @@
 package com.gov.ma.saoluis.agendamento.service;
 
+import com.gov.ma.saoluis.agendamento.utils.DataUtils;
 import com.gov.ma.saoluis.agendamento.repository.GerenciadorRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import java.time.LocalDateTime;
 
 @Component
 public class GerenciadorScheduler {
@@ -14,12 +16,13 @@ public class GerenciadorScheduler {
         this.gerenciadorRepository = gerenciadorRepository;
     }
 
-    // Roda todos os dias às 00:00:00
+    // 🟢 'zone' garante que o Spring olhe para o relógio de São Luís, não do servidor
     @Transactional
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 0 0 * * *", zone = DataUtils.STR_ZONE)
     public void resetarGuichesDiarios() {
-        // Esta query vai setar null em todos os guichês de todos os gerenciadores
         gerenciadorRepository.limparTodosOsGuiches();
-        System.out.println("Sistema: Todos os guichês foram liberados para o novo dia.");
+
+        // Exemplo de uso da constante ZONE_SLZ no log
+        System.out.println("Sistema: Todos os guichês liberados em: " + LocalDateTime.now(DataUtils.ZONE_SLZ));
     }
 }

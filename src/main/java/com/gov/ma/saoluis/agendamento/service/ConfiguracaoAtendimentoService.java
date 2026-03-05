@@ -157,12 +157,12 @@ public class ConfiguracaoAtendimentoService {
     }
 
     // 🔹 Listar por secretaria
-    public List<ConfiguracaoAtendimento> listarPorSecretaria(Long setorId) {
+    public List<ConfiguracaoAtendimento> listarPorSetor(Long setorId) {
         System.out.print(repository.findBySetorIdAndAtivoTrue(setorId));
         return repository.findBySetorId(setorId);
     }
 
-    public List<ConfiguracaoAtendimento> listarPorSecretariaAtivas(Long setorId, Boolean ativo) {
+    public List<ConfiguracaoAtendimento> listarPorSetorAtivos(Long setorId, Boolean ativo) {
         if (ativo == null) return repository.findBySetorId(setorId);
         return repository.findBySetorIdAndAtivo(setorId, ativo);
     }

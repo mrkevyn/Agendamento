@@ -582,6 +582,14 @@ public class AgendamentoService {
 
         Agendamento agendamento = agendamentos.get(0);
 
+        // 🚩 TRAVA DE SEGURANÇA: Impede que outro guichê "roube" o atendimento iniciado
+        if (agendamento.getSituacao() == SituacaoAgendamento.EM_ATENDIMENTO) {
+            if (agendamento.getAtendente() != null && !agendamento.getAtendente().getId().equals(atendenteId)) {
+                throw new RuntimeException("Esta senha já está sendo atendida no Guichê "
+                        + agendamento.getAtendente().getGuiche());
+            }
+        }
+
         // 🔹 Processa a chamada
         agendamento = processarChamada(agendamento, gerenciador);
 

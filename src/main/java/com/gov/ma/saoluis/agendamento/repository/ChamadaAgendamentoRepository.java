@@ -18,7 +18,7 @@ public interface ChamadaAgendamentoRepository
         ca.agendamento_id   AS agendamentoId,
         ca.senha            AS senha,
         ca.tipo_atendimento AS tipoAtendimento,
-        ca.data_chamada     AS horaChamada, -- alias para horário
+        ca.data_chamada     AS horaChamada,
 
         a.nome_cidadao      AS nomeCidadao,
 
@@ -27,15 +27,20 @@ public interface ChamadaAgendamentoRepository
 
         s.id                AS servicoId,
         s.nome              AS servicoNome,
+        
+        st.nome             AS setorNome,
+        sec.id              AS secretariaId,
+        sec.nome            AS secretariaNome,
 
         ca.guiche           AS guiche
 
     FROM chamada_agendamento ca
     JOIN agendamento a       ON ca.agendamento_id = a.id
     JOIN servico s           ON a.servico_id = s.id
+    JOIN setor st            ON a.setor_id = st.id
+    JOIN secretaria sec      ON st.secretaria_id = sec.id
 
     LEFT JOIN usuario u      ON a.usuario_id = u.id
-    --LEFT JOIN gerenciador g  ON ca.gerenciador_id = g.id
 
     WHERE a.setor_id = :setorId
       AND ca.data_chamada >= :inicio

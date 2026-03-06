@@ -35,10 +35,20 @@ public class TipoAtendimentoController {
         return ResponseEntity.ok(atualizado);
     }
 
-    // 🟢 Rota para o cidadão/app ver opções ativas de uma secretaria específica
     @GetMapping("/secretaria/{secretariaId}/ativos")
-    public ResponseEntity<List<TipoAtendimento>> listarAtivosPorSecretaria(@PathVariable Long secretariaId) {
-        return ResponseEntity.ok(service.listarAtivosPorSecretaria(secretariaId));
+    public ResponseEntity<List<TipoAtendimentoDTO>> listarAtivosPorSecretaria(@PathVariable Long secretariaId) {
+        List<TipoAtendimentoDTO> dtos = service.listarAtivosPorSecretaria(secretariaId)
+                .stream()
+                .map(t -> new TipoAtendimentoDTO(
+                        t.getId(),             // 1. id (do tipo)
+                        t.getAtivo(),
+                        t.getNome(),// 3. ativo
+                        secretariaId,          // 4. secretariaId (que veio no Path)
+                        t.getPeso()            // 5. peso
+                ))
+                .toList();
+
+        return ResponseEntity.ok(dtos);
     }
 
     // 🟢 Rota para o painel do ADMIN listar todos de uma secretaria específica

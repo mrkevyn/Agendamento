@@ -283,7 +283,7 @@ public class AgendamentoService {
         String nomeTipo = tipoAtendimento.getNome();
 
         // Busca no banco a última senha gerada para esse nome de tipo hoje
-        String ultima = agendamentoRepository.findUltimaSenhaDoDia(setorId, nomeTipo, data);
+        String ultima = agendamentoRepository.findUltimaSenhaDoDia(setorId, sigla, data);
 
         // Se não houver nenhuma, cria a número 001 usando a sigla do banco
         if (ultima == null || ultima.isBlank()) {
@@ -293,7 +293,6 @@ public class AgendamentoService {
         // Se já tiver, passa para a função de incremento
         return gerarProximaSenha(ultima, sigla);
     }
-
 
     @Transactional
     public Agendamento criarEspontaneo(Long secretariaId, AgendamentoEspontaneoDTO dto) { // 🟢 Alterado de Agendamento para o DTO
@@ -498,7 +497,7 @@ public class AgendamentoService {
         return agendamentoRepository.buscarAgendamentosComDetalhes(agendamentoId);
     }
 
- // 🔹 Chamar próxima senha normal
+    @Transactional// 🔹 Chamar próxima senha normal
      public Agendamento chamarProximaNormal(Long setorId, Long atendenteId) {
 
          Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
@@ -521,11 +520,12 @@ public class AgendamentoService {
                  setorId, inicio, fim, PageRequest.of(0, 1)
          );
 
-         Agendamento proximo = lista.isEmpty() ? null : lista.get(0);
+        Agendamento proximo = lista.get(0);
 
          return processarChamada(proximo, gerenciador);
      }
 
+    @Transactional
     public Agendamento chamarProximaPrioridade(Long setorId, Long atendenteId) {
 
         Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
@@ -547,7 +547,7 @@ public class AgendamentoService {
                 setorId, inicio, fim, PageRequest.of(0, 1)
         );
 
-        Agendamento proximo = lista.isEmpty() ? null : lista.get(0);
+        Agendamento proximo = lista.get(0);
 
         return processarChamada(proximo, gerenciador);
     }

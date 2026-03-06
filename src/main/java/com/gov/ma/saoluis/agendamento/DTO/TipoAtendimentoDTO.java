@@ -1,8 +1,9 @@
 package com.gov.ma.saoluis.agendamento.DTO;
 
 public record TipoAtendimentoDTO(
-        String nome,
+        Long id,          // 🟢 Adicione o ID aqui
         Boolean ativo,
+        String nome,
         Long secretariaId,
         Integer peso
 ) {}

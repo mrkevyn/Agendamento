@@ -104,24 +104,45 @@ public class AgendamentoController {
     }
 
     @PostMapping("/chamar/normal/{setorId}/{gerenciadorId}")
-    public ResponseEntity<Agendamento> chamarProximaNormal(
+    public ResponseEntity<?> chamarProximaNormal(
             @PathVariable Long setorId,
             @PathVariable Long gerenciadorId
     ) {
-        return ResponseEntity.ok(
-                agendamentoService.chamarProximaNormal(setorId, gerenciadorId)
-        );
+        try {
+            Agendamento agendamento = agendamentoService.chamarProximaNormal(setorId, gerenciadorId);
+
+            return ResponseEntity.ok(Map.of(
+                    "id", agendamento.getId(),
+                    "senha", agendamento.getSenha(),
+                    "status", "CHAMADO",
+                    "sucesso", true
+            ));
+        } catch (Exception e) {
+            // 🟢 Se não encontrar ninguém, retornamos 200 (OK), mas com sucesso=false
+            // Isso evita o erro 400 vermelho no console
+            return ResponseEntity.ok(Map.of(
+                    "sucesso", false,
+                    "mensagem", "Fila vazia"
+            ));
+        }
     }
 
+    // Repita a mesma lógica para o chamarProximaPrioridade
     @PostMapping("/chamar/prioridade/{setorId}/{gerenciadorId}")
-    public ResponseEntity<Agendamento> chamarProximaPrioridade(
+    public ResponseEntity<?> chamarProximaPrioridade(
             @PathVariable Long setorId,
             @PathVariable Long gerenciadorId
     ) {
-        // ✅ Alterado de enderecoId para setorId
-        return ResponseEntity.ok(
-                agendamentoService.chamarProximaPrioridade(setorId, gerenciadorId)
-        );
+        try {
+            Agendamento agendamento = agendamentoService.chamarProximaPrioridade(setorId, gerenciadorId);
+            return ResponseEntity.ok(Map.of(
+                    "id", agendamento.getId(),
+                    "senha", agendamento.getSenha(),
+                    "sucesso", true
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("sucesso", false, "mensagem", "Fila vazia"));
+        }
     }
 
     @PostMapping("/chamar/por-senha/{senha}/{atendenteId}/{setorId}")

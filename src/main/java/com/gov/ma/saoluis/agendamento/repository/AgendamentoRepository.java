@@ -132,7 +132,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         FROM Agendamento a
         WHERE a.setor.id = :setorId
           AND a.tipoAtendimento.peso = 0 
-          AND a.situacao IN ('AGENDADO', 'REAGENDADO', 'EM_ATENDIMENTO')
+          AND a.situacao IN ('AGENDADO', 'REAGENDADO')
           AND a.horaAgendamento >= :inicio
           AND a.horaAgendamento < :fim
         ORDER BY a.horaAgendamento ASC
@@ -150,7 +150,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         FROM Agendamento a
         WHERE a.setor.id = :setorId
           AND a.tipoAtendimento.peso > 0 
-          AND a.situacao IN ('AGENDADO', 'REAGENDADO', 'EM_ATENDIMENTO')
+          AND a.situacao IN ('AGENDADO', 'REAGENDADO')
           AND a.horaAgendamento >= :inicio
           AND a.horaAgendamento < :fim
         ORDER BY a.tipoAtendimento.peso DESC, a.horaAgendamento ASC
@@ -185,13 +185,13 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     from agendamento a
     join tipo_atendimento ta on ta.id = a.tipo_atendimento_id 
     where a.setor_id = :setorId
-      and ta.nome = :tipo
+      AND ta.sigla = :sigla
       and date(a.hora_agendamento) = :data
     order by a.id desc
     limit 1
 """, nativeQuery = true)
 	String findUltimaSenhaDoDia(@Param("setorId") Long setorId,
-								@Param("tipo") String tipo,
+								@Param("sigla") String sigla,
 								@Param("data") LocalDate data);
 
 	@Query("""

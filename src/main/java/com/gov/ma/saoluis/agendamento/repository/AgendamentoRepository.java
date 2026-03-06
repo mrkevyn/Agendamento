@@ -155,7 +155,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     FROM Agendamento a
     WHERE a.setor.id = :setorId
       AND a.senha = :senha
-      AND a.situacao IN ('AGENDADO', 'REAGENDADO', 'EM_ATENDIMENTO')
+      AND a.situacao IN ('AGENDADO', 'REAGENDADO', 'EM_ATENDIMENTO', 'FALTOU')
       AND a.horaAgendamento >= :inicio
       AND a.horaAgendamento < :fim
     ORDER BY a.horaAgendamento ASC

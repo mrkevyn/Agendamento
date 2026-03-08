@@ -116,7 +116,7 @@ public class SlotAtendimentoController {
         ConfiguracaoAtendimento cfg = configuracaoService.buscarPorId(configuracaoId);
 
         if (!cfg.getSetor().getId().equals(setorId)) {
-            throw new RuntimeException("Configuração não pertence a esta secretaria");
+            throw new RuntimeException("Configuração não pertence a este setor");
         }
 
         slotService.excluirSlot(configuracaoId, data, hora);

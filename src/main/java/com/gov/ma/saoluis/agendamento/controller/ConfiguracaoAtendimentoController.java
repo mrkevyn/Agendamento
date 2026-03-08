@@ -65,6 +65,16 @@ public class ConfiguracaoAtendimentoController {
         return ResponseEntity.ok(service.buscarPorId(id));
     }
 
+    // 🔹 Buscar configurações por Setor
+    @GetMapping("/setor/{setorId}")
+    public ResponseEntity<List<ConfiguracaoAtendimento>> listarPorSetor(
+            @PathVariable Long setorId,
+            @RequestParam(required = false) Boolean ativo // Permite filtrar ativos/inativos passando ?ativo=true
+    ) {
+        // Usa o método que você acabou de criar no Service!
+        return ResponseEntity.ok(service.listarPorSetorAtivos(setorId, ativo));
+    }
+
     // 🔹 Desativar configuração
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> desativar(
@@ -84,12 +94,12 @@ public class ConfiguracaoAtendimentoController {
     // 🔹 Validar disponibilidade (usado pelo agendamento)
     @GetMapping("/validar-disponibilidade")
     public ResponseEntity<ConfiguracaoAtendimento> validarDisponibilidade(
-            @RequestParam Long secretariaId,
+            @RequestParam Long setorId,
             @RequestParam LocalDate data,
             @RequestParam LocalTime hora
     ) {
         return ResponseEntity.ok(
-                service.validarDisponibilidade(secretariaId, data, hora)
+                service.validarDisponibilidade(setorId, data, hora)
         );
     }
 }

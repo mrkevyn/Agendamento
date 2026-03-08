@@ -76,7 +76,7 @@ public class ConfiguracaoAtendimentoController {
     }
 
     // 🔹 Desativar configuração
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id}/desativar")
     public ResponseEntity<Void> desativar(
             @PathVariable Long id
     ) {

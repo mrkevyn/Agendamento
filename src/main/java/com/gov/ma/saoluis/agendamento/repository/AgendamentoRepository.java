@@ -81,14 +81,13 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         a.senha            AS senha,
         a.tipo_agendamento AS tipoAgendamento,
         
-        -- DADOS DO TIPO DE ATENDIMENTO COMPLETOS
         ta.id              AS tipoAtendimentoId,
         ta.nome            AS tipoAtendimento,
         ta.sigla           AS tipoAtendimentoSigla,
         ta.peso            AS tipoAtendimentoPeso,
 
         a.gerenciador_id   AS gerenciadorId,
-        gui.numero AS guiche,
+        gui.numero         AS guiche,
 
         u.id               AS usuarioId,
         COALESCE(u.nome, a.nome_cidadao) AS usuarioNome,
@@ -96,11 +95,9 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         s.id               AS servicoId,
         s.nome             AS servicoNome,
 
-        -- Dados do Setor
         setor.id           AS setorId,
         setor.nome         AS setorNome,
 
-        -- Dados do Endereço (via Setor)
         e.id               AS enderecoId,
         e.logradouro       AS enderecoLogradouro,
         e.bairro           AS enderecoBairro,
@@ -118,46 +115,77 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     INNER JOIN endereco e    ON setor.endereco_id = e.id
     LEFT JOIN secretaria sec ON sec.id = a.secretaria_id
 
-    -- Filtro agora é direto pelo ID do Setor
     WHERE a.setor_id = :setorId
       AND a.hora_agendamento >= CURRENT_DATE
       AND a.hora_agendamento < CURRENT_DATE + INTERVAL '1 day'
-    ORDER BY a.hora_agendamento ASC
+      
+    ORDER BY 
+        -- 🟢 ORDENAÇÃO EXPLÍCITA: Sem margem para o banco errar
+        CASE 
+            WHEN a.situacao = 'EM_ATENDIMENTO' OR a.situacao = 'CHAMADO' THEN 1
+            
+            WHEN (a.situacao = 'AGENDADO' OR a.situacao = 'REAGENDADO') 
+                 AND a.tipo_agendamento = 'ESPONTANEO' THEN 2
+                 
+            WHEN (a.situacao = 'AGENDADO' OR a.situacao = 'REAGENDADO') 
+                 AND a.hora_agendamento <= :agora THEN 2
+                 
+            WHEN (a.situacao = 'AGENDADO' OR a.situacao = 'REAGENDADO') 
+                 AND a.hora_agendamento > :agora THEN 3
+                 
+            ELSE 4
+        END ASC,
+        
+        -- COALESCE garante que se o peso for nulo, ele vira 0 e não quebra a ordem
+        COALESCE(ta.peso, 0) DESC,
+        
+        a.hora_agendamento ASC
 """, nativeQuery = true)
-	List<AgendamentoDTO> buscarAgendamentosPorSetor(@Param("setorId") Long setorId);
+	List<AgendamentoDTO> buscarAgendamentosPorSetor(
+			@Param("setorId") Long setorId,
+			@Param("agora") java.sql.Timestamp agora // 🟢 Recebe o Timestamp puro
+	);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("""
-        SELECT a
-        FROM Agendamento a
-        WHERE a.setor.id = :setorId
-          AND a.tipoAtendimento.peso = 0 
-          AND a.situacao IN ('AGENDADO', 'REAGENDADO')
-          AND a.horaAgendamento >= :inicio
-          AND a.horaAgendamento < :fim
-        ORDER BY a.horaAgendamento ASC
-    """)
+      SELECT a
+      FROM Agendamento a
+      WHERE a.setor.id = :setorId
+        AND a.tipoAtendimento.peso = 0 
+        AND a.situacao IN ('AGENDADO', 'REAGENDADO')
+        AND (
+            (a.tipoAgendamento = 'AGENDADO' AND a.horaAgendamento >= :inicio AND a.horaAgendamento <= :agora)
+            OR 
+            (a.tipoAgendamento = 'ESPONTANEO' AND a.horaAgendamento >= :inicio AND a.horaAgendamento <= :fim)
+        )
+      ORDER BY a.horaAgendamento ASC, a.id ASC
+  """)
 	List<Agendamento> buscarProximoNormalHoje(
 			@Param("setorId") Long setorId,
 			@Param("inicio") LocalDateTime inicio,
+			@Param("agora") LocalDateTime agora,
 			@Param("fim") LocalDateTime fim,
 			Pageable pageable
 	);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("""
-        SELECT a
-        FROM Agendamento a
-        WHERE a.setor.id = :setorId
-          AND a.tipoAtendimento.peso > 0 
-          AND a.situacao IN ('AGENDADO', 'REAGENDADO')
-          AND a.horaAgendamento >= :inicio
-          AND a.horaAgendamento < :fim
-        ORDER BY a.tipoAtendimento.peso DESC, a.horaAgendamento ASC
-    """)
+       SELECT a
+       FROM Agendamento a
+       WHERE a.setor.id = :setorId
+         AND a.tipoAtendimento.peso > 0 
+         AND a.situacao IN ('AGENDADO', 'REAGENDADO')
+         AND (
+             (a.tipoAgendamento = 'AGENDADO' AND a.horaAgendamento >= :inicio AND a.horaAgendamento <= :agora)
+             OR 
+             (a.tipoAgendamento = 'ESPONTANEO' AND a.horaAgendamento >= :inicio AND a.horaAgendamento <= :fim)
+         )
+       ORDER BY a.tipoAtendimento.peso DESC, a.horaAgendamento ASC
+   """)
 	List<Agendamento> buscarProximoPrioridadeHoje(
 			@Param("setorId") Long setorId,
 			@Param("inicio") LocalDateTime inicio,
+			@Param("agora") LocalDateTime agora, // 🟢 Adicionamos o 'agora'
 			@Param("fim") LocalDateTime fim,
 			Pageable pageable
 	);

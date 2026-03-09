@@ -127,7 +127,7 @@ public class AgendamentoController {
         }
     }
 
-    // Repita a mesma lógica para o chamarProximaPrioridade
+    // NO CONTROLLER:
     @PostMapping("/chamar/prioridade/{setorId}/{gerenciadorId}")
     public ResponseEntity<?> chamarProximaPrioridade(
             @PathVariable Long setorId,
@@ -140,8 +140,13 @@ public class AgendamentoController {
                     "senha", agendamento.getSenha(),
                     "sucesso", true
             ));
-        } catch (Exception e) {
-            return ResponseEntity.ok(Map.of("sucesso", false, "mensagem", "Fila vazia"));
+        } catch (RuntimeException e) {
+            // 🟢 Se a mensagem for fila vazia, retorna 200 amigável para o Vue não estourar vermelho
+            if ("Fila vazia".equals(e.getMessage())) {
+                return ResponseEntity.ok(Map.of("sucesso", false, "mensagem", "Não há prioridades na fila para hoje."));
+            }
+            // Se for outro erro (ex: atendente não encontrado), manda um erro 400 real
+            return ResponseEntity.badRequest().body(Map.of("sucesso", false, "mensagem", e.getMessage()));
         }
     }
 

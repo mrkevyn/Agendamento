@@ -2,8 +2,14 @@ package com.gov.ma.saoluis.agendamento.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -15,7 +21,7 @@ import java.util.Set;
         }
 )
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class Gerenciador {
+public class Gerenciador implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -74,6 +80,36 @@ public class Gerenciador {
     protected void onCreate() {
         this.criadoEm = LocalDateTime.now();
     }
+
+    // --- MÉTODOS DO SPRING SECURITY (UserDetails) ---
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        // Mapeie o perfil do usuário para as roles do Spring Security
+        return List.of(new SimpleGrantedAuthority("ROLE_" + this.getPerfil()));
+    }
+
+    @Override
+    public String getPassword() {
+        return this.senha; // Retorne o atributo da senha hasheada
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email; // Ou CPF, dependendo da sua regra principal
+    }
+
+    @Override
+    public boolean isAccountNonExpired() { return true; }
+
+    @Override
+    public boolean isAccountNonLocked() { return true; }
+
+    @Override
+    public boolean isCredentialsNonExpired() { return true; }
+
+    @Override
+    public boolean isEnabled() { return true; }
 
     // --- Getters e Setters ---
 

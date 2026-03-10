@@ -217,41 +217,6 @@ public class GerenciadorService {
         gerenciadorRepository.delete(at);
     }
 
-    public Gerenciador login(String login, String senha) {
-
-        Gerenciador gerenciador = gerenciadorRepository
-                .findByCpfOrEmail(login, login)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
-
-        // 🔐 COMPARAÇÃO SEGURA COM HASH
-        if (!passwordEncoder.matches(senha, gerenciador.getSenha())) {
-            throw new RuntimeException("Senha inválida");
-        }
-
-        // 🔴 Agora pegamos os nomes de TODAS as secretarias (N:N)
-        String nomesSecretarias = gerenciador.getSecretarias().stream()
-                .map(Secretaria::getNome)
-                .collect(Collectors.joining(", "));
-
-        // 🟢 Transforma a lista de SETORES em uma String para o log (N:N)
-        String nomesSetores = gerenciador.getSetores().stream()
-                .map(Setor::getNome)
-                .collect(Collectors.joining(", "));
-
-        // 🔹 REGISTRAR LOG DE LOGIN
-        logService.registrar(
-                gerenciador.getId(),
-                gerenciador.getPerfil(),
-                "LOGIN",
-                "Nome: " + gerenciador.getNome() +
-                        "; Email: " + gerenciador.getEmail() +
-                        "; Secretarias: [" + nomesSecretarias + "]" +
-                        "; Setores: [" + nomesSetores + "]"
-        );
-
-        return gerenciador;
-    }
-
     @Transactional
     public Gerenciador atualizarGuiche(Long id, Long guicheId) { // 🟢 Agora recebe Long guicheId
 

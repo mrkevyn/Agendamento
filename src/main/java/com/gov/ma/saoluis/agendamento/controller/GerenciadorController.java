@@ -108,59 +108,6 @@ public class GerenciadorController {
         return ResponseEntity.noContent().build();
     }
 
-    // ➤ Login por CPF ou Email + Senha
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequestDTO dto) {
-
-        try {
-            Gerenciador g = gerenciadorService.login(
-                    dto.login(),
-                    dto.senha()
-            );
-
-            // 🔴 Extrai a lista de IDs das secretarias
-            List<Long> secretariaIds = g.getSecretarias().stream()
-                    .map(Secretaria::getId)
-                    .collect(Collectors.toList());
-
-            // 🔴 ATENÇÃO: Seu jwtService precisará ser atualizado para aceitar uma List<Long>
-            String token = jwtService.gerarToken(
-                    g.getId(),
-                    g.getPerfil(),
-                    secretariaIds
-            );
-
-            // 🏢 DTOs de Secretarias
-            List<SecretariaDTO> secretariasDTO = g.getSecretarias().stream()
-                    .map(sec -> new SecretariaDTO(sec.getId(), sec.getNome(), sec.getSigla()))
-                    .toList();
-
-            // 📍 DTOs de Setores (Incluindo o ID da secretaria para o filtro do Vue)
-            List<SetorDTO> setoresDTO = g.getSetores().stream()
-                    .map(set -> new SetorDTO(
-                            set.getId(),
-                            set.getNome(),
-                            set.getSecretaria() != null ? set.getSecretaria().getId() : null // ✅ Vincula o setor à secretaria pai
-                    ))
-                    .toList();
-
-            return ResponseEntity.ok(
-                    new LoginResponseDTO(
-                            g.getId(),
-                            g.getNome(),
-                            g.getPerfil(),
-                            token,
-                            secretariasDTO,
-                            setoresDTO
-                    )
-            );
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
     @GetMapping("/usuario-logado")
     public UsuarioLogadoDTO usuarioLogado(HttpServletRequest request) {
 

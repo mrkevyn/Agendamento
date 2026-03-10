@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -503,8 +504,20 @@ public class AgendamentoService {
         return agendamentoRepository.buscarAgendamentosComDetalhes(agendamentoId);
     }
 
+    private void verificarAtendenteOcupado(Long gerenciadorId) {
+        List<String> statusOcupados = Arrays.asList("EM_ATENDIMENTO");
+        boolean ocupado = agendamentoRepository.existsByGerenciadorIdAndSituacaoIn(gerenciadorId, statusOcupados);
+
+        if (ocupado) {
+            throw new RuntimeException("Atendente ocupado");
+        }
+    }
+
     @Transactional
     public Agendamento chamarProximaNormal(Long setorId, Long atendenteId) {
+
+        verificarAtendenteOcupado(atendenteId);
+
         Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
                 .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
 
@@ -531,6 +544,9 @@ public class AgendamentoService {
 
     @Transactional
     public Agendamento chamarProximaPrioridade(Long setorId, Long atendenteId) {
+
+        verificarAtendenteOcupado(atendenteId);
+
         Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
                 .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
 
@@ -556,6 +572,8 @@ public class AgendamentoService {
     }
 
     public AgendamentoResponseDTO chamarPorSenha(String senha, Long atendenteId, Long setorId) throws Exception {
+
+        verificarAtendenteOcupado(atendenteId);
 
         Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
                 .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));

@@ -19,6 +19,9 @@ import java.util.Optional;
 @Repository
 public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> {
 
+	// Adicione isto no seu AgendamentoRepository
+	boolean existsByGerenciadorIdAndSituacaoIn(Long gerenciadorId, List<String> situacoes);
+
 	@Query(value = "select * from agendamento where id = :id", nativeQuery = true)
 	Optional<Agendamento> findByIdNativo(@Param("id") Long id);
 

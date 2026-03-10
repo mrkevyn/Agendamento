@@ -103,31 +103,6 @@ public class AgendamentoController {
         agendamentoService.deletar(id);
     }
 
-    @PostMapping("/chamar/normal/{setorId}/{gerenciadorId}")
-    public ResponseEntity<?> chamarProximaNormal(
-            @PathVariable Long setorId,
-            @PathVariable Long gerenciadorId
-    ) {
-        try {
-            Agendamento agendamento = agendamentoService.chamarProximaNormal(setorId, gerenciadorId);
-
-            return ResponseEntity.ok(Map.of(
-                    "id", agendamento.getId(),
-                    "senha", agendamento.getSenha(),
-                    "status", "CHAMADO",
-                    "sucesso", true
-            ));
-        } catch (Exception e) {
-            // 🟢 Se não encontrar ninguém, retornamos 200 (OK), mas com sucesso=false
-            // Isso evita o erro 400 vermelho no console
-            return ResponseEntity.ok(Map.of(
-                    "sucesso", false,
-                    "mensagem", "Fila vazia"
-            ));
-        }
-    }
-
-    // NO CONTROLLER:
     @PostMapping("/chamar/prioridade/{setorId}/{gerenciadorId}")
     public ResponseEntity<?> chamarProximaPrioridade(
             @PathVariable Long setorId,
@@ -141,25 +116,62 @@ public class AgendamentoController {
                     "sucesso", true
             ));
         } catch (RuntimeException e) {
-            // 🟢 Se a mensagem for fila vazia, retorna 200 amigável para o Vue não estourar vermelho
+            // 🟢 Devolve 200 amigável para fila vazia
             if ("Fila vazia".equals(e.getMessage())) {
                 return ResponseEntity.ok(Map.of("sucesso", false, "mensagem", "Não há prioridades na fila para hoje."));
             }
-            // Se for outro erro (ex: atendente não encontrado), manda um erro 400 real
+            // 🟢 Devolve 200 amigável informando que ele está ocupado (Bloqueio do Backend!)
+            if ("Atendente ocupado".equals(e.getMessage())) {
+                return ResponseEntity.ok(Map.of("sucesso", false, "mensagem", "Ação bloqueada: Você já possui um atendimento em aberto. Finalize-o primeiro."));
+            }
+
+            // Se for outro erro, manda um erro 400 real
+            return ResponseEntity.badRequest().body(Map.of("sucesso", false, "mensagem", e.getMessage()));
+        }
+    }
+
+    // Faça a mesma coisa para o chamarNormal:
+    @PostMapping("/chamar/normal/{setorId}/{gerenciadorId}")
+    public ResponseEntity<?> chamarNormal(
+            @PathVariable Long setorId,
+            @PathVariable Long gerenciadorId
+    ) {
+        try {
+            Agendamento agendamento = agendamentoService.chamarProximaNormal(setorId, gerenciadorId);
+            return ResponseEntity.ok(Map.of(
+                    "id", agendamento.getId(),
+                    "senha", agendamento.getSenha(),
+                    "sucesso", true
+            ));
+        } catch (RuntimeException e) {
+            if ("Fila vazia".equals(e.getMessage())) {
+                return ResponseEntity.ok(Map.of("sucesso", false, "mensagem", "Não há pacientes aguardando na fila de atendimento NORMAL."));
+            }
+            if ("Atendente ocupado".equals(e.getMessage())) {
+                return ResponseEntity.ok(Map.of("sucesso", false, "mensagem", "Ação bloqueada: Você já possui um atendimento em aberto. Finalize-o primeiro."));
+            }
             return ResponseEntity.badRequest().body(Map.of("sucesso", false, "mensagem", e.getMessage()));
         }
     }
 
     @PostMapping("/chamar/por-senha/{senha}/{atendenteId}/{setorId}")
-    public ResponseEntity<AgendamentoResponseDTO> chamarPorSenha(
+    public ResponseEntity<?> chamarPorSenha(
             @PathVariable String senha,
             @PathVariable Long atendenteId,
             @PathVariable Long setorId
     ) throws Exception {
-        // ✅ Adicionado setorId no Path pois o atendente agora tem múltiplos setores
-        return ResponseEntity.ok(
-                agendamentoService.chamarPorSenha(senha, atendenteId, setorId)
-        );
+        try {
+            // Aqui mantemos o seu DTO
+            AgendamentoResponseDTO dto = agendamentoService.chamarPorSenha(senha, atendenteId, setorId);
+            return ResponseEntity.ok(dto);
+        } catch (RuntimeException e) {
+            // Para o chamarPorSenha, como o Vue usa o e.response.data.mensagem no CATCH,
+            // retornamos Bad Request (400) com a mensagem limpa
+            if ("Atendente ocupado".equals(e.getMessage())) {
+                return ResponseEntity.badRequest().body(Map.of("mensagem", "Ação bloqueada: Você já possui um atendimento em aberto."));
+            }
+            throw e; // Repassa para o GlobalExceptionHandler se for outro erro
+        }
     }
 
     @GetMapping("/ultimas-chamadas/{setorId}")

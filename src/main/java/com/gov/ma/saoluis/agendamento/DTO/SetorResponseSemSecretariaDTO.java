@@ -1,9 +1,8 @@
 package com.gov.ma.saoluis.agendamento.DTO;
 
-public record SetorResponseDTO(
+public record SetorResponseSemSecretariaDTO(
         Long id,
         String nome,
         String descricao,
-        EnderecoDTO endereco,
-        SecretariaDTO secretaria
+        EnderecoDTO endereco
 ) {}

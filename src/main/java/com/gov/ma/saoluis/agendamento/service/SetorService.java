@@ -1,8 +1,6 @@
 package com.gov.ma.saoluis.agendamento.service;
 
-import com.gov.ma.saoluis.agendamento.DTO.EnderecoDTO;
-import com.gov.ma.saoluis.agendamento.DTO.SetorCreateDTO;
-import com.gov.ma.saoluis.agendamento.DTO.SetorResponseDTO;
+import com.gov.ma.saoluis.agendamento.DTO.*;
 import com.gov.ma.saoluis.agendamento.model.Endereco;
 import com.gov.ma.saoluis.agendamento.model.Secretaria;
 import com.gov.ma.saoluis.agendamento.model.Setor;
@@ -39,7 +37,7 @@ public class SetorService {
         setor.setNome(dto.nome());
         setor.setDescricao(dto.descricao());
         setor.setEndereco(endereco);
-        setor.setSecretaria(secretaria); // ⬅️ Realiza o vínculo com a secretaria
+        setor.setSecretaria(secretaria);
 
         setor = setorRepository.save(setor);
 
@@ -55,6 +53,11 @@ public class SetorService {
                         setor.getEndereco().getCidade(),
                         setor.getEndereco().getUf(),
                         setor.getEndereco().getCep()
+                ),
+                new SecretariaDTO(
+                        secretaria.getId(),
+                        secretaria.getNome(),
+                        secretaria.getSigla()
                 )
         );
     }
@@ -74,6 +77,11 @@ public class SetorService {
                                 setor.getEndereco().getCidade(),
                                 setor.getEndereco().getUf(),
                                 setor.getEndereco().getCep()
+                        ),
+                        new SecretariaDTO(
+                                setor.getSecretaria().getId(),
+                                setor.getSecretaria().getNome(),
+                                setor.getSecretaria().getSigla()
                         )
                 ))
                 .toList();
@@ -103,6 +111,11 @@ public class SetorService {
                                 setor.getEndereco().getCidade(),
                                 setor.getEndereco().getUf(),
                                 setor.getEndereco().getCep()
+                        ),
+                        new SecretariaDTO(
+                                setor.getSecretaria().getId(),
+                                setor.getSecretaria().getNome(),
+                                setor.getSecretaria().getSigla()
                         )
                 ))
                 .toList();

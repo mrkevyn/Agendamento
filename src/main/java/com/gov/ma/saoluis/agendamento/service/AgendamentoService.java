@@ -573,7 +573,7 @@ public class AgendamentoService {
 
     public AgendamentoResponseDTO chamarPorSenha(String senha, Long atendenteId, Long setorId) throws Exception {
 
-        verificarAtendenteOcupado(atendenteId);
+        // Vamos checar isso SÓ DEPOIS de saber qual senha ele está chamando.
 
         Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
                 .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
@@ -603,7 +603,19 @@ public class AgendamentoService {
 
         Agendamento agendamento = agendamentos.get(0);
 
-        // 🚩 TRAVA DE SEGURANÇA: Impede que outro guichê "roube" o atendimento iniciado
+        // 🟢 NOVA LÓGICA: Permite "Re-chamar" a mesma senha!
+        // Descobre se a senha clicada é a que o atendente já está atendendo agora.
+        boolean ehAMinhaSenhaAtual = (agendamento.getSituacao() == SituacaoAgendamento.EM_ATENDIMENTO) &&
+                (agendamento.getAtendente() != null) &&
+                (agendamento.getAtendente().getId().equals(atendenteId));
+
+        // Só barra o atendente se ele tentar puxar um paciente NOVO (AGENDADO)
+        // ou a senha de outra pessoa, enquanto ele ainda tem um atendimento em aberto.
+        if (!ehAMinhaSenhaAtual) {
+            verificarAtendenteOcupado(atendenteId);
+        }
+
+        // 🚩 TRAVA DE SEGURANÇA: Impede que OUTRO guichê "roube" o atendimento de um colega
         if (agendamento.getSituacao() == SituacaoAgendamento.EM_ATENDIMENTO) {
             if (agendamento.getAtendente() != null && !agendamento.getAtendente().getId().equals(atendenteId)) {
                 throw new RuntimeException("Esta senha já está sendo atendida no Guichê "

@@ -72,6 +72,9 @@ public class Agendamento {
     @JoinColumn(name = "setor_id", nullable = false)
     private Setor setor;
 
+    @Column(name = "ultimo_ping")
+    private LocalDateTime ultimoPing;
+
     // Getters e Setters
     public Long getId() {
         return id;
@@ -210,5 +213,13 @@ public class Agendamento {
 
     public void setSetor(Setor setor) {
         this.setor = setor;
+    }
+
+    public LocalDateTime getUltimoPing() {
+        return ultimoPing;
+    }
+
+    public void setUltimoPing(LocalDateTime ultimoPing) {
+        this.ultimoPing = ultimoPing;
     }
 }

@@ -6,6 +6,7 @@ import com.gov.ma.saoluis.agendamento.repository.*;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import com.gov.ma.saoluis.agendamento.service.SlotAtendimentoService;
 import com.gov.ma.saoluis.agendamento.repository.EnderecoRepository;
@@ -721,6 +722,30 @@ public class AgendamentoService {
 
         return agendamentoRepository.save(agendamento);
     }
+
+    @Scheduled(fixedDelay = 15000)
+    @Transactional
+    public void finalizarAtendimentosAbandonados() {
+        // 1. Use o mesmo fuso horário (ZONE_SLZ) para o cálculo do limite
+        LocalDateTime limite = LocalDateTime.now(ZONE_SLZ).minusSeconds(30);
+
+        // 2. Tente fazer o update diretamente no banco (mais eficiente)
+        // Se preferir manter a lógica atual para disparar eventos de JPA, corrija apenas o fuso:
+        List<Agendamento> abandonados = agendamentoRepository.findBySituacaoInAndUltimoPingBefore(
+                List.of(SituacaoAgendamento.EM_ATENDIMENTO), limite
+        );
+
+        if (!abandonados.isEmpty()) {
+            for (Agendamento ag : abandonados) {
+                ag.setSituacao(SituacaoAgendamento.ATENDIDO);
+                ag.setHoraFinalizado(LocalDateTime.now(ZONE_SLZ));
+                // No @Transactional, o save() dentro do loop é opcional se o objeto for 'managed'
+                // mas ajuda na legibilidade.
+                agendamentoRepository.save(ag);
+            }
+        }
+    }
+
     // 🔹 Cancelar atendimento (não compareceu)
     public Agendamento cancelarAtendimento(Long id) {
 
@@ -750,5 +775,17 @@ public class AgendamentoService {
                 a.getServico() != null ? a.getServico().getNome() : "Serviço não informado",
                 a.getSetor() != null ? a.getSetor().getNome() : "Setor não informado"
         )).toList();
+    }
+
+    @Transactional
+    public void atualizarPing(Long id) {
+        Agendamento agendamento = buscarPorId(id);
+
+        // 🚨 IMPORTANTE: Use o mesmo ZONE_SLZ que você usa no Scheduler
+        agendamento.setUltimoPing(LocalDateTime.now(ZONE_SLZ));
+
+        // O Spring Data JPA salva automaticamente ao final do @Transactional,
+        // mas você pode forçar o save se preferir.
+        agendamentoRepository.save(agendamento);
     }
 }

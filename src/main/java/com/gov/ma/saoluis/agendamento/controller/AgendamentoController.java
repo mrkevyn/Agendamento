@@ -208,4 +208,10 @@ public class AgendamentoController {
 
         return ResponseEntity.ok(historico);
     }
+
+    @PutMapping("/heartbeat/{agendamentoId}")
+    public ResponseEntity<?> heartbeat(@PathVariable Long agendamentoId) {
+        agendamentoService.atualizarPing(agendamentoId);
+        return ResponseEntity.ok(Map.of("mensagem", "Ping recebido"));
+    }
 }

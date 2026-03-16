@@ -3,6 +3,7 @@ package com.gov.ma.saoluis.agendamento.repository;
 import com.gov.ma.saoluis.agendamento.DTO.AgendamentoDTO;
 import com.gov.ma.saoluis.agendamento.DTO.UltimaChamadaDTO;
 import com.gov.ma.saoluis.agendamento.model.Agendamento;
+import com.gov.ma.saoluis.agendamento.model.SituacaoAgendamento;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -24,6 +25,8 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 
 	@Query(value = "select * from agendamento where id = :id", nativeQuery = true)
 	Optional<Agendamento> findByIdNativo(@Param("id") Long id);
+
+	List<Agendamento> findBySituacaoInAndUltimoPingBefore(List<SituacaoAgendamento> situacoes, LocalDateTime limite);
 
 	@Query(value = """
         SELECT

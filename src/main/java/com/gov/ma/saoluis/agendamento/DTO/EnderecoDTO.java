@@ -1,5 +1,7 @@
 package com.gov.ma.saoluis.agendamento.DTO;
 
+import java.math.BigDecimal;
+
 public record EnderecoDTO(
         String logradouro,
         String numero,
@@ -7,5 +9,7 @@ public record EnderecoDTO(
         String bairro,
         String cidade,
         String uf,
-        String cep
+        String cep,
+        BigDecimal latitude,
+        BigDecimal longitude
 ) {}

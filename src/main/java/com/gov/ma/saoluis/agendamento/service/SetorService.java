@@ -52,7 +52,9 @@ public class SetorService {
                         setor.getEndereco().getBairro(),
                         setor.getEndereco().getCidade(),
                         setor.getEndereco().getUf(),
-                        setor.getEndereco().getCep()
+                        setor.getEndereco().getCep(),
+                        setor.getEndereco().getLatitude(),
+                        setor.getEndereco().getLongitude()
                 ),
                 new SecretariaDTO(
                         secretaria.getId(),
@@ -76,7 +78,9 @@ public class SetorService {
                                 setor.getEndereco().getBairro(),
                                 setor.getEndereco().getCidade(),
                                 setor.getEndereco().getUf(),
-                                setor.getEndereco().getCep()
+                                setor.getEndereco().getCep(),
+                                setor.getEndereco().getLatitude(),
+                                setor.getEndereco().getLongitude()
                         ),
                         new SecretariaDTO(
                                 setor.getSecretaria().getId(),
@@ -110,7 +114,10 @@ public class SetorService {
                                 setor.getEndereco().getBairro(),
                                 setor.getEndereco().getCidade(),
                                 setor.getEndereco().getUf(),
-                                setor.getEndereco().getCep()
+                                setor.getEndereco().getCep(),
+                                setor.getEndereco().getLatitude(),
+                                setor.getEndereco().getLongitude()
+
                         ),
                         new SecretariaDTO(
                                 setor.getSecretaria().getId(),

@@ -4,6 +4,7 @@ import com.gov.ma.saoluis.agendamento.DTO.*;
 import com.gov.ma.saoluis.agendamento.model.*;
 import com.gov.ma.saoluis.agendamento.repository.*;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -189,6 +190,9 @@ public class AgendamentoService {
         }
     }
 
+    @Autowired
+    private EmailService emailService;
+
     // 🔹 Criar novo agendamento pelo app externo (sem login)
     @Transactional
     public Agendamento salvarExterno(AgendamentoExternoRequest req) {
@@ -276,10 +280,23 @@ public class AgendamentoService {
             );
 
             try {
-                return agendamentoRepository.save(agendamento);
+                // 1. Salva o agendamento no banco
+                Agendamento agendamentoSalvo = agendamentoRepository.save(agendamento);
+
+                // 2. Dispara o e-mail (O método deve ser @Async para não travar a resposta)
+                try {
+                    emailService.enviarEmailConfirmacao(agendamentoSalvo);
+                } catch (Exception e) {
+                    // Logamos o erro do e-mail mas não impedimos o retorno do sucesso do agendamento
+                    System.err.println("Erro ao disparar e-mail: " + e.getMessage());
+                }
+
+                return agendamentoSalvo;
+
             } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                // Se houver duplicidade de senha, ele tenta novamente até 5 vezes
                 if (tentativas >= 5) {
-                    throw new RuntimeException("Falha ao gerar senha única");
+                    throw new RuntimeException("Falha ao gerar senha única após 5 tentativas");
                 }
             }
         }

@@ -43,4 +43,12 @@ public class Setor {
     @OneToMany(mappedBy = "setor", cascade = CascadeType.ALL)
     @JsonIgnore
     private Set<ConfiguracaoAtendimento> configuracoes;
+
+    @ManyToMany
+    @JoinTable(
+            name = "setor_servico_saude",
+            joinColumns = @JoinColumn(name = "setor_id"),
+            inverseJoinColumns = @JoinColumn(name = "servico_saude_id")
+    )
+    private Set<ServicoSaude> servicosSaude = new HashSet<>();
 }

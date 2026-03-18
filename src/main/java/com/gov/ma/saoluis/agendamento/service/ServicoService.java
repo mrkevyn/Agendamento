@@ -4,6 +4,7 @@ import com.gov.ma.saoluis.agendamento.DTO.ServicoResponseDTO;
 import com.gov.ma.saoluis.agendamento.model.Endereco;
 import com.gov.ma.saoluis.agendamento.model.Setor;
 import com.gov.ma.saoluis.agendamento.repository.EnderecoRepository;
+import com.gov.ma.saoluis.agendamento.repository.ServicoSaudeRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -14,16 +15,19 @@ import com.gov.ma.saoluis.agendamento.repository.SetorRepository;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @Service
 public class ServicoService {
 
     private final ServicoRepository servicoRepository;
     private final SetorRepository setorRepository;
+    private ServicoSaudeRepository servicoSaudeRepository;
 
-    public ServicoService(ServicoRepository servicoRepository, SetorRepository setorRepository) {
+    public ServicoService(ServicoRepository servicoRepository, SetorRepository setorRepository, ServicoSaudeRepository servicoSaudeRepository) {
         this.servicoRepository = servicoRepository;
         this.setorRepository = setorRepository;
+        this.servicoSaudeRepository = servicoSaudeRepository;
     }
 
     // Lista todos os serviços
@@ -42,15 +46,20 @@ public class ServicoService {
     }
 
     public List<ServicoResponseDTO> listarPorSetor(Long setorId) {
-
-        return servicoRepository.findBySetoresId(setorId)
+        // Busca da tabela antiga (Servico)
+        List<ServicoResponseDTO> servicosComuns = servicoRepository.findBySetoresId(setorId)
                 .stream()
-                .map(s -> new ServicoResponseDTO(
-                        s.getId(),
-                        s.getNome(),
-                        s.getDescricao()
-                ))
+                .map(s -> new ServicoResponseDTO(s.getId(), s.getNome(), s.getDescricao()))
                 .toList();
+
+        // Busca da tabela nova (ServicoSaude)
+        List<ServicoResponseDTO> servicosSaude = servicoSaudeRepository.findBySetoresId(setorId)
+                .stream()
+                .map(s -> new ServicoResponseDTO(s.getId(), s.getNome(), "Serviço de Saúde")) // Hardcoded ou campo novo
+                .toList();
+
+        // Combina as duas listas (se for o caso)
+        return Stream.concat(servicosComuns.stream(), servicosSaude.stream()).toList();
     }
 
     @Transactional

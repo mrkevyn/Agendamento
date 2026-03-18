@@ -5,6 +5,13 @@ import jakarta.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
 
+import lombok.Getter;
+import lombok.Setter;
+
+
+@Getter
+@Setter
+
 @Entity
 @Table(name = "servico_saude")
 public class ServicoSaude {

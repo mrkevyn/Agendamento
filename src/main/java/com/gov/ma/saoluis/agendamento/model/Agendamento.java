@@ -75,6 +75,13 @@ public class Agendamento {
     @Column(name = "ultimo_ping")
     private LocalDateTime ultimoPing;
 
+    @Column(name = "observacao", columnDefinition = "TEXT")
+    private String observacao;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "servico_saude_id", nullable = true) // 🟢 Hospital/Saúde
+    private ServicoSaude servicoSaude;
+
     // Getters e Setters
     public Long getId() {
         return id;
@@ -221,5 +228,21 @@ public class Agendamento {
 
     public void setUltimoPing(LocalDateTime ultimoPing) {
         this.ultimoPing = ultimoPing;
+    }
+
+    public String getObservacao() {
+        return observacao;
+    }
+
+    public void setObservacao(String observacao) {
+        this.observacao = observacao;
+    }
+
+    public ServicoSaude getServicoSaude() {
+        return servicoSaude;
+    }
+
+    public void setServicoSaude(ServicoSaude servicoSaude) {
+        this.servicoSaude = servicoSaude;
     }
 }

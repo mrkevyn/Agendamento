@@ -232,14 +232,19 @@ public class GerenciadorService {
                 .orElseThrow(() -> new RuntimeException("Usuário logado não encontrado"));
 
         String perfil = usuarioLogado.getPerfil();
+        boolean ehOProprio = usuarioLogado.getId().equals(id);
 
         // ✔ Validação de Perfil
-        if ("ATENDENTE".equalsIgnoreCase(perfil) && !usuarioLogado.getId().equals(id)) {
-            throw new RuntimeException("Atendente só pode alterar o próprio guichê");
-        }
+        if (!"ADMIN".equals(perfil)) {
+            // Se não for o próprio, já barra aqui (segurança)
+            if (!ehOProprio) {
+                throw new RuntimeException("Você não tem permissão para alterar o local de outro usuário.");
+            }
 
-        if (!"ADMIN".equalsIgnoreCase(perfil) && !"ATENDENTE".equalsIgnoreCase(perfil)) {
-            throw new RuntimeException("Você não tem permissão para alterar o guichê");
+            // Verifica se o perfil está na lista dos permitidos para auto-alteração
+            if (!"ATENDENTE".equals(perfil) && !"MEDICO".equals(perfil) && !"TRIAGEM".equals(perfil)) {
+                throw new RuntimeException("Seu perfil (" + perfil + ") não tem permissão para selecionar local de trabalho.");
+            }
         }
 
         // Variável para guardar o nome da secretaria selecionada para o log

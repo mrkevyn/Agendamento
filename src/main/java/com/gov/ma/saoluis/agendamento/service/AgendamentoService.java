@@ -50,10 +50,11 @@ public class AgendamentoService {
     private final ServicoRepository servicoRepository;
 
     private TipoAtendimentoRepository tipoAtendimentoRepository;
+    private ServicoSaudeRepository servicoSaudeRepository;
 
     private static final ZoneId ZONE_SLZ = ZoneId.of("America/Fortaleza");
 
-    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService, ConfiguracaoAtendimentoService configuracaoService, ChamadaAgendamentoRepository chamadaAgendamentoRepository, HorarioAtendimentoRepository horarioRepository, ServicoService servicoService, UsuarioService usuarioService, SlotAtendimentoService slotAtendimentoService, SlotAtendimentoRepository slotAtendimentoRepository, EnderecoRepository enderecoRepository, SetorRepository setorRepository, ServicoRepository servicoRepository, TipoAtendimentoRepository tipoAtendimentoRepository) {
+    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService, ConfiguracaoAtendimentoService configuracaoService, ChamadaAgendamentoRepository chamadaAgendamentoRepository, HorarioAtendimentoRepository horarioRepository, ServicoService servicoService, UsuarioService usuarioService, SlotAtendimentoService slotAtendimentoService, SlotAtendimentoRepository slotAtendimentoRepository, EnderecoRepository enderecoRepository, SetorRepository setorRepository, ServicoRepository servicoRepository, TipoAtendimentoRepository tipoAtendimentoRepository, ServicoSaudeRepository servicoSaudeRepository) {
         this.atendenteRepository = gerenciadorRepository;
         this.agendamentoRepository = agendamentoRepository;
         this.logService = logService;
@@ -68,16 +69,25 @@ public class AgendamentoService {
         this.setorRepository = setorRepository;
         this.servicoRepository = servicoRepository;
         this.tipoAtendimentoRepository = tipoAtendimentoRepository;
+        this.servicoSaudeRepository = servicoSaudeRepository;
     }
 
     public List<AgendamentoDTO> listarPorSetorGerenciador(Long setorId) {
-        // 1. Pega a hora local
-        LocalDateTime horaLocal = LocalDateTime.now(ZoneId.of("America/Sao_Paulo"));
+        // 1. Busca o setor para verificar a secretaria
+        Setor setor = setorRepository.findById(setorId)
+                .orElseThrow(() -> new RuntimeException("Setor não encontrado"));
 
-        // 🟢 2. Converte para Timestamp do SQL (Essa é a bala de prata!)
+        // 2. Define se é Hospital (Regra 24h e Serviços de Saúde)
+        // Usamos o nome da secretaria para decidir
+        String nomeSec = setor.getSecretaria().getNome().toUpperCase();
+        boolean isHospital = nomeSec.contains("SAÚDE") || nomeSec.contains("SAUDE");
+
+        // 3. Pega a hora local para a regra administrativa de "passou do horário"
+        LocalDateTime horaLocal = LocalDateTime.now(ZoneId.of("America/Sao_Paulo"));
         Timestamp agoraSql = Timestamp.valueOf(horaLocal);
 
-        return agendamentoRepository.buscarAgendamentosPorSetor(setorId, agoraSql);
+        // 4. Chama a Query com os 3 parâmetros
+        return agendamentoRepository.buscarAgendamentosPorSetor(setorId, agoraSql, isHospital);
     }
 
     // 🔹 Buscar todos os agendamentos com detalhes
@@ -320,64 +330,71 @@ public class AgendamentoService {
     }
 
     @Transactional
-    public Agendamento criarEspontaneo(Long secretariaId, AgendamentoEspontaneoDTO dto) { // 🟢 Alterado de Agendamento para o DTO
+    public Agendamento criarEspontaneo(Long secretariaId, AgendamentoEspontaneoDTO dto) {
         if (secretariaId == null) throw new RuntimeException("Secretaria é obrigatória");
 
-        // 1. Validar e Buscar Setor usando o ID que vem do DTO
-        if (dto.setorId() == null) {
-            throw new RuntimeException("Setor é obrigatório");
-        }
-
+        // 1. Validar e Buscar Setor
         Setor setor = setorRepository.findById(dto.setorId())
                 .orElseThrow(() -> new RuntimeException("Setor não encontrado"));
 
-        // 2. Validar Serviço
-        if (dto.servicoId() == null) {
-            throw new RuntimeException("Serviço é obrigatório");
-        }
-
-        if (!servicoRepository.existsByIdAndSetores_Id(dto.servicoId(), setor.getId())) {
-            throw new RuntimeException("Serviço não pertence ao setor informado");
-        }
-
-        Servico servico = servicoService.buscarPorId(dto.servicoId());
-
-        // 3. INSTANCIAR a Entidade Agendamento (O banco só entende esta classe)
-        Agendamento agendamento = new Agendamento();
-
-        // Mapear dados do DTO para a Entidade
-        agendamento.setNomeCidadao(dto.nomeCidadao()); // Record acessa como método: campo()
-        agendamento.setSetor(setor);
-        agendamento.setSecretaria(setor.getSecretaria());
-
-        // 🟢 Pegamos a secretaria real do setor para garantir a consistência
         Secretaria secretariaDoSetor = setor.getSecretaria();
-        agendamento.setSecretaria(secretariaDoSetor);
-        agendamento.setServico(servico);
 
-        // Status e Horários
+        // 🟢 IDENTIFICAÇÃO DE REGRA: É Hospital/Saúde?
+        boolean isHospital = secretariaDoSetor.getNome().toUpperCase().contains("SAÚDE")
+                || secretariaDoSetor.getNome().toUpperCase().contains("SAUDE");
+
+        // 2. Validar Serviço
+        Long sId = dto.servicoId();
+        if (sId == null) throw new RuntimeException("Serviço é obrigatório");
+
+        // 3. INSTANCIAR a Entidade Agendamento
+        Agendamento agendamento = new Agendamento();
+        agendamento.setNomeCidadao(dto.nomeCidadao());
+        agendamento.setSetor(setor);
+        agendamento.setSecretaria(secretariaDoSetor);
+        agendamento.setObservacao(dto.observacao());
         agendamento.setSituacao(SituacaoAgendamento.AGENDADO);
         agendamento.setTipoAgendamento(TipoAgendamento.ESPONTANEO);
+        agendamento.setHoraAgendamento(LocalDateTime.now(ZONE_SLZ));
 
-        LocalDateTime agora = LocalDateTime.now(ZONE_SLZ);
-        agendamento.setHoraAgendamento(agora);
+        // 🟢 LÓGICA DE SALVAMENTO HÍBRIDA (Resolve o erro de servico_id nulo)
+        if (isHospital) {
+            // Se for Saúde, valida e salva na NOVA coluna servicoSaude
+            ServicoSaude ss = servicoSaudeRepository.findById(sId)
+                    .orElseThrow(() -> new RuntimeException("Serviço hospitalar não encontrado"));
 
-        // 👇 MUDANÇA AQUI: Busca considerando a Secretaria
+            if (!servicoSaudeRepository.existsByIdAndSetores_Id(sId, setor.getId())) {
+                throw new RuntimeException("Este serviço de saúde não pertence a este setor");
+            }
+
+            agendamento.setServicoSaude(ss); // Salva na coluna servico_saude_id
+            agendamento.setServico(null);     // Deixa a coluna servico_id (administrativa) vazia
+        } else {
+            // Se for Administrativo, valida e salva na coluna ANTIGA servico
+            Servico s = servicoRepository.findById(sId)
+                    .orElseThrow(() -> new RuntimeException("Serviço administrativo não encontrado"));
+
+            if (!servicoRepository.existsByIdAndSetores_Id(sId, setor.getId())) {
+                throw new RuntimeException("Este serviço não pertence ao setor informado");
+            }
+
+            agendamento.setServico(s);       // Salva na coluna servico_id
+            agendamento.setServicoSaude(null); // Deixa a coluna de saúde vazia
+        }
+
+        // 4. Tipo de Atendimento (Mantendo sua regra de segurança)
         TipoAtendimento tipoAtendimento;
         if (dto.tipoAtendimentoId() != null) {
             tipoAtendimento = tipoAtendimentoRepository.findById(dto.tipoAtendimentoId())
                     .orElseThrow(() -> new RuntimeException("Tipo de atendimento não encontrado"));
 
-            // 🟢 VALIDAÇÃO DE SEGURANÇA: Impede cruzar dados de secretarias diferentes
             if (!tipoAtendimento.getSecretaria().getId().equals(secretariaDoSetor.getId())) {
-                throw new RuntimeException("O tipo de atendimento escolhido não pertence à secretaria deste setor.");
+                throw new RuntimeException("O tipo de atendimento não pertence à secretaria deste setor.");
             }
         } else {
-            // 🟢 MUDANÇA: Busca o "NORMAL" filtrando pela secretaria do setor
             tipoAtendimento = tipoAtendimentoRepository.findByNomeAndSecretaria_Id("NORMAL", secretariaDoSetor.getId())
-                    .orElseThrow(() -> new RuntimeException("Tipo de atendimento padrão não configurado para esta secretaria"));
+                    .orElseThrow(() -> new RuntimeException("Tipo 'NORMAL' não configurado para esta secretaria"));
         }
-
         agendamento.setTipoAtendimento(tipoAtendimento);
 
         // 4. Geração de Senha

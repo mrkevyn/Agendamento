@@ -1,5 +1,6 @@
 package com.gov.ma.saoluis.agendamento.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 @Entity
@@ -14,6 +15,7 @@ public class Guiche {
 
     @ManyToOne
     @JoinColumn(name = "setor_id", nullable = false)
+    @JsonIgnoreProperties({"guiches", "servicos", "servicosSaude", "configuracoes", "secretaria", "endereco"})
     private Setor setor; // O guichê pertence a um setor específico
 
     // Getters e Setters

@@ -16,6 +16,7 @@ public interface AgendamentoDTO {
     String getTipoAtendimentoSigla();
     Integer getTipoAtendimentoPeso();
     String getTipoAgendamento();
+    String getObservacao();
 
     Long getUsuarioId();
     String getUsuarioNome();

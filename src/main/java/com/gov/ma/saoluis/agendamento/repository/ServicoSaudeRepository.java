@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface ServicoSaudeRepository extends JpaRepository<ServicoSaude, Long> {
     List<ServicoSaude> findBySetoresId(Long setorId);
+
+    boolean existsByIdAndSetores_Id(Long id, Long setorId);
 }

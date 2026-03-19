@@ -3,17 +3,12 @@ package com.gov.ma.saoluis.agendamento.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "tipo_atendimento", uniqueConstraints = {
-        // Garante que não existam dois tipos com o mesmo nome na MESMA secretaria
-        @UniqueConstraint(columnNames = {"nome", "secretaria_id"})
-})
+@Table(name = "tipo_atendimento") // sem uniqueConstraints
 public class TipoAtendimento {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Removemos o unique=true daqui, pois a regra agora está no @Table acima
     @Column(nullable = false, length = 50)
     private String nome;
 
@@ -26,7 +21,6 @@ public class TipoAtendimento {
     @Column(nullable = false)
     private Boolean ativo = true;
 
-    // 👇 NOVO RELACIONAMENTO
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "secretaria_id", nullable = false)
     private Secretaria secretaria;

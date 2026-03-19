@@ -86,6 +86,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         a.situacao         AS situacao,
         a.senha            AS senha,
         a.tipo_agendamento AS tipoAgendamento,
+        a.observacao AS observacao,
         
         ta.id              AS tipoAtendimentoId,
         ta.nome            AS tipoAtendimento,
@@ -98,8 +99,9 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         u.id               AS usuarioId,
         COALESCE(u.nome, a.nome_cidadao) AS usuarioNome,
 
-        s.id               AS servicoId,
-        s.nome             AS servicoNome,
+        -- 🟢 PEGA O ID E NOME DE ONDE ESTIVER PREENCHIDO
+        COALESCE(s.id, ss.id)     AS servicoId,
+        COALESCE(s.nome, ss.nome) AS servicoNome,
 
         setor.id           AS setorId,
         setor.nome         AS setorNome,
@@ -113,43 +115,41 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 
     FROM agendamento a
     LEFT JOIN tipo_atendimento ta ON a.tipo_atendimento_id = ta.id
-    LEFT JOIN usuario u      ON a.usuario_id = u.id
-    LEFT JOIN servico s      ON a.servico_id = s.id
-    LEFT JOIN gerenciador g  ON g.id = a.gerenciador_id
-    LEFT JOIN guiche gui     ON gui.id = g.guiche_id
-    INNER JOIN setor setor   ON a.setor_id = setor.id
-    INNER JOIN endereco e    ON setor.endereco_id = e.id
-    LEFT JOIN secretaria sec ON sec.id = a.secretaria_id
+    LEFT JOIN usuario u           ON a.usuario_id = u.id
+    
+    -- 🟢 MUDANÇA AQUI: Cada Join olha para sua respectiva coluna no agendamento
+    LEFT JOIN servico s           ON a.servico_id = s.id
+    LEFT JOIN servico_saude ss    ON a.servico_saude_id = ss.id -- 👈 Aqui estava o erro!
+    
+    LEFT JOIN gerenciador g       ON g.id = a.gerenciador_id
+    LEFT JOIN guiche gui          ON gui.id = g.guiche_id
+    INNER JOIN setor setor        ON a.setor_id = setor.id
+    INNER JOIN endereco e         ON setor.endereco_id = e.id
+    LEFT JOIN secretaria sec      ON sec.id = a.secretaria_id
 
     WHERE a.setor_id = :setorId
-      AND a.hora_agendamento >= CURRENT_DATE
-      AND a.hora_agendamento < CURRENT_DATE + INTERVAL '1 day'
+      AND (
+          (:isHospital = true AND a.situacao IN ('AGENDADO', 'CHAMADO', 'EM_ATENDIMENTO', 'REAGENDADO'))
+          OR
+          (:isHospital = false AND a.hora_agendamento >= CURRENT_DATE AND a.hora_agendamento < CURRENT_DATE + INTERVAL '1 day')
+      )
       
     ORDER BY 
-        -- 🟢 ORDENAÇÃO EXPLÍCITA: Sem margem para o banco errar
         CASE 
-            WHEN a.situacao = 'EM_ATENDIMENTO' OR a.situacao = 'CHAMADO' THEN 1
-            
-            WHEN (a.situacao = 'AGENDADO' OR a.situacao = 'REAGENDADO') 
-                 AND a.tipo_agendamento = 'ESPONTANEO' THEN 2
-                 
-            WHEN (a.situacao = 'AGENDADO' OR a.situacao = 'REAGENDADO') 
-                 AND a.hora_agendamento <= :agora THEN 2
-                 
-            WHEN (a.situacao = 'AGENDADO' OR a.situacao = 'REAGENDADO') 
-                 AND a.hora_agendamento > :agora THEN 3
-                 
+            WHEN a.situacao IN ('EM_ATENDIMENTO', 'CHAMADO') THEN 1
+            WHEN :isHospital = false AND (a.situacao IN ('AGENDADO', 'REAGENDADO')) 
+                 AND (a.tipo_agendamento = 'ESPONTANEO' OR a.hora_agendamento <= :agora) THEN 2
+            WHEN :isHospital = true AND a.situacao IN ('AGENDADO', 'REAGENDADO') THEN 2
+            WHEN a.situacao IN ('AGENDADO', 'REAGENDADO') AND a.hora_agendamento > :agora THEN 3
             ELSE 4
         END ASC,
-        
-        -- COALESCE garante que se o peso for nulo, ele vira 0 e não quebra a ordem
         COALESCE(ta.peso, 0) DESC,
-        
         a.hora_agendamento ASC
 """, nativeQuery = true)
 	List<AgendamentoDTO> buscarAgendamentosPorSetor(
 			@Param("setorId") Long setorId,
-			@Param("agora") java.sql.Timestamp agora // 🟢 Recebe o Timestamp puro
+			@Param("agora") java.sql.Timestamp agora,
+			@Param("isHospital") boolean isHospital
 	);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)

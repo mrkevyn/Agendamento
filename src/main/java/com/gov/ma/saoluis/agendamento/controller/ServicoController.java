@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("/agendamento/api/servico")
+@RequestMapping("/api/agendamento/api/servico")
 public class ServicoController {
 
     private final ServicoService servicoService;

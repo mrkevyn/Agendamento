@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/gerenciador")
+@RequestMapping("/api/gerenciador")
 public class GerenciadorController {
 
     private final GerenciadorService gerenciadorService;

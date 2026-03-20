@@ -46,22 +46,12 @@ public class SecurityConfig {
 
                         // 🔓 ROTAS PÚBLICAS
                         .requestMatchers(
-                                "/auth/**", // 🔴 3. IMPRESCINDÍVEL: Libera a rota de login!
-                                "/gerenciador/**",
-                                "/uploads/**",
-                                "/secretarias/**",
-                                "/setores/**",
-                                "/agendamentos/ultimas-chamadas/**",
-                                "/agendamento/api/servico/**",
-                                "/api/configuracoes-atendimento/**",
-                                "/api/slots/**",
-                                "/agendamentos/externo",
-                                "/agendamentos/agendar-app",
-                                "/agendamentos/espontaneo/**",
-                                "/api/tipos-atendimento/**",
-                                "/agendamentos/**",
-                                "/agendamento/api/servico/**",
-                                "/guiches/**",
+                                "/api/auth/**", // 3. Libera a rota de login!
+
+                                "/api/agendamentos/externo",
+                                "/api/agendamentos/agendar-app",
+                                "/api/agendamentos/ultimas-chamadas/**",
+                                "/api/setores/setor/**",
 
                                 // 🔹 Swagger / OpenAPI
                                 "/v3/api-docs/**",

@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/guiches")// Permite que o Vue acesse o endpoint
+@RequestMapping("/api/guiches")// Permite que o Vue acesse o endpoint
 public class GuicheController {
 
     private final GuicheRepository guicheRepository;

@@ -14,7 +14,7 @@ import java.util.Collections;
 import java.util.List;
 
 @RestController
-@RequestMapping("/enderecos")
+@RequestMapping("/api/enderecos")
 @RequiredArgsConstructor
 public class EnderecoController {
 

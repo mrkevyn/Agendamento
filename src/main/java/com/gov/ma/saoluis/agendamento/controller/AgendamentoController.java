@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/agendamentos")
+@RequestMapping("/api/agendamentos")
 public class AgendamentoController {
 
     private final AgendamentoService agendamentoService;

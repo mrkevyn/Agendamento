@@ -169,12 +169,12 @@ public class AgendamentoService {
             tipoAtendimento = tipoAtendimentoRepository.findById(req.tipoAtendimentoId())
                     .orElseThrow(() -> new RuntimeException("Tipo de atendimento não encontrado"));
 
-            // 🟢 VALIDAÇÃO DE SEGURANÇA: Garante que o tipo escolhido pertence à secretaria do agendamento
+            //  VALIDAÇÃO DE SEGURANÇA: Garante que o tipo escolhido pertence à secretaria do agendamento
             if (!tipoAtendimento.getSecretaria().getId().equals(secretaria.getId())) {
                 throw new RuntimeException("O tipo de atendimento escolhido não pertence a esta secretaria.");
             }
         } else {
-            // 🟢 MUDANÇA AQUI: Busca o tipo padrão "NORMAL" cadastrado APENAS para esta secretaria
+            // MUDANÇA AQUI: Busca o tipo padrão "NORMAL" cadastrado APENAS para esta secretaria
             tipoAtendimento = tipoAtendimentoRepository.findByNomeAndSecretaria_Id("NORMAL", secretaria.getId())
                     .orElseThrow(() -> new RuntimeException("Tipo de atendimento padrão não configurado para esta secretaria"));
         }
@@ -199,9 +199,6 @@ public class AgendamentoService {
             }
         }
     }
-
-    @Autowired
-    private EmailService emailService;
 
     // 🔹 Criar novo agendamento pelo app externo (sem login)
     @Transactional
@@ -265,12 +262,12 @@ public class AgendamentoService {
             tipoAtendimento = tipoAtendimentoRepository.findById(req.tipoAtendimentoId())
                     .orElseThrow(() -> new RuntimeException("Tipo de atendimento não encontrado"));
 
-            // 🟢 VALIDAÇÃO DE SEGURANÇA: Garante que o tipo escolhido pertence à secretaria do agendamento
+            //  VALIDAÇÃO DE SEGURANÇA: Garante que o tipo escolhido pertence à secretaria do agendamento
             if (!tipoAtendimento.getSecretaria().getId().equals(secretaria.getId())) {
                 throw new RuntimeException("O tipo de atendimento escolhido não pertence a esta secretaria.");
             }
         } else {
-            // 🟢 MUDANÇA AQUI: Busca o tipo padrão "NORMAL" cadastrado APENAS para esta secretaria
+            //  MUDANÇA AQUI: Busca o tipo padrão "NORMAL" cadastrado APENAS para esta secretaria
             tipoAtendimento = tipoAtendimentoRepository.findByNomeAndSecretaria_Id("NORMAL", secretaria.getId())
                     .orElseThrow(() -> new RuntimeException("Tipo de atendimento padrão não configurado para esta secretaria"));
         }
@@ -290,21 +287,10 @@ public class AgendamentoService {
             );
 
             try {
-                // 1. Salva o agendamento no banco
-                Agendamento agendamentoSalvo = agendamentoRepository.save(agendamento);
-
-                // 2. Dispara o e-mail (O método deve ser @Async para não travar a resposta)
-                try {
-                    emailService.enviarEmailConfirmacao(agendamentoSalvo);
-                } catch (Exception e) {
-                    // Logamos o erro do e-mail mas não impedimos o retorno do sucesso do agendamento
-                    System.err.println("Erro ao disparar e-mail: " + e.getMessage());
-                }
-
-                return agendamentoSalvo;
+                // 1. Salva o agendamento no banco e retorna imediatamente
+                return agendamentoRepository.save(agendamento);
 
             } catch (org.springframework.dao.DataIntegrityViolationException e) {
-                // Se houver duplicidade de senha, ele tenta novamente até 5 vezes
                 if (tentativas >= 5) {
                     throw new RuntimeException("Falha ao gerar senha única após 5 tentativas");
                 }
@@ -638,7 +624,7 @@ public class AgendamentoService {
 
         Agendamento agendamento = agendamentos.get(0);
 
-        // 🟢 NOVA LÓGICA: Permite "Re-chamar" a mesma senha!
+        // NOVA LÓGICA: Permite "Re-chamar" a mesma senha!
         // Descobre se a senha clicada é a que o atendente já está atendendo agora.
         boolean ehAMinhaSenhaAtual = (agendamento.getSituacao() == SituacaoAgendamento.EM_ATENDIMENTO) &&
                 (agendamento.getAtendente() != null) &&
@@ -653,8 +639,10 @@ public class AgendamentoService {
         // 🚩 TRAVA DE SEGURANÇA: Impede que OUTRO guichê "roube" o atendimento de um colega
         if (agendamento.getSituacao() == SituacaoAgendamento.EM_ATENDIMENTO) {
             if (agendamento.getAtendente() != null && !agendamento.getAtendente().getId().equals(atendenteId)) {
-                throw new RuntimeException("Esta senha já está sendo atendida no Guichê "
-                        + agendamento.getAtendente().getGuiche());
+                throw new RuntimeException("Esta senha já está sendo atendida no(a) "
+                        + (agendamento.getAtendente().getPontoAtendimento() != null
+                        ? agendamento.getAtendente().getPontoAtendimento().getDescricao() + " " + agendamento.getAtendente().getPontoAtendimento().getNumero()
+                        : "Ponto de Atendimento não identificado"));
             }
         }
 
@@ -691,8 +679,8 @@ public class AgendamentoService {
         LocalDateTime inicio = hoje.atStartOfDay();
         LocalDateTime fim = hoje.plusDays(1).atStartOfDay();
 
-        Integer numeroGuiche = (gerenciador.getGuiche() != null)
-                ? gerenciador.getGuiche().getNumero()
+        Integer numeroGuiche = (gerenciador.getPontoAtendimento() != null)
+                ? gerenciador.getPontoAtendimento().getNumero()
                 : null;
 
         // 🔹 Verifica se já existe chamada para essa senha hoje

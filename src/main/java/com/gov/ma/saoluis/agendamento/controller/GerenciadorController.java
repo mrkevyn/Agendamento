@@ -64,7 +64,7 @@ public class GerenciadorController {
 
         // 🟢 Ajuste no Guichê: Extraindo apenas o número para o JSON
         // Se o seu Vue precisar do ID para formulários, você pode adicionar resposta.put("guicheId", ...)
-        resposta.put("guiche", atualizado.getGuiche() != null ? atualizado.getGuiche().getNumero() : null);
+        resposta.put("guiche", atualizado.getPontoAtendimento() != null ? atualizado.getPontoAtendimento().getNumero() : null);
 
         resposta.put("perfil", atualizado.getPerfil());
 
@@ -141,7 +141,7 @@ public class GerenciadorController {
                 ))
                 .collect(Collectors.toList());
 
-        Integer numeroGuiche = (g.getGuiche() != null) ? g.getGuiche().getNumero() : null;
+        Integer numeroGuiche = (g.getPontoAtendimento() != null) ? g.getPontoAtendimento().getNumero() : null;
 
         return new UsuarioLogadoDTO(
                 g.getId(),

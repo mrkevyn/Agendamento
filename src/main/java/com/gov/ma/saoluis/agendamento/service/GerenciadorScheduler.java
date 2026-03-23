@@ -20,7 +20,7 @@ public class GerenciadorScheduler {
     @Transactional
     @Scheduled(cron = "0 0 0 * * *", zone = DataUtils.STR_ZONE)
     public void resetarGuichesDiarios() {
-        gerenciadorRepository.limparTodosOsGuiches();
+        gerenciadorRepository.limparTodosOsPontosAtendimento();
 
         // Exemplo de uso da constante ZONE_SLZ no log
         System.out.println("Sistema: Todos os guichês liberados em: " + LocalDateTime.now(DataUtils.ZONE_SLZ));

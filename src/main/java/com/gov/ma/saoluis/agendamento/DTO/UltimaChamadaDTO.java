@@ -15,7 +15,7 @@ public interface UltimaChamadaDTO {
     Long getServicoId();
     String getServicoNome();
 
-    Integer getGuiche();
+    String getGuiche();
     Long getSecretariaId();
 
     String getNomeCidadao();

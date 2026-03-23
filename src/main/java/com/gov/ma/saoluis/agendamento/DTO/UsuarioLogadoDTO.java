@@ -8,5 +8,7 @@ public record UsuarioLogadoDTO(
         String perfil,
         List<SecretariaDTO> secretarias, // Já estava como lista
         List<SetorDTO> setores,
-        Integer guiche,
+        Long pontoId,
+        Integer numeroPonto,
+        String descricaoPonto,
         String token) {}

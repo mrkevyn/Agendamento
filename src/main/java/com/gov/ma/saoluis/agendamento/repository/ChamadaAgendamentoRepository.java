@@ -25,22 +25,27 @@ public interface ChamadaAgendamentoRepository
         u.id                AS usuarioId,
         u.nome              AS usuarioNome,
 
-        s.id                AS servicoId,
-        s.nome              AS servicoNome,
+        -- 🟢 Busca o nome do serviço de onde ele estiver (Serviço Comum ou Saúde)
+        COALESCE(s.nome, ss.nome) AS servicoNome,
+        COALESCE(s.id, ss.id)     AS servicoId,
         
         st.nome             AS setorNome,
         sec.id              AS secretariaId,
         sec.nome            AS secretariaNome,
 
-        ca.guiche           AS guiche
+        -- 🟢 Agora traz a descrição completa para a TV (ex: "Consultório 01")
+        COALESCE(pa.descricao || ' ' || LPAD(CAST(pa.numero AS TEXT), 2, '0'), 'Ponto ' || ca.guiche) AS guiche
 
     FROM chamada_agendamento ca
-    JOIN agendamento a       ON ca.agendamento_id = a.id
-    JOIN servico s           ON a.servico_id = s.id
-    JOIN setor st            ON a.setor_id = st.id
-    JOIN secretaria sec      ON st.secretaria_id = sec.id
+    JOIN agendamento a           ON ca.agendamento_id = a.id
+    LEFT JOIN servico s          ON a.servico_id = s.id
+    LEFT JOIN servico_saude ss   ON a.servico_saude_id = ss.id -- 👈 Nova tabela integrada
+    JOIN setor st                ON a.setor_id = st.id
+    JOIN secretaria sec          ON st.secretaria_id = sec.id
+    LEFT JOIN gerenciador g      ON ca.gerenciador_id = g.id
+    LEFT JOIN ponto_atendimento pa ON g.ponto_atendimento_id = pa.id -- 👈 Nova tabela de pontos
 
-    LEFT JOIN usuario u      ON a.usuario_id = u.id
+    LEFT JOIN usuario u          ON a.usuario_id = u.id
 
     WHERE a.setor_id = :setorId
       AND ca.data_chamada >= :inicio

@@ -141,7 +141,15 @@ public class GerenciadorController {
                 ))
                 .collect(Collectors.toList());
 
-        Integer numeroGuiche = (g.getPontoAtendimento() != null) ? g.getPontoAtendimento().getNumero() : null;
+        Integer numeroPonto = null;
+        String descricaoPonto = null;
+        Long pontoId = null;
+
+        if (g.getPontoAtendimento() != null) {
+            pontoId = g.getPontoAtendimento().getId();
+            numeroPonto = g.getPontoAtendimento().getNumero();
+            descricaoPonto = g.getPontoAtendimento().getDescricao();
+        }
 
         return new UsuarioLogadoDTO(
                 g.getId(),
@@ -149,7 +157,9 @@ public class GerenciadorController {
                 g.getPerfil(),
                 secretariasDTO,
                 setoresDTO, // 👈 Agora enviando a lista completa de setores
-                numeroGuiche,
+                pontoId,        // 👈 Adicionado ID do ponto
+                numeroPonto,    // 👈 Número (ex: 1)
+                descricaoPonto,
                 token
         );
     }

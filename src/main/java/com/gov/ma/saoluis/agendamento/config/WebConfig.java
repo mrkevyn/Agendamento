@@ -24,7 +24,8 @@ public class WebConfig {
                                 "http://10.0.0.243:5173",
                                 "http://10.0.0.243:3000",
                                 "http://192.168.200.242",
-                                "http://192.168.200.29"
+                                "http://192.168.200.29",
+                                "http://192.168.200.63:5173"
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowCredentials(true);

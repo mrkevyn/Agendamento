@@ -129,7 +129,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 
     WHERE a.setor_id = :setorId
       AND (
-          (:isHospital = true AND a.situacao IN ('AGENDADO', 'CHAMADO', 'EM_ATENDIMENTO', 'REAGENDADO'))
+          (:isHospital = true AND a.situacao IN ('AGENDADO', 'CHAMADO', 'EM_ATENDIMENTO', 'REAGENDADO', 'ATENDIDO', 'FALTOU'))
           OR
           (:isHospital = false AND a.hora_agendamento >= CURRENT_DATE AND a.hora_agendamento < CURRENT_DATE + INTERVAL '1 day')
       )

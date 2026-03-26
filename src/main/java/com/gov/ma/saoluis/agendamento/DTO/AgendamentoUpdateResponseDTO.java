@@ -8,5 +8,6 @@ public record AgendamentoUpdateResponseDTO(
         Long setorId,
         String senha,
         String situacao,
-        String tipoAtendimento
+        String tipoAtendimento,
+        String observacao
 ) {}

@@ -79,7 +79,8 @@ public class AgendamentoController {
                 salvo.getSetor() != null ? salvo.getSetor().getId() : null,
                 salvo.getSenha(),
                 salvo.getSituacao() != null ? salvo.getSituacao().name() : "AGENDADO",
-                salvo.getTipoAtendimento() != null ? salvo.getTipoAtendimento().getNome() : "NORMAL"
+                salvo.getTipoAtendimento() != null ? salvo.getTipoAtendimento().getNome() : "NORMAL",
+                salvo.getObservacao()
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

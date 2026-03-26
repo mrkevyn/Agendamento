@@ -21,6 +21,12 @@ public class TipoAtendimentoService {
         this.secretariaRepository = secretariaRepository;
     }
 
+    @Transactional(readOnly = true)
+    public TipoAtendimento buscarPorId(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Tipo de atendimento não encontrado"));
+    }
+
     @Transactional
     public TipoAtendimento criar(TipoAtendimentoDTO dto) {
         // 1. Busca a secretaria

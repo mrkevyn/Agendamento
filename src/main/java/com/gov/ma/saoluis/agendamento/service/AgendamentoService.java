@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import com.gov.ma.saoluis.agendamento.service.SlotAtendimentoService;
 import com.gov.ma.saoluis.agendamento.repository.EnderecoRepository;
+import com.gov.ma.saoluis.agendamento.service.TipoAtendimentoService;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -52,9 +53,11 @@ public class AgendamentoService {
     private TipoAtendimentoRepository tipoAtendimentoRepository;
     private ServicoSaudeRepository servicoSaudeRepository;
 
+    private TipoAtendimentoService tipoAtendimentoService;
+
     private static final ZoneId ZONE_SLZ = ZoneId.of("America/Fortaleza");
 
-    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService, ConfiguracaoAtendimentoService configuracaoService, ChamadaAgendamentoRepository chamadaAgendamentoRepository, HorarioAtendimentoRepository horarioRepository, ServicoService servicoService, UsuarioService usuarioService, SlotAtendimentoService slotAtendimentoService, SlotAtendimentoRepository slotAtendimentoRepository, EnderecoRepository enderecoRepository, SetorRepository setorRepository, ServicoRepository servicoRepository, TipoAtendimentoRepository tipoAtendimentoRepository, ServicoSaudeRepository servicoSaudeRepository) {
+    public AgendamentoService(GerenciadorRepository gerenciadorRepository, AgendamentoRepository agendamentoRepository, LogService logService, ConfiguracaoAtendimentoService configuracaoService, ChamadaAgendamentoRepository chamadaAgendamentoRepository, HorarioAtendimentoRepository horarioRepository, ServicoService servicoService, UsuarioService usuarioService, SlotAtendimentoService slotAtendimentoService, SlotAtendimentoRepository slotAtendimentoRepository, EnderecoRepository enderecoRepository, SetorRepository setorRepository, ServicoRepository servicoRepository, TipoAtendimentoRepository tipoAtendimentoRepository, ServicoSaudeRepository servicoSaudeRepository, TipoAtendimentoService tipoAtendimentoService) {
         this.atendenteRepository = gerenciadorRepository;
         this.agendamentoRepository = agendamentoRepository;
         this.logService = logService;
@@ -70,6 +73,7 @@ public class AgendamentoService {
         this.servicoRepository = servicoRepository;
         this.tipoAtendimentoRepository = tipoAtendimentoRepository;
         this.servicoSaudeRepository = servicoSaudeRepository;
+        this.tipoAtendimentoService = tipoAtendimentoService;
     }
 
     public List<AgendamentoDTO> listarPorSetorGerenciador(Long setorId) {
@@ -408,22 +412,66 @@ public class AgendamentoService {
     @Transactional
     public AgendamentoUpdateResponseDTO atualizarEspontaneo(Long id, AgendamentoUpdateDTO dto) {
 
+        // 1️⃣ Busca o agendamento
         Agendamento ag = agendamentoRepository.findByIdNativo(id)
                 .orElseThrow(() -> new RuntimeException("Agendamento não encontrado"));
 
+        // 2️⃣ Valida e pega o setor e secretaria
+        Setor setor = ag.getSetor();
+        if (setor == null) throw new RuntimeException("Agendamento sem setor vinculado");
+        Secretaria secretariaDoSetor = setor.getSecretaria();
+        if (secretariaDoSetor == null) throw new RuntimeException("Setor sem secretaria vinculada");
+
+        boolean isHospital = secretariaDoSetor.getNome().toUpperCase().contains("SAÚDE") ||
+                secretariaDoSetor.getNome().toUpperCase().contains("SAUDE");
+
+        // 3️⃣ Atualiza nome do cidadão
         if (dto.nomeCidadao() != null && !dto.nomeCidadao().isBlank()) {
             ag.setNomeCidadao(dto.nomeCidadao().trim());
         }
 
+        // 4️⃣ Atualiza serviço (respeitando a regra Saúde vs Administrativo)
         if (dto.servicoId() != null) {
-            Servico servico = servicoService.buscarPorId(dto.servicoId());
-            ag.setServico(servico);
-
-            if (servico.getSecretaria() != null) {
-                ag.setSecretaria(servico.getSecretaria());
+            if (isHospital) {
+                ServicoSaude ss = servicoSaudeRepository.findById(dto.servicoId())
+                        .orElseThrow(() -> new RuntimeException("Serviço hospitalar não encontrado"));
+                if (!servicoSaudeRepository.existsByIdAndSetores_Id(dto.servicoId(), setor.getId())) {
+                    throw new RuntimeException("Este serviço de saúde não pertence a este setor");
+                }
+                ag.setServicoSaude(ss);
+                ag.setServico(null); // limpa o administrativo
+            } else {
+                Servico s = servicoRepository.findById(dto.servicoId())
+                        .orElseThrow(() -> new RuntimeException("Serviço administrativo não encontrado"));
+                if (!servicoRepository.existsByIdAndSetores_Id(dto.servicoId(), setor.getId())) {
+                    throw new RuntimeException("Este serviço não pertence ao setor informado");
+                }
+                ag.setServico(s);
+                ag.setServicoSaude(null); // limpa saúde
             }
         }
 
+        // 5️⃣ Atualiza tipo de atendimento
+        TipoAtendimento tipoAtendimento;
+        if (dto.tipoAtendimentoId() != null) {
+            tipoAtendimento = tipoAtendimentoRepository.findById(dto.tipoAtendimentoId())
+                    .orElseThrow(() -> new RuntimeException("Tipo de atendimento não encontrado"));
+
+            if (!tipoAtendimento.getSecretaria().getId().equals(secretariaDoSetor.getId())) {
+                throw new RuntimeException("O tipo de atendimento não pertence à secretaria deste setor.");
+            }
+        } else {
+            tipoAtendimento = tipoAtendimentoRepository.findByNomeAndSecretaria_Id("NORMAL", secretariaDoSetor.getId())
+                    .orElseThrow(() -> new RuntimeException("Tipo 'NORMAL' não configurado para esta secretaria"));
+        }
+        ag.setTipoAtendimento(tipoAtendimento);
+
+        // 6️⃣ Atualiza observação
+        if (dto.observacao() != null) {
+            ag.setObservacao(dto.observacao().trim());
+        }
+
+        // 7️⃣ Salva e retorna resposta
         agendamentoRepository.save(ag);
 
         // ✅ monta resposta sem proxy
@@ -435,7 +483,8 @@ public class AgendamentoService {
                 ag.getSetor() != null ? ag.getSetor().getId() : null,
                 ag.getSenha(),
                 ag.getSituacao() != null ? ag.getSituacao().name() : null,
-                ag.getTipoAtendimento() != null ? ag.getTipoAtendimento().getNome() : null
+                ag.getTipoAtendimento() != null ? ag.getTipoAtendimento().getNome() : null,
+                ag.getObservacao()
         );
     }
 

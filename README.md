@@ -37,7 +37,6 @@ As senhas são geradas automaticamente com base no tipo de atendimento:
 | ------------ | ------- | ------- |
 | Normal       | N       | N001    |
 | Prioridade   | P       | P001    |
-| Preferencial | F       | F001    |
 
 * A numeração é reiniciada diariamente por secretaria
 * Incremento automático baseado no total de atendimentos do dia

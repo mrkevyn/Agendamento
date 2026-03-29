@@ -1,70 +1,115 @@
 # 📅 Sistema de Agendamento de Atendimento
 
-Este projeto é um sistema backend para gerenciamento de agendamentos de atendimento em órgãos públicos, permitindo controle de filas, geração de senhas, chamadas e acompanhamento do atendimento em tempo real.
+Sistema backend desenvolvido para gerenciamento de atendimentos em órgãos públicos, com controle de filas, geração de senhas, distribuição por guichês e acompanhamento em tempo real.
+
+O projeto simula um ambiente real de atendimento, com regras de negócio complexas e foco em consistência e organização do fluxo.
 
 ---
 
 ## 🚀 Funcionalidades
 
-* 📌 Criação de agendamentos (com horário)
+* 📌 Criação de agendamentos com horário
 * ⚡ Atendimento espontâneo (sem agendamento prévio)
-* 🔢 Geração automática de senhas (Normal, Prioridade, Preferencial)
+* 🔢 Geração automática de senhas (Normal, Prioridade)
 * 📋 Listagem de agendamentos com detalhes
-* 🔄 Reagendamento
-* 📢 Chamada de próxima senha:
+* 🔄 Reagendamento de atendimentos
+* 📢 Sistema de chamada:
 
-  * Normal
-  * Prioridade
-  * Por número específico
-* 🧾 Registro de histórico de chamadas
+  * Próxima senha normal
+  * Próxima senha prioritária
+  * Chamada por número específico
+* 🧾 Registro completo de histórico de chamadas
+* 🏢 Controle de atendentes e guichês
 * ✅ Finalização de atendimento
 * ❌ Cancelamento (não comparecimento)
+* 📝 Auditoria de ações (logs)
 
 ---
 
-## 🧠 Regras de Negócio (Destaque)
+## 🧠 Regras de Negócio
 
 ### 🔐 Controle de Horários
 
-* Um horário só pode ser utilizado uma vez
-* Ao agendar, o sistema bloqueia automaticamente o horário
+* Cada horário pode ser utilizado apenas uma vez
+* O sistema bloqueia automaticamente o horário ao agendar
+* Validação por:
 
-### 🎟️ Geração de Senhas
-
-As senhas são geradas automaticamente com base no tipo de atendimento:
-
-| Tipo         | Prefixo | Exemplo |
-| ------------ | ------- | ------- |
-| Normal       | N       | N001    |
-| Prioridade   | P       | P001    |
-
-* A numeração é reiniciada diariamente por setor
-* Incremento automático baseado no total de atendimentos do dia
+  * Dia da semana
+  * Intervalo de funcionamento
+  * Configuração ativa da secretaria
 
 ---
 
-### 🔥 Atendimento Espontâneo
+### ⏰ Geração Inteligente de Horários
 
-* Não depende de horário
-* Gera senha automaticamente
+Os horários são gerados dinamicamente com base em duas estratégias:
+
+#### ➤ Por Intervalo
+
+Define horários com espaçamento fixo
+
+**Exemplo:**
+08:00 → 08:20 → 08:40 → ...
+
+---
+
+#### ➤ Por Quantidade
+
+Distribui automaticamente os horários dentro do período
+
+**Exemplo:**
+08:00 → 08:30 → 09:00 → 09:30
+
+---
+
+### 🎟️ Geração de Senhas
+
+| Tipo       | Prefixo | Exemplo |
+| ---------- | ------- | ------- |
+| Normal     | N       | N001    |
+| Prioridade | P       | P001    |
+
+* Numeração reiniciada diariamente por secretaria
+* Incremento automático baseado no volume diário
+* Independente de horário (para atendimento espontâneo)
+
+---
+
+### ⚡ Atendimento Espontâneo
+
+* Não depende de horário prévio
+* Geração automática de senha
 * Valida:
 
   * Serviço
   * Configuração ativa
-  * Nome do cidadão
+  * Dados do cidadão
+
+---
+
+### 🏢 Sistema de Guichês
+
+* Cada guichê é único por secretaria
+* Um guichê não pode ser utilizado por dois atendentes simultaneamente
+* Controle de permissão:
+
+  * **ADMIN** → gerencia todos
+  * **ATENDENTE** → altera apenas o próprio guichê
 
 ---
 
 ### 📢 Sistema de Chamada
 
-* O sistema chama automaticamente o próximo da fila
-* Atualiza status para **EM_ATENDIMENTO**
-* Registra:
+Ao chamar um atendimento:
+
+* Status atualizado para `EM_ATENDIMENTO`
+* Registro de:
 
   * Atendente
   * Guichê
-  * Horário da chamada
-* Salva histórico na entidade `ChamadaAgendamento`
+  * Senha
+  * Data e hora
+* Persistência do histórico (`ChamadaAgendamento`)
 
 ---
 
@@ -78,29 +123,83 @@ As senhas são geradas automaticamente com base no tipo de atendimento:
 
 ---
 
-## 🏗️ Arquitetura
+## 📡 Endpoints (Exemplo)
 
-O projeto segue uma arquitetura baseada em camadas:
+```http
+POST   /agendamentos
+GET    /agendamentos
+GET    /agendamentos/{id}
+PUT    /agendamentos/{id}
+DELETE /agendamentos/{id}
 
-* **Controller** → Entrada das requisições
-* **Service** → Regras de negócio (**camada principal**)
-* **Repository** → Acesso ao banco de dados
-* **DTOs** → Comunicação com cliente
+POST   /agendamentos/chamar/normal
+POST   /agendamentos/chamar/prioridade
+POST   /agendamentos/chamar/{senha}
+
+POST   /agendamentos/{id}/finalizar
+POST   /agendamentos/{id}/cancelar
+```
 
 ---
 
-## 🧩 Service Principal
+## 📥 Exemplo de Request
 
-A classe `AgendamentoService` centraliza toda a lógica do sistema:
+```json
+POST /agendamentos
 
-Principais responsabilidades:
+{
+  "usuarioId": 1,
+  "servicoId": 2,
+  "horarioId": 10,
+  "tipoAtendimento": "NORMAL"
+}
+```
 
-* Gerenciar criação de agendamentos
-* Controlar geração de senhas
-* Validar regras de negócio
-* Gerenciar fila de atendimento
-* Registrar chamadas
-* Controlar estados do atendimento
+---
+
+## 📤 Exemplo de Response
+
+```json
+{
+  "id": 100,
+  "senha": "N001",
+  "situacao": "AGENDADO",
+  "tipoAtendimento": "NORMAL"
+}
+```
+
+---
+
+## 🏗️ Arquitetura
+
+Arquitetura baseada em camadas:
+
+* **Controller** → entrada da API
+* **Service** → regras de negócio (camada central)
+* **Repository** → acesso a dados
+* **DTOs** → comunicação externa
+
+---
+
+## 🧩 Serviços Principais
+
+### `AgendamentoService`
+
+* Gerencia toda a lógica de atendimento
+* Controle de fila e senhas
+* Processamento de chamadas
+
+### `ConfiguracaoAtendimentoService`
+
+* Geração dinâmica de horários
+* Validação de disponibilidade
+* Regras de agenda
+
+### `GerenciadorService`
+
+* Controle de atendentes
+* Gestão de guichês
+* Controle de permissões
 
 ---
 
@@ -109,68 +208,49 @@ Principais responsabilidades:
 * Java
 * Spring Boot
 * Spring Data JPA
-* Banco de dados relacional
 * API REST
+* Banco de dados relacional
 
 ---
 
-## 📡 Exemplos de Fluxo
+## 📡 Fluxos do Sistema
 
-### 1. Criar Agendamento
+### ➤ Criar Agendamento
 
-1. Usuário escolhe serviço e horário
+1. Usuário seleciona serviço e horário
 2. Sistema valida disponibilidade
-3. Gera senha automaticamente
-4. Salva como `AGENDADO`
+3. Horário é bloqueado
+4. Senha é gerada automaticamente
 
 ---
 
-### 2. Chamada de Atendimento
+### ➤ Chamada de Atendimento
 
 1. Atendente solicita próxima senha
-2. Sistema busca próxima disponível
-3. Atualiza para `EM_ATENDIMENTO`
-4. Registra histórico da chamada
+2. Sistema busca da fila
+3. Atualiza status
+4. Registra histórico com guichê
 
 ---
 
-### 3. Finalização
+### ➤ Finalização
 
-* Atendimento → `ATENDIDO`
-* Não compareceu → `FALTOU`
-
----
-
-## 📂 Estrutura (resumo)
-
-```
-service/
- └── AgendamentoService.java
-
-repository/
- └── AgendamentoRepository.java
-
-model/
- └── Agendamento.java
-
-DTO/
- └── AgendamentoDTO.java
-```
+* Atendimento concluído → `ATENDIDO`
+* Não comparecimento → `FALTOU`
 
 ---
 
-## 💡 Diferenciais do Projeto
+## 💡 Diferenciais Técnicos
 
 * Regras reais de fila de atendimento
-* Controle de concorrência em horários
-* Geração inteligente de senhas
-* Histórico completo de chamadas
-* Separação clara de responsabilidades (boa arquitetura)
+* Geração dinâmica de horários (intervalo/quantidade)
+* Controle de concorrência (horários e guichês)
+* Sistema de senhas com lógica incremental
+* Auditoria de ações (logs)
+* Separação clara de responsabilidades (Clean Architecture)
 
 ---
 
 ## 👨‍💻 Autor
 
-Desenvolvido como projeto de portfólio focado em backend, com ênfase em regras de negócio complexas e sistemas reais de atendimento.
-
----
+Sistema desenvolvido com foco em backend, simulando cenários reais de atendimento público, com ênfase em regras de negócio complexas, consistência de dados e organização de fluxo.

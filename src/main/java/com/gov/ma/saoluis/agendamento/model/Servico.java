@@ -40,4 +40,8 @@ public class Servico {
     )
     @JsonIgnore
     private Set<Setor> setores = new HashSet<>();
+
+    @ManyToMany(mappedBy = "servicos", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private Set<Gerenciador> gerenciadores = new HashSet<>();
 }

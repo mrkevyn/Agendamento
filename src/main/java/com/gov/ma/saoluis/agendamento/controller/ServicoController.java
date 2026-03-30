@@ -83,7 +83,10 @@ public class ServicoController {
     }
 
     @GetMapping("/setor/{setorId}")
-    public ResponseEntity<List<ServicoResponseDTO>> listarPorSetor(@PathVariable Long setorId) {
-        return ResponseEntity.ok(servicoService.listarPorSetor(setorId));
+    public ResponseEntity<List<ServicoResponseDTO>> listarPorSetor(
+            @PathVariable Long setorId,
+            @RequestParam(required = false) Long gerenciadorId
+    ) {
+        return ResponseEntity.ok(servicoService.listarPorSetor(setorId, gerenciadorId));
     }
 }

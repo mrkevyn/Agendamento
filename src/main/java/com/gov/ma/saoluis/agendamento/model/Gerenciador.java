@@ -74,6 +74,14 @@ public class Gerenciador implements UserDetails {
     )
     private Set<Setor> setores = new HashSet<>();
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "gerenciador_servico",
+            joinColumns = @JoinColumn(name = "gerenciador_id"),
+            inverseJoinColumns = @JoinColumn(name = "servico_id")
+    )
+    private Set<Servico> servicos = new HashSet<>();
+
     public Gerenciador() {}
 
     @PrePersist
@@ -156,5 +164,13 @@ public class Gerenciador implements UserDetails {
 
     public void setSecretariaPrincipal(Secretaria secretariaPrincipal) {
         this.secretariaPrincipal = secretariaPrincipal;
+    }
+
+    public Set<Servico> getServicos() {
+        return servicos;
+    }
+
+    public void setServicos(Set<Servico> servicos) {
+        this.servicos = servicos;
     }
 }

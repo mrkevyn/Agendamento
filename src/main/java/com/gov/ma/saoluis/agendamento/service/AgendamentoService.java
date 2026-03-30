@@ -583,6 +583,38 @@ public class AgendamentoService {
         }
     }
 
+    private void validarPermissaoServico(Gerenciador gerenciador, Agendamento agendamento) {
+
+        if (agendamento.getServico() == null) return;
+
+        Servico servico = agendamento.getServico();
+
+        // 👉 Se o serviço NÃO tem gerenciadores vinculados → libera geral
+        if (servico.getGerenciadores() == null || servico.getGerenciadores().isEmpty()) {
+            return;
+        }
+
+        boolean podeAtender = gerenciador.getServicos()
+                .stream()
+                .anyMatch(s -> s.getId().equals(servico.getId()));
+
+        if (!podeAtender) {
+            throw new RuntimeException("Você não pode atender este serviço");
+        }
+    }
+
+    private boolean podeAtenderServico(Gerenciador gerenciador, Servico servico) {
+        if (servico == null) return true;
+
+        if (servico.getGerenciadores() == null || servico.getGerenciadores().isEmpty()) {
+            return true;
+        }
+
+        return gerenciador.getServicos()
+                .stream()
+                .anyMatch(s -> s.getId().equals(servico.getId()));
+    }
+
     @Transactional
     public Agendamento chamarProximaNormal(Long setorId, Long atendenteId) {
 
@@ -609,7 +641,12 @@ public class AgendamentoService {
             throw new RuntimeException("Fila vazia");
         }
 
-        return processarChamada(lista.get(0), gerenciador);
+        Agendamento agendamento = lista.stream()
+                .filter(a -> podeAtenderServico(gerenciador, a.getServico()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Nenhuma senha disponível para este atendente"));
+
+        return processarChamada(agendamento, gerenciador);
     }
 
     @Transactional
@@ -638,7 +675,12 @@ public class AgendamentoService {
             throw new RuntimeException("Fila vazia");
         }
 
-        return processarChamada(lista.get(0), gerenciador);
+        Agendamento agendamento = lista.stream()
+                .filter(a -> podeAtenderServico(gerenciador, a.getServico()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Nenhuma senha de prioridade disponível para este atendente"));
+
+        return processarChamada(agendamento, gerenciador);
     }
 
     public AgendamentoResponseDTO chamarPorSenha(String senha, Long atendenteId, Long setorId) throws Exception {
@@ -695,7 +737,10 @@ public class AgendamentoService {
             }
         }
 
-        // 🔹 Processa a chamada
+        // Validação de serviço
+        validarPermissaoServico(gerenciador, agendamento);
+
+        // Processa a chamada
         agendamento = processarChamada(agendamento, gerenciador);
 
         return new AgendamentoResponseDTO(

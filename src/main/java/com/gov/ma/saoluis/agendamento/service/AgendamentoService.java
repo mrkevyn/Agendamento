@@ -156,7 +156,7 @@ public class AgendamentoService {
         agendamento.setServico(servico);
         agendamento.setSetor(cfg.getSetor());
 
-        // 🟢 NOVO: Pega a secretaria através do setor (ou serviço) para usar nas validações e já salva no agendamento
+        // NOVO: Pega a secretaria através do setor (ou serviço) para usar nas validações e já salva no agendamento
         Secretaria secretaria = cfg.getSetor().getSecretaria();
         agendamento.setSecretaria(secretaria);
 
@@ -214,7 +214,7 @@ public class AgendamentoService {
 
         Servico servico = servicoService.buscarPorId(req.servicoId());
 
-        // 🔥 AGORA BUSCA CONFIGURAÇÃO PELO SETOR
+        // AGORA BUSCA CONFIGURAÇÃO PELO SETOR
         ConfiguracaoAtendimento cfg =
                 configuracaoService.buscarPorSetorId(req.setorId());
 
@@ -250,7 +250,7 @@ public class AgendamentoService {
         agendamento.setCelular(req.celular());
         agendamento.setEmail(req.email());
 
-        // 🟢 NOVO: Pega a secretaria através do setor (ou serviço) para usar nas validações e já salva no agendamento
+        // NOVO: Pega a secretaria através do setor (ou serviço) para usar nas validações e já salva no agendamento
         Secretaria secretaria = cfg.getSetor().getSecretaria();
         agendamento.setSecretaria(secretaria);
 
@@ -329,7 +329,7 @@ public class AgendamentoService {
 
         Secretaria secretariaDoSetor = setor.getSecretaria();
 
-        // 🟢 IDENTIFICAÇÃO DE REGRA: É Hospital/Saúde?
+        // IDENTIFICAÇÃO DE REGRA: É Hospital/Saúde?
         boolean isHospital = secretariaDoSetor.getNome().toUpperCase().contains("SAÚDE")
                 || secretariaDoSetor.getNome().toUpperCase().contains("SAUDE");
 
@@ -347,7 +347,7 @@ public class AgendamentoService {
         agendamento.setTipoAgendamento(TipoAgendamento.ESPONTANEO);
         agendamento.setHoraAgendamento(LocalDateTime.now(ZONE_SLZ));
 
-        // 🟢 LÓGICA DE SALVAMENTO HÍBRIDA (Resolve o erro de servico_id nulo)
+        // LÓGICA DE SALVAMENTO HÍBRIDA (Resolve o erro de servico_id nulo)
         if (isHospital) {
             // Se for Saúde, valida e salva na NOVA coluna servicoSaude
             ServicoSaude ss = servicoSaudeRepository.findById(sId)
@@ -412,11 +412,11 @@ public class AgendamentoService {
     @Transactional
     public AgendamentoUpdateResponseDTO atualizarEspontaneo(Long id, AgendamentoUpdateDTO dto) {
 
-        // 1️⃣ Busca o agendamento
+        // 1️ Busca o agendamento
         Agendamento ag = agendamentoRepository.findByIdNativo(id)
                 .orElseThrow(() -> new RuntimeException("Agendamento não encontrado"));
 
-        // 2️⃣ Valida e pega o setor e secretaria
+        // 2️ Valida e pega o setor e secretaria
         Setor setor = ag.getSetor();
         if (setor == null) throw new RuntimeException("Agendamento sem setor vinculado");
         Secretaria secretariaDoSetor = setor.getSecretaria();
@@ -425,12 +425,12 @@ public class AgendamentoService {
         boolean isHospital = secretariaDoSetor.getNome().toUpperCase().contains("SAÚDE") ||
                 secretariaDoSetor.getNome().toUpperCase().contains("SAUDE");
 
-        // 3️⃣ Atualiza nome do cidadão
+        // 3️ Atualiza nome do cidadão
         if (dto.nomeCidadao() != null && !dto.nomeCidadao().isBlank()) {
             ag.setNomeCidadao(dto.nomeCidadao().trim());
         }
 
-        // 4️⃣ Atualiza serviço (respeitando a regra Saúde vs Administrativo)
+        // 4️ Atualiza serviço (respeitando a regra Saúde vs Administrativo)
         if (dto.servicoId() != null) {
             if (isHospital) {
                 ServicoSaude ss = servicoSaudeRepository.findById(dto.servicoId())
@@ -451,7 +451,7 @@ public class AgendamentoService {
             }
         }
 
-        // 5️⃣ Atualiza tipo de atendimento
+        // 5️ Atualiza tipo de atendimento
         TipoAtendimento tipoAtendimento;
         if (dto.tipoAtendimentoId() != null) {
             tipoAtendimento = tipoAtendimentoRepository.findById(dto.tipoAtendimentoId())
@@ -466,12 +466,12 @@ public class AgendamentoService {
         }
         ag.setTipoAtendimento(tipoAtendimento);
 
-        // 6️⃣ Atualiza observação
+        // 6️ Atualiza observação
         if (dto.observacao() != null) {
             ag.setObservacao(dto.observacao().trim());
         }
 
-        // 7️⃣ Salva e retorna resposta
+        // 7 Salva e retorna resposta
         agendamentoRepository.save(ag);
 
         // ✅ monta resposta sem proxy
@@ -625,7 +625,7 @@ public class AgendamentoService {
             throw new RuntimeException("Gerenciador não pertence a este setor");
         }
 
-        // 🟢 Pegamos os 3 tempos (Início do dia, Agora, e Fim do dia)
+        // Pegamos os 3 tempos (Início do dia, Agora, e Fim do dia)
         LocalDateTime agora = LocalDateTime.now(ZONE_SLZ);
         LocalDateTime inicio = agora.toLocalDate().atStartOfDay();
         LocalDateTime fim = inicio.plusDays(1);
@@ -648,7 +648,7 @@ public class AgendamentoService {
         Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
                 .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
 
-        // ✅ Valida se o atendente pode atuar no setor informado
+        // Valida se o atendente pode atuar no setor informado
         boolean vinculado = gerenciador.getSetores().stream()
                 .anyMatch(s -> s.getId().equals(setorId));
 
@@ -662,7 +662,7 @@ public class AgendamentoService {
 
         Pageable pageable = PageRequest.of(0, 1);
 
-        // ✅ Busca por senha dentro do setor específico
+        // Busca por senha dentro do setor específico
         List<Agendamento> agendamentos = agendamentoRepository.buscarPorSenhaHoje(
                 setorId, senha, inicio, fim, pageable
         );
@@ -685,7 +685,7 @@ public class AgendamentoService {
             verificarAtendenteOcupado(atendenteId);
         }
 
-        // 🚩 TRAVA DE SEGURANÇA: Impede que OUTRO guichê "roube" o atendimento de um colega
+        // TRAVA DE SEGURANÇA: Impede que OUTRO guichê "roube" o atendimento de um colega
         if (agendamento.getSituacao() == SituacaoAgendamento.EM_ATENDIMENTO) {
             if (agendamento.getAtendente() != null && !agendamento.getAtendente().getId().equals(atendenteId)) {
                 throw new RuntimeException("Esta senha já está sendo atendida no(a) "
@@ -738,14 +738,14 @@ public class AgendamentoService {
 
         ChamadaAgendamento chamada;
         if (!chamadasExistentes.isEmpty()) {
-            // ✅ já existe → atualiza apenas data/hora
+            // já existe → atualiza apenas data/hora
             chamada = chamadasExistentes.get(0);
             chamada.setDataChamada(LocalDateTime.now());
             chamada.setGerenciador(gerenciador);
             chamada.setGuiche(numeroGuiche);
             chamada.setSetor(agendamentoSalvo.getSetor());
         } else {
-            // ✅ não existe → cria nova chamada
+            // não existe → cria nova chamada
             chamada = new ChamadaAgendamento();
             chamada.setAgendamento(agendamentoSalvo);
             chamada.setGerenciador(gerenciador);
@@ -797,11 +797,9 @@ public class AgendamentoService {
     @Scheduled(fixedDelay = 15000)
     @Transactional
     public void finalizarAtendimentosAbandonados() {
-        // 1. Use o mesmo fuso horário (ZONE_SLZ) para o cálculo do limite
+
         LocalDateTime limite = LocalDateTime.now(ZONE_SLZ).minusSeconds(30);
 
-        // 2. Tente fazer o update diretamente no banco (mais eficiente)
-        // Se preferir manter a lógica atual para disparar eventos de JPA, corrija apenas o fuso:
         List<Agendamento> abandonados = agendamentoRepository.findBySituacaoInAndUltimoPingBefore(
                 List.of(SituacaoAgendamento.EM_ATENDIMENTO), limite
         );
@@ -810,14 +808,12 @@ public class AgendamentoService {
             for (Agendamento ag : abandonados) {
                 ag.setSituacao(SituacaoAgendamento.ATENDIDO);
                 ag.setHoraFinalizado(LocalDateTime.now(ZONE_SLZ));
-                // No @Transactional, o save() dentro do loop é opcional se o objeto for 'managed'
-                // mas ajuda na legibilidade.
+
                 agendamentoRepository.save(ag);
             }
         }
     }
 
-    // 🔹 Cancelar atendimento (não compareceu)
     public Agendamento cancelarAtendimento(Long id) {
 
         Agendamento agendamento = buscarPorId(id);
@@ -828,6 +824,7 @@ public class AgendamentoService {
 
         agendamento.setSituacao(SituacaoAgendamento.FALTOU);
         agendamento.setHoraChamada(LocalDateTime.now(ZONE_SLZ));
+        agendamento.setAtendente(null);
 
         return agendamentoRepository.save(agendamento);
     }
@@ -852,11 +849,8 @@ public class AgendamentoService {
     public void atualizarPing(Long id) {
         Agendamento agendamento = buscarPorId(id);
 
-        // 🚨 IMPORTANTE: Use o mesmo ZONE_SLZ que você usa no Scheduler
         agendamento.setUltimoPing(LocalDateTime.now(ZONE_SLZ));
 
-        // O Spring Data JPA salva automaticamente ao final do @Transactional,
-        // mas você pode forçar o save se preferir.
         agendamentoRepository.save(agendamento);
     }
 }

@@ -23,6 +23,10 @@ public class ServicoSaude {
     @Column(nullable = false, length = 150, unique = true)
     private String nome;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "secretaria_id", nullable = false)
+    private Secretaria secretaria;
+
     @ManyToMany(mappedBy = "servicosSaude")
     private Set<Setor> setores = new HashSet<>();
 }

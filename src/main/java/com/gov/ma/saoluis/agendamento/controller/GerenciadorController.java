@@ -35,7 +35,7 @@ public class GerenciadorController {
         this.gerenciadorRepository = gerenciadorRepository;
     }
 
-    // ➤ Criar atendente
+    // Criar atendente
     @PostMapping
     public ResponseEntity<?> criar(@RequestBody GerenciadorDTO dto) {
         try {
@@ -48,7 +48,7 @@ public class GerenciadorController {
         }
     }
 
-    // ➤ Editar atendente (N Secretarias : N Setores)
+    // Editar atendente (N Secretarias : N Setores)
     @PutMapping("/{id}")
     public ResponseEntity<?> editar(@PathVariable Long id, @RequestBody GerenciadorDTO dto) {
 
@@ -62,19 +62,19 @@ public class GerenciadorController {
         resposta.put("cpf", atualizado.getCpf());
         resposta.put("email", atualizado.getEmail());
 
-        // 🟢 Ajuste no Guichê: Extraindo apenas o número para o JSON
+        // Ajuste no Guichê: Extraindo apenas o número para o JSON
         // Se o seu Vue precisar do ID para formulários, você pode adicionar resposta.put("guicheId", ...)
         resposta.put("guiche", atualizado.getPontoAtendimento() != null ? atualizado.getPontoAtendimento().getNumero() : null);
 
         resposta.put("perfil", atualizado.getPerfil());
 
-        // ✅ Agora extrai a lista de nomes das SECRETARIAS (plural)
+        // Agora extrai a lista de nomes das SECRETARIAS (plural)
         List<String> nomesSecretarias = atualizado.getSecretarias().stream()
                 .map(Secretaria::getNome)
                 .toList();
         resposta.put("secretarias", nomesSecretarias);
 
-        // ✅ Extrai a lista de nomes dos SETORES (plural)
+        // Extrai a lista de nomes dos SETORES (plural)
         List<String> nomesSetores = atualizado.getSetores().stream()
                 .map(Setor::getNome)
                 .toList();
@@ -83,25 +83,25 @@ public class GerenciadorController {
         return ResponseEntity.ok(resposta);
     }
 
-    // ➤ Listar todos
+    // Listar todos
     @GetMapping
     public ResponseEntity<List<Gerenciador>> listarTodos() {
         return ResponseEntity.ok(gerenciadorService.listarTodos());
     }
 
-    // ➤ Listar por secretaria
+    // Listar por secretaria
     @GetMapping("/secretaria/{secretariaId}")
     public ResponseEntity<List<Gerenciador>> listarPorSecretaria(@PathVariable Long secretariaId) {
         return ResponseEntity.ok(gerenciadorService.listarPorSecretaria(secretariaId));
     }
 
-    // ➤ Buscar por ID
+    // Buscar por ID
     @GetMapping("/{id}")
     public ResponseEntity<Gerenciador> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(gerenciadorService.buscarPorId(id));
     }
 
-    // ➤ Remover
+    // Remover
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> remover(@PathVariable Long id) {
         gerenciadorService.remover(id);
@@ -120,19 +120,19 @@ public class GerenciadorController {
         Gerenciador g = gerenciadorRepository.findById(usuarioId)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        // 🔹 Token do header
+        // Token do header
         String authHeader = request.getHeader("Authorization");
         String token = null;
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
         }
 
-        // ✅ Transforma as Secretarias (N) em DTOs
+        // Transforma as Secretarias (N) em DTOs
         List<SecretariaDTO> secretariasDTO = g.getSecretarias().stream()
                 .map(sec -> new SecretariaDTO(sec.getId(), sec.getNome(), sec.getSigla()))
                 .collect(Collectors.toList());
 
-        // ✅ Transforma os Setores (N) em DTOs (plural agora!)
+        // Transforma os Setores (N) em DTOs (plural agora!)
         List<SetorDTO> setoresDTO = g.getSetores().stream()
                 .map(set -> new SetorDTO(
                         set.getId(),
@@ -156,9 +156,9 @@ public class GerenciadorController {
                 g.getNome(),
                 g.getPerfil(),
                 secretariasDTO,
-                setoresDTO, // 👈 Agora enviando a lista completa de setores
-                pontoId,        // 👈 Adicionado ID do ponto
-                numeroPonto,    // 👈 Número (ex: 1)
+                setoresDTO, // Agora enviando a lista completa de setores
+                pontoId,        // Adicionado ID do ponto
+                numeroPonto,    // Número (ex: 1)
                 descricaoPonto,
                 token
         );

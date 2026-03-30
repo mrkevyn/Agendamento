@@ -20,6 +20,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class AgendamentoService {
@@ -94,18 +95,18 @@ public class AgendamentoService {
         return agendamentoRepository.buscarAgendamentosPorSetor(setorId, agoraSql, isHospital);
     }
 
-    // 🔹 Buscar todos os agendamentos com detalhes
+    // Buscar todos os agendamentos com detalhes
     public List<AgendamentoDTO> listarTodosComDetalhes() {
         return agendamentoRepository.buscarTodosAgendamentosComDetalhes();
     }
 
-    // 🔹 Buscar por ID
+    // Buscar por ID
     public Agendamento buscarPorId(Long id) {
         return agendamentoRepository.findByIdNativo(id)
                 .orElseThrow(() -> new RuntimeException("Agendamento não encontrado"));
     }
 
-    // 🔹 Criar novo agendamento
+    // Criar novo agendamento
     @Transactional
     public Agendamento salvarApp(AgendamentoAppRequest req) {
 
@@ -147,7 +148,7 @@ public class AgendamentoService {
                     .filter(h -> h.getHora().equals(req.hora()))
                     .findFirst()
                     .ifPresent(h -> h.setOcupado(true));
-            // 💡 se quiser persistir isso, faça cfgRepo.save(cfg) ou garanta cascade/dirty checking
+            // se quiser persistir isso, faça cfgRepo.save(cfg) ou garanta cascade/dirty checking
         }
 
         // 6) cria agendamento
@@ -204,7 +205,7 @@ public class AgendamentoService {
         }
     }
 
-    // 🔹 Criar novo agendamento pelo app externo (sem login)
+    // Criar novo agendamento pelo app externo (sem login)
     @Transactional
     public Agendamento salvarExterno(AgendamentoExternoRequest req) {
 
@@ -474,7 +475,7 @@ public class AgendamentoService {
         // 7 Salva e retorna resposta
         agendamentoRepository.save(ag);
 
-        // ✅ monta resposta sem proxy
+        // monta resposta sem proxy
         return new AgendamentoUpdateResponseDTO(
                 ag.getId(),
                 ag.getNomeCidadao(),
@@ -488,7 +489,7 @@ public class AgendamentoService {
         );
     }
 
-    // 🔹 Atualizar (reagendar)
+    // Atualizar (reagendar)
     public Agendamento atualizar(Long id, Agendamento novosDados) {
         Agendamento existente = buscarPorId(id);
 
@@ -536,12 +537,12 @@ public class AgendamentoService {
         return agendamentoRepository.save(existente);
     }
 
-    // 🔹 Deletar
+    // Deletar
     public void deletar(Long id) {
         agendamentoRepository.deleteById(id);
     }
 
-    // 🔹 Gerar prefixo da senha com base no tipo
+    // Gerar prefixo da senha com base no tipo
     private String gerarPrefixo(String tipo) {
         tipo = tipo.toUpperCase();
         return switch (tipo) {
@@ -551,7 +552,7 @@ public class AgendamentoService {
         };
     }
 
-    // 🔹 Incrementar senha anterior (ex: N001 → N002)
+    // Incrementar senha anterior (ex: N001 → N002)
     private String gerarProximaSenha(String senhaAntiga, String siglaFallback) {
         if (senhaAntiga == null || senhaAntiga.length() < 2) {
             return siglaFallback + "001";
@@ -584,35 +585,48 @@ public class AgendamentoService {
     }
 
     private void validarPermissaoServico(Gerenciador gerenciador, Agendamento agendamento) {
-
-        if (agendamento.getServico() == null) return;
+        if (agendamento.getServico() == null || gerenciador == null) return;
 
         Servico servico = agendamento.getServico();
+        Set<Servico> servicosDoAtendente = gerenciador.getServicos();
+        Set<Gerenciador> donosDoServico = servico.getGerenciadores();
 
-        // 👉 Se o serviço NÃO tem gerenciadores vinculados → libera geral
-        if (servico.getGerenciadores() == null || servico.getGerenciadores().isEmpty()) {
-            return;
+        // REGRA 1: Se o atendente é ESPECIALISTA (tem uma lista própria)
+        if (servicosDoAtendente != null && !servicosDoAtendente.isEmpty()) {
+            boolean estaNaMinhaLista = servicosDoAtendente.stream()
+                    .anyMatch(s -> s.getId().equals(servico.getId()));
+
+            if (!estaNaMinhaLista) {
+                throw new RuntimeException("Você possui uma relação exclusiva de serviços e não pode atender: " + servico.getNome());
+            }
+            return; // Passou na validação de especialista
         }
 
-        boolean podeAtender = gerenciador.getServicos()
-                .stream()
-                .anyMatch(s -> s.getId().equals(servico.getId()));
+        // REGRA 2: Se o atendente é GENERALISTA (não tem lista)
+        // Ele só pode atender serviços que NÃO têm donos (gerais)
+        boolean servicoEhExclusivoDeOutrem = donosDoServico != null && !donosDoServico.isEmpty();
 
-        if (!podeAtender) {
-            throw new RuntimeException("Você não pode atender este serviço");
+        if (servicoEhExclusivoDeOutrem) {
+            throw new RuntimeException("Este serviço é exclusivo para atendentes específicos.");
         }
     }
 
     private boolean podeAtenderServico(Gerenciador gerenciador, Servico servico) {
-        if (servico == null) return true;
+        if (servico == null || gerenciador == null) return false;
 
-        if (servico.getGerenciadores() == null || servico.getGerenciadores().isEmpty()) {
-            return true;
+        Set<Servico> servicosDoAtendente = gerenciador.getServicos();
+        Set<Gerenciador> donosDoServico = servico.getGerenciadores();
+
+        // REGRA 1: Se o atendente TEM uma relação de serviços exclusivos
+        if (servicosDoAtendente != null && !servicosDoAtendente.isEmpty()) {
+            // Ele SÓ pode atender se este serviço específico estiver na lista dele
+            return servicosDoAtendente.stream()
+                    .anyMatch(s -> s.getId().equals(servico.getId()));
         }
 
-        return gerenciador.getServicos()
-                .stream()
-                .anyMatch(s -> s.getId().equals(servico.getId()));
+        // REGRA 2: Se o atendente NÃO TEM relação (é clínico geral)
+        // Ele só atende serviços que NÃO possuem donos (serviços gerais do setor)
+        return donosDoServico == null || donosDoServico.isEmpty();
     }
 
     @Transactional
@@ -634,7 +648,7 @@ public class AgendamentoService {
                 inicio,
                 agora,
                 fim,
-                PageRequest.of(0, 1)
+                PageRequest.of(0, 10)
         );
 
         if (lista.isEmpty()) {
@@ -668,7 +682,7 @@ public class AgendamentoService {
         LocalDateTime fim = inicio.plusDays(1);
 
         var lista = agendamentoRepository.buscarProximoPrioridadeHoje(
-                setorId, inicio, agora, fim, PageRequest.of(0, 1)
+                setorId, inicio, agora, fim, PageRequest.of(0, 10)
         );
 
         if (lista.isEmpty()) {
@@ -756,7 +770,7 @@ public class AgendamentoService {
         );
     }
 
-    // 🔹 Lógica comum para registrar chamada
+    // Lógica comum para registrar chamada
     private Agendamento processarChamada(Agendamento agendamento, Gerenciador gerenciador) {
 
         if (agendamento == null) {
@@ -777,7 +791,7 @@ public class AgendamentoService {
                 ? gerenciador.getPontoAtendimento().getNumero()
                 : null;
 
-        // 🔹 Verifica se já existe chamada para essa senha hoje
+        // Verifica se já existe chamada para essa senha hoje
         List<ChamadaAgendamento> chamadasExistentes = chamadaAgendamentoRepository
                 .findByAgendamentoAndDataChamadaBetween(agendamentoSalvo, inicio, fim);
 
@@ -821,7 +835,7 @@ public class AgendamentoService {
                 .buscarUltimasChamadasPorSetorEHorario(setorId, inicio, fim);
     }
 
-    // 🔹 Finalizar atendimento
+    // Finalizar atendimento
     @Transactional
     public Agendamento finalizarAtendimento(Long id) {
 
@@ -832,7 +846,7 @@ public class AgendamentoService {
             throw new RuntimeException("Este agendamento não está em atendimento.");
         }
 
-        // 🟢 Define a situação e carimba o horário de término com o fuso correto
+        // Define a situação e carimba o horário de término com o fuso correto
         agendamento.setSituacao(SituacaoAgendamento.ATENDIDO);
         agendamento.setHoraFinalizado(LocalDateTime.now(ZONE_SLZ));
 

@@ -41,7 +41,7 @@ public class SlotAtendimentoController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data
     ) {
 
-        // 🔹 Busca configuração pelo setor
+        // Busca configuração pelo setor
         ConfiguracaoAtendimento cfg =
                 configuracaoService.buscarPorSetorId(setorId);
 

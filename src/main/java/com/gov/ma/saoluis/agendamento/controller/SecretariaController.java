@@ -23,13 +23,13 @@ public class SecretariaController {
         this.servicoService = servicoService;
     }
 
-    // ✅ GET - Todas
+    // GET - Todas
     @GetMapping
     public ResponseEntity<List<Secretaria>> listarTodas() {
         return ResponseEntity.ok(secretariaService.buscarTodas());
     }
 
-    // ✅ GET - Por ID
+    // GET - Por ID
     @GetMapping("/{id}")
     public ResponseEntity<Secretaria> buscarPorId(@PathVariable Long id) {
         return secretariaService.buscarPorId(id)
@@ -37,25 +37,25 @@ public class SecretariaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // ✅ GET - Somente ativas
+    // GET - Somente ativas
     @GetMapping("/ativas")
     public ResponseEntity<List<Secretaria>> listarAtivas() {
         return ResponseEntity.ok(secretariaService.buscarAtivas());
     }
 
-    // ✅ GET - Somente visíveis
+    // GET - Somente visíveis
     @GetMapping("/visiveis")
     public ResponseEntity<List<Secretaria>> listarVisiveis() {
         return ResponseEntity.ok(secretariaService.buscarVisiveis());
     }
 
-    // ✅ GET - Ativas e visíveis (mais usado no frontend)
+    // GET - Ativas e visíveis (mais usado no frontend)
     @GetMapping("/ativas-visiveis")
     public ResponseEntity<List<Secretaria>> listarAtivasEVisiveis() {
         return ResponseEntity.ok(secretariaService.buscarAtivasEVisiveis());
     }
 
-    // ✅ GET - Buscar por nome
+    // GET - Buscar por nome
     @GetMapping("/buscar")
     public ResponseEntity<List<Secretaria>> buscarPorNome(@RequestParam String nome) {
         return ResponseEntity.ok(secretariaService.buscarPorNome(nome));

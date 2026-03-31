@@ -1,6 +1,7 @@
 package com.gov.ma.saoluis.agendamento.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -14,6 +15,7 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "endereco")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Endereco {
 
     @Id
@@ -54,6 +56,7 @@ public class Endereco {
     private Set<EnderecoFoto> fotos = new HashSet<>();
 
     // 🔗 UM ENDEREÇO PARA VÁRIOS SETORES
+    @JsonIgnore
     @OneToMany(mappedBy = "endereco", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Setor> setores = new HashSet<>();
 }

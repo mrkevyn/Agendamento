@@ -24,8 +24,13 @@ public class AgendamentoController {
     }
 
     @GetMapping("/setor/{setorId}")
-    public ResponseEntity<List<AgendamentoDTO>> listarPorSetor(@PathVariable Long setorId) {
-        return ResponseEntity.ok(agendamentoService.listarPorSetorGerenciador(setorId));
+    public ResponseEntity<List<AgendamentoDTO>> listarPorSetor(
+            @PathVariable Long setorId,
+            @RequestParam(required = false) Long gerenciadorId
+    ) {
+        return ResponseEntity.ok(
+                agendamentoService.listarPorSetorGerenciador(setorId, gerenciadorId)
+        );
     }
 
     @GetMapping("/{id}")

@@ -99,7 +99,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
         u.id               AS usuarioId,
         COALESCE(u.nome, a.nome_cidadao) AS usuarioNome,
 
-        -- 🟢 PEGA O ID E NOME DE ONDE ESTIVER PREENCHIDO
+        -- PEGA O ID E NOME DE ONDE ESTIVER PREENCHIDO
         COALESCE(s.id, ss.id)     AS servicoId,
         COALESCE(s.nome, ss.nome) AS servicoNome,
 
@@ -117,9 +117,10 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     LEFT JOIN tipo_atendimento ta ON a.tipo_atendimento_id = ta.id
     LEFT JOIN usuario u           ON a.usuario_id = u.id
     
-    -- 🟢 MUDANÇA AQUI: Cada Join olha para sua respectiva coluna no agendamento
+    -- MUDANÇA AQUI: Cada Join olha para sua respectiva coluna no agendamento
     LEFT JOIN servico s           ON a.servico_id = s.id
     LEFT JOIN servico_saude ss    ON a.servico_saude_id = ss.id -- 👈 Aqui estava o erro!
+    LEFT JOIN gerenciador_servico sg ON sg.servico_id = s.id
     
     LEFT JOIN gerenciador g       ON g.id = a.gerenciador_id
     LEFT JOIN guiche gui          ON gui.id = g.guiche_id
@@ -128,6 +129,31 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     LEFT JOIN secretaria sec      ON sec.id = a.secretaria_id
 
     WHERE a.setor_id = :setorId
+    
+      AND (
+          -- CASO 1: gerenciador NÃO tem serviços vinculados -> vê só gerais
+          (
+              NOT EXISTS (
+                  SELECT 1\s
+                  FROM gerenciador_servico sg2\s
+                  WHERE sg2.gerenciador_id = :gerenciadorId
+              )
+              AND sg.servico_id IS NULL
+          )
+      
+          OR
+      
+          -- CASO 2: gerenciador TEM serviços -> vê só os dele
+          (
+              EXISTS (
+                  SELECT 1\s
+                  FROM gerenciador_servico sg2\s
+                  WHERE sg2.gerenciador_id = :gerenciadorId
+              )
+              AND sg.gerenciador_id = :gerenciadorId
+          )
+      )
+      
       AND (
           (:isHospital = true AND a.situacao IN ('AGENDADO', 'CHAMADO', 'EM_ATENDIMENTO', 'REAGENDADO', 'ATENDIDO', 'FALTOU'))
           OR
@@ -149,7 +175,8 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 	List<AgendamentoDTO> buscarAgendamentosPorSetor(
 			@Param("setorId") Long setorId,
 			@Param("agora") java.sql.Timestamp agora,
-			@Param("isHospital") boolean isHospital
+			@Param("isHospital") boolean isHospital,
+			@Param("gerenciadorId") Long gerenciadorId
 	);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)

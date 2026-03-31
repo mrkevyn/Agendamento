@@ -43,19 +43,19 @@ public class Endereco {
     @Column(length = 200)
     private String complemento;
 
-    // 🌍 COORDENADAS GEOGRÁFICAS
+    // COORDENADAS GEOGRÁFICAS
     @Column(precision = 10, scale = 7)
     private BigDecimal latitude;
 
     @Column(precision = 10, scale = 7)
     private BigDecimal longitude;
 
-    // 🔗 Fotos do endereço
+    // Fotos do endereço
     @OneToMany(mappedBy = "endereco", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private Set<EnderecoFoto> fotos = new HashSet<>();
 
-    // 🔗 UM ENDEREÇO PARA VÁRIOS SETORES
+    // UM ENDEREÇO PARA VÁRIOS SETORES
     @JsonIgnore
     @OneToMany(mappedBy = "endereco", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Setor> setores = new HashSet<>();

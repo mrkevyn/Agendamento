@@ -41,7 +41,7 @@ public class GerenciadorService {
 
     }
 
-    // ➤ Criar gerenciador (N Secretarias : N Setores)
+    // Criar gerenciador (N Secretarias : N Setores)
     public Gerenciador criar(GerenciadorDTO dto) {
 
         // 1. Busca a lista de Secretarias (Agora plural no DTO)
@@ -64,7 +64,7 @@ public class GerenciadorService {
         }
         Set<Setor> setores = new HashSet<>(setoresEncontrados);
 
-        // 🔒 3. VALIDAR GUICHÊ ÚNICO
+        // 3. VALIDAR GUICHÊ ÚNICO
         // O guichê é validado por SETOR, que é o local físico do atendimento
         PontoAtendimento pontoAtendimentoEntidade = null;
         if (dto.guicheId() != null) {
@@ -90,7 +90,7 @@ public class GerenciadorService {
         g.setSenha(senhaCriptografada);
 
         g.setPerfil(dto.perfil());
-        // 🟢 Sincronização de Guichê
+        // Sincronização de Guichê
         if (pontoAtendimentoEntidade != null) {
             g.setPontoAtendimento(pontoAtendimentoEntidade); // Define o Objeto (Sistema Novo)
             // Se o outro sistema exigir o número na coluna Integer 'guiche' da tabela 'gerenciador':
@@ -132,7 +132,7 @@ public class GerenciadorService {
         return salvo;
     }
 
-    // ➤ Atualizar atendente (N Secretarias : N Setores)
+    // Atualizar atendente (N Secretarias : N Setores)
     public Gerenciador editar(Long id, GerenciadorDTO dto) {
 
         Gerenciador g = gerenciadorRepository.findById(id)
@@ -152,7 +152,7 @@ public class GerenciadorService {
         }
         Set<Setor> novosSetores = new java.util.HashSet<>(setoresEncontrados);
 
-        // 🟢 3. VALIDAR GUICHÊ ÚNICO (Entidade Guiche)
+        // 3. VALIDAR GUICHÊ ÚNICO (Entidade Guiche)
         if (dto.guicheId() != null) {
             // Valida se o guichê já está ocupado por OUTRO atendente (IdNot)
             boolean ocupado = gerenciadorRepository.existsByPontoAtendimentoIdAndIdNot(dto.guicheId(), id);
@@ -192,24 +192,24 @@ public class GerenciadorService {
         return gerenciadorRepository.save(g);
     }
 
-    // ➤ Listar todos
+    // Listar todos
     public List<Gerenciador> listarTodos() {
         return gerenciadorRepository.findAll();
     }
 
-    // ➤ Listar por secretaria
+    // Listar por secretaria
     public List<Gerenciador> listarPorSecretaria(Long secretariaId) {
         // Mudou de findBySecretariaId para findBySecretarias_Id
         return gerenciadorRepository.findBySecretarias_Id(secretariaId);
     }
 
-    // ➤ Buscar por ID
+    // Buscar por ID
     public Gerenciador buscarPorId(Long id) {
         return gerenciadorRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
     }
 
-    // ➤ Remover
+    // Remover
     public void remover(Long id) {
         Gerenciador at = gerenciadorRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));

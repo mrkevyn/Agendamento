@@ -8,7 +8,7 @@ public record GerenciadorDTO(
         String contato,
         String email,
         String senha,
-        String perfil,      // 👈 AQUI
+        String perfil,
         Long guicheId,
         Long secretariaId,
         List<Long> secretariasIds,

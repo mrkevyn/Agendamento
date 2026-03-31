@@ -69,7 +69,7 @@ public class AuthController {
                             set.getSecretaria() != null ? set.getSecretaria().getId() : null
                     )).toList();
 
-            // 🔹 REGISTRAR LOG DE LOGIN
+            // REGISTRAR LOG DE LOGIN
             String nomesSecretarias = g.getSecretarias().stream()
                     .map(Secretaria::getNome)
                     .collect(Collectors.joining(", "));
@@ -79,7 +79,7 @@ public class AuthController {
                     .map(setor -> setor.getNome())
                     .collect(Collectors.joining(", "));
 
-            // 🔹 REGISTRAR LOG DE LOGIN
+            // REGISTRAR LOG DE LOGIN
             // (Você pode criar um método no LogService que receba o objeto 'g' pronto)
             logService.registrar(
                     g.getId(),

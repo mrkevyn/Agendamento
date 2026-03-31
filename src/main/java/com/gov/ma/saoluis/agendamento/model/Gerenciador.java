@@ -56,7 +56,7 @@ public class Gerenciador implements UserDetails {
     @JoinColumn(name = "secretaria_id", nullable = false) // Mantemos o nullable conforme o banco exige
     private Secretaria secretariaPrincipal;
 
-    // 🔴 ESCOPO: N Secretarias
+    // ESCOPO: N Secretarias
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "gerenciador_secretaria",
@@ -65,7 +65,7 @@ public class Gerenciador implements UserDetails {
     )
     private Set<Secretaria> secretarias = new HashSet<>();
 
-    // 🔴 ESCOPO: N Setores
+    // ESCOPO: N Setores
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "gerenciador_setor",

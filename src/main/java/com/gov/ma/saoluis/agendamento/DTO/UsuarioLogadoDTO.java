@@ -6,7 +6,7 @@ public record UsuarioLogadoDTO(
         Long id,
         String nome,
         String perfil,
-        List<SecretariaDTO> secretarias, // Já estava como lista
+        List<SecretariaDTO> secretarias,
         List<SetorDTO> setores,
         Long pontoId,
         Integer numeroPonto,

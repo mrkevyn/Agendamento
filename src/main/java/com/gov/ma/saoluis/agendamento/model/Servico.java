@@ -31,7 +31,7 @@ public class Servico {
     @JoinColumn(name = "secretaria_id", nullable = false)
     private Secretaria secretaria;
 
-    // ✅ N:N com Setor
+    // N:N com Setor
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "servico_setor",

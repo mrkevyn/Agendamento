@@ -38,7 +38,7 @@ public class AgendamentoController {
         return agendamentoService.buscarPorId(id);
     }
 
-    // 🔹 Listar todos os agendamentos com detalhes
+    // Listar todos os agendamentos com detalhes
     @GetMapping("/detalhamento")
     public ResponseEntity<List<AgendamentoDTO>> listarTodosComDetalhes() {
         List<AgendamentoDTO> agendamentos = agendamentoService.listarTodosComDetalhes();
@@ -122,11 +122,11 @@ public class AgendamentoController {
                     "sucesso", true
             ));
         } catch (RuntimeException e) {
-            // 🟢 Devolve 200 amigável para fila vazia
+            // Devolve 200 amigável para fila vazia
             if ("Fila vazia".equals(e.getMessage())) {
                 return ResponseEntity.ok(Map.of("sucesso", false, "mensagem", "Não há prioridades na fila para hoje."));
             }
-            // 🟢 Devolve 200 amigável informando que ele está ocupado (Bloqueio do Backend!)
+            // Devolve 200 amigável informando que ele está ocupado (Bloqueio do Backend!)
             if ("Atendente ocupado".equals(e.getMessage())) {
                 return ResponseEntity.ok(Map.of("sucesso", false, "mensagem", "Ação bloqueada: Você já possui um atendimento em aberto. Finalize-o primeiro."));
             }
@@ -184,7 +184,7 @@ public class AgendamentoController {
     public ResponseEntity<List<UltimaChamadaDTO>> buscarUltimasChamadas(
             @PathVariable Long setorId) {
 
-        // ✅ Alterado para buscar as últimas chamadas do setor específico
+        // Alterado para buscar as últimas chamadas do setor específico
         return ResponseEntity.ok(
                 agendamentoService.getUltimasChamadasPorSetor(setorId)
         );

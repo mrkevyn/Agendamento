@@ -53,7 +53,6 @@ public class SecurityConfig {
                                 "/api/agendamentos/ultimas-chamadas/**",
                                 "/api/setores/setor/**",
                                 "/api/gerenciador/**",
-                                "/api/enderecos/**",
 
                                 // 🔹 Swagger / OpenAPI
                                 "/v3/api-docs/**",
@@ -61,7 +60,7 @@ public class SecurityConfig {
                                 "/swagger-ui.html"
                         ).permitAll()
 
-                        // 🔒 TODO O RESTO EXIGE JWT
+                        // TODO O RESTO EXIGE JWT
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

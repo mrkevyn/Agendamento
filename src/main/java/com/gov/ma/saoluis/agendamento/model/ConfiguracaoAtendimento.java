@@ -17,32 +17,32 @@ public class ConfiguracaoAtendimento {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 🔹 Agora o setor é o dono da configuração
+    // Agora o setor é o dono da configuração
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "setor_id", nullable = false)
     private Setor setor;
 
-    // ⏰ Bloco
+    // Bloco
     private LocalTime horaInicio;
     private LocalTime horaFim;
 
     private LocalTime pausaInicio; // ex: 13:00
     private LocalTime pausaFim;    // ex: 14:00
 
-    // 🔹 Regra escolhida
+    // Regra escolhida
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TipoRegraAtendimento tipoRegra;
 
-    // 🅰️ Usado quando regra = POR_QUANTIDADE
+    // Usado quando regra = POR_QUANTIDADE
     private Integer quantidadeAtendimentos;
 
-    // 🅱️ Usado quando regra = POR_INTERVALO
+    // Usado quando regra = POR_INTERVALO
     private Integer intervaloMinutos;
 
     private Integer numeroGuiches;
 
-    // 📆 Dias da semana
+    // Dias da semana
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
             name = "configuracao_datas",
@@ -51,7 +51,7 @@ public class ConfiguracaoAtendimento {
     @Column(name = "data", nullable = false)
     private Set<LocalDate> datasAtendimento = new HashSet<>();
 
-    // ⏱️ Horários gerados
+    // Horários gerados
     @OneToMany(
             mappedBy = "configuracao",
             cascade = CascadeType.ALL,

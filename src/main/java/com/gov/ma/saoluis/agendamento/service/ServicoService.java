@@ -71,7 +71,7 @@ public class ServicoService {
         // Pegamos a lista de serviços que o atendente TEM vinculados a ele
         Set<Servico> servicosDoGerenciador = gerenciador.getServicos();
 
-        // 🚀 A LÓGICA MUDOU AQUI:
+        // A LÓGICA MUDOU AQUI:
         // Se o atendente JÁ TEM uma relação de serviços exclusivos...
         if (servicosDoGerenciador != null && !servicosDoGerenciador.isEmpty()) {
             return servicosDoGerenciador.stream()

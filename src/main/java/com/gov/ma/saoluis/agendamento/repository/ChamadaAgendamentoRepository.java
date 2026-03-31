@@ -25,7 +25,7 @@ public interface ChamadaAgendamentoRepository
         u.id                AS usuarioId,
         u.nome              AS usuarioNome,
 
-        -- 🟢 Busca o nome do serviço de onde ele estiver (Serviço Comum ou Saúde)
+        -- Busca o nome do serviço de onde ele estiver (Serviço Comum ou Saúde)
         COALESCE(s.nome, ss.nome) AS servicoNome,
         COALESCE(s.id, ss.id)     AS servicoId,
         
@@ -39,11 +39,11 @@ public interface ChamadaAgendamentoRepository
     FROM chamada_agendamento ca
     JOIN agendamento a           ON ca.agendamento_id = a.id
     LEFT JOIN servico s          ON a.servico_id = s.id
-    LEFT JOIN servico_saude ss   ON a.servico_saude_id = ss.id -- 👈 Nova tabela integrada
+    LEFT JOIN servico_saude ss   ON a.servico_saude_id = ss.id 
     JOIN setor st                ON a.setor_id = st.id
     JOIN secretaria sec          ON st.secretaria_id = sec.id
     LEFT JOIN gerenciador g      ON ca.gerenciador_id = g.id
-    LEFT JOIN ponto_atendimento pa ON g.ponto_atendimento_id = pa.id -- 👈 Nova tabela de pontos
+    LEFT JOIN ponto_atendimento pa ON g.ponto_atendimento_id = pa.id 
 
     LEFT JOIN usuario u          ON a.usuario_id = u.id
 

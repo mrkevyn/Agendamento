@@ -29,13 +29,13 @@ public class Setor {
     @JsonIgnore
     private Endereco endereco;
 
-    // 🔗 NOVO VÍNCULO: MUITOS SETORES PERTENCEM A UMA SECRETARIA
+    // NOVO VÍNCULO: MUITOS SETORES PERTENCEM A UMA SECRETARIA
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "secretaria_id")
     @JsonIgnore
     private Secretaria secretaria;
 
-    // ✅ Lado inverso do N:N
+    // Lado inverso do N:N
     @ManyToMany(mappedBy = "setores")
     @JsonIgnore
     private Set<Servico> servicos = new HashSet<>();

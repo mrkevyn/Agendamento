@@ -51,7 +51,7 @@ public class TipoAtendimentoService {
             novoTipo.setSigla("N");
             novoTipo.setPeso(0); // 🟢 REGRA DE NEGÓCIO: Normal é sempre peso 0, ignora o que vier no DTO
         } else {
-            // 🟢 REGRA DE NEGÓCIO: Se não é NORMAL, o administrador é OBRIGADO a informar o peso (> 0)
+            // REGRA DE NEGÓCIO: Se não é NORMAL, o administrador é OBRIGADO a informar o peso (> 0)
             if (dto.peso() == null || dto.peso() <= 0) {
                 throw new RuntimeException("O peso da prioridade é obrigatório e deve ser maior que zero.");
             }

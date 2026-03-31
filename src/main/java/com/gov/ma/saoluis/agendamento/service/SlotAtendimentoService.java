@@ -26,14 +26,14 @@ public class SlotAtendimentoService {
     @Transactional
     public void garantirSlotsDoDia(ConfiguracaoAtendimento cfg, LocalDate data) {
 
-        // 📆 só gera slot se a data estiver configurada
+        // só gera slot se a data estiver configurada
         if (cfg.getDatasAtendimento() == null
                 || !cfg.getDatasAtendimento().contains(data)) {
             return;
         }
 
         for (HorarioAtendimento ht : cfg.getHorarios()) {
-            // ✅ ideal: insertIfNotExists (ON CONFLICT) para não abortar transação
+            // ideal: insertIfNotExists (ON CONFLICT) para não abortar transação
             slotRepo.insertIfNotExists(
                     cfg.getId(),
                     data,

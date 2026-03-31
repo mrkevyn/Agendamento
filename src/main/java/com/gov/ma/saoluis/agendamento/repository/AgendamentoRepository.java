@@ -119,7 +119,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     
     -- MUDANÇA AQUI: Cada Join olha para sua respectiva coluna no agendamento
     LEFT JOIN servico s           ON a.servico_id = s.id
-    LEFT JOIN servico_saude ss    ON a.servico_saude_id = ss.id -- 👈 Aqui estava o erro!
+    LEFT JOIN servico_saude ss    ON a.servico_saude_id = ss.id
     LEFT JOIN gerenciador_servico sg ON sg.servico_id = s.id
     
     LEFT JOIN gerenciador g       ON g.id = a.gerenciador_id

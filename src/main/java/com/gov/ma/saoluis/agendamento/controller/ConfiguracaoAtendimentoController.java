@@ -22,7 +22,7 @@ public class ConfiguracaoAtendimentoController {
         this.service = service;
     }
 
-    // 🔹 Criar configuração
+    // Criar configuração
     @PostMapping
     public ResponseEntity<ConfiguracaoAtendimento> criar(
             @RequestBody ConfiguracaoAtendimento configuracao
@@ -47,7 +47,7 @@ public class ConfiguracaoAtendimentoController {
         return ResponseEntity.ok(service.removerDatas(id, datas));
     }
 
-    // 🔹 Atualizar configuração
+    // Atualizar configuração
     @PutMapping("/{id}")
     public ResponseEntity<ConfiguracaoAtendimento> atualizar(
             @PathVariable Long id,
@@ -57,7 +57,7 @@ public class ConfiguracaoAtendimentoController {
         return ResponseEntity.ok(atualizada);
     }
 
-    // 🔹 Buscar por ID
+    // Buscar por ID
     @GetMapping("/{id}")
     public ResponseEntity<ConfiguracaoAtendimento> buscarPorId(
             @PathVariable Long id
@@ -65,7 +65,7 @@ public class ConfiguracaoAtendimentoController {
         return ResponseEntity.ok(service.buscarPorId(id));
     }
 
-    // 🔹 Buscar configurações por Setor
+    // Buscar configurações por Setor
     @GetMapping("/setor/{setorId}")
     public ResponseEntity<List<ConfiguracaoAtendimento>> listarPorSetor(
             @PathVariable Long setorId,
@@ -75,7 +75,7 @@ public class ConfiguracaoAtendimentoController {
         return ResponseEntity.ok(service.listarPorSetorAtivos(setorId, ativo));
     }
 
-    // 🔹 Desativar configuração
+    // Desativar configuração
     @DeleteMapping("/{id}/desativar")
     public ResponseEntity<Void> desativar(
             @PathVariable Long id
@@ -84,14 +84,14 @@ public class ConfiguracaoAtendimentoController {
         return ResponseEntity.noContent().build();
     }
 
-    // 🔹 Ativar configuração
+    // Ativar configuração
     @PutMapping("/{id}/ativar")
     public ResponseEntity<Void> ativar(@PathVariable Long id) {
         service.ativar(id);
         return ResponseEntity.noContent().build();
     }
 
-    // 🔹 Validar disponibilidade (usado pelo agendamento)
+    // Validar disponibilidade (usado pelo agendamento)
     @GetMapping("/validar-disponibilidade")
     public ResponseEntity<ConfiguracaoAtendimento> validarDisponibilidade(
             @RequestParam Long setorId,

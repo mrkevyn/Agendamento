@@ -37,7 +37,7 @@ public class Agendamento {
     
     private LocalDateTime horaChamada;
 
-    @Column(name = "hora_finalizado") // 🟢 Novo campo
+    @Column(name = "hora_finalizado")
     private LocalDateTime horaFinalizado;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -79,7 +79,7 @@ public class Agendamento {
     private String observacao;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "servico_saude_id", nullable = true) // 🟢 Hospital/Saúde
+    @JoinColumn(name = "servico_saude_id", nullable = true)
     private ServicoSaude servicoSaude;
 
     // Getters e Setters

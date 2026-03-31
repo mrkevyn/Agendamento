@@ -24,14 +24,14 @@ public interface AgendamentoDTO {
     Long getServicoId();
     String getServicoNome();
 
-    // 🔹 Novos campos da secretaria
+    // Novos campos da secretaria
     Long getSecretariaId();
     String getSecretariaNome();
 
     String getGuiche();
     Long getGerenciadorId(); // recomendo também retornar, ajuda debug
 
-    // 🔹 Endereço (NOVO)
+    // Endereço (NOVO)
     Long getEnderecoId();
     String getEnderecoLogradouro();
     String getEnderecoNumero();

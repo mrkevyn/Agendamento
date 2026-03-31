@@ -28,7 +28,7 @@ public interface SlotAtendimentoRepository extends JpaRepository<SlotAtendimento
 
     void deleteByConfiguracaoIdAndData(Long configuracaoId, LocalDate data);
 
-    // ✅ idempotente: não quebra transação se já existir
+    // idempotente: não quebra transação se já existir
     @Modifying
     @Query(value = """
         INSERT INTO slot_atendimento (ativo, capacidade, configuracao_id, data, hora, reservados)
@@ -42,7 +42,7 @@ public interface SlotAtendimentoRepository extends JpaRepository<SlotAtendimento
             @Param("capacidade") int capacidade
     );
 
-    // 🔒 use isso só no POST /agendamentos
+    // use isso só no POST /agendamentos
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
         select s from SlotAtendimento s

@@ -8,5 +8,5 @@ public record LoginResponseDTO(
         String perfil,
         String token,
         List<SecretariaDTO> secretarias,
-        List<SetorDTO> setores // 👈 Fundamental para o filtro no Vue
+        List<SetorDTO> setores
 ) {}

@@ -630,7 +630,7 @@ public class AgendamentoService {
         Gerenciador gerenciador = atendenteRepository.findById(atendenteId)
                 .orElseThrow(() -> new RuntimeException("Atendente não encontrado"));
 
-        // Validação de vínculo...
+        // Validação de vínculo
 
         LocalDateTime agora = LocalDateTime.now(ZONE_SLZ);
         LocalDateTime inicio = agora.toLocalDate().atStartOfDay();

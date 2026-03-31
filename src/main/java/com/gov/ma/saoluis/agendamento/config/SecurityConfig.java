@@ -44,7 +44,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
-                        // 🔓 ROTAS PÚBLICAS
+                        // ROTAS PÚBLICAS
                         .requestMatchers(
                                 "/api/auth/**", // 3. Libera a rota de login!
 
@@ -52,9 +52,8 @@ public class SecurityConfig {
                                 "/api/agendamentos/agendar-app",
                                 "/api/agendamentos/ultimas-chamadas/**",
                                 "/api/setores/setor/**",
-                                "/api/gerenciador/**",
 
-                                // 🔹 Swagger / OpenAPI
+                                // Swagger / OpenAPI
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"

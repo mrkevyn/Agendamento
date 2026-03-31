@@ -14,7 +14,7 @@ import java.util.List;
 public class TipoAtendimentoService {
 
     private final TipoAtendimentoRepository repository;
-    private final SecretariaRepository secretariaRepository; // 🟢 Injetado para buscar a Secretaria
+    private final SecretariaRepository secretariaRepository; // Injetado para buscar a Secretaria
 
     public TipoAtendimentoService(TipoAtendimentoRepository repository, SecretariaRepository secretariaRepository) {
         this.repository = repository;
@@ -49,7 +49,7 @@ public class TipoAtendimentoService {
         // 5. Lógica inteligente da Sigla e do Peso
         if (nomeFormatado.startsWith("NORMAL")) {
             novoTipo.setSigla("N");
-            novoTipo.setPeso(0); // 🟢 REGRA DE NEGÓCIO: Normal é sempre peso 0, ignora o que vier no DTO
+            novoTipo.setPeso(0); // REGRA DE NEGÓCIO: Normal é sempre peso 0, ignora o que vier no DTO
         } else {
             // REGRA DE NEGÓCIO: Se não é NORMAL, o administrador é OBRIGADO a informar o peso (> 0)
             if (dto.peso() == null || dto.peso() <= 0) {

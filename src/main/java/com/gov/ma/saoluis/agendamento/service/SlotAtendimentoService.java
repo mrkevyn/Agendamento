@@ -77,7 +77,7 @@ public class SlotAtendimentoService {
         }
     }
 
-    // 🟢 Novo método para sincronizar os slots já gerados com a nova capacidade
+    // Novo método para sincronizar os slots já gerados com a nova capacidade
     @Transactional
     public void sincronizarCapacidadeFutura(Long configuracaoId, int novaCapacidade) {
         slotRepo.atualizarCapacidadeFutura(configuracaoId, novaCapacidade);

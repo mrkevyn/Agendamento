@@ -16,7 +16,7 @@ public class GerenciadorScheduler {
         this.gerenciadorRepository = gerenciadorRepository;
     }
 
-    // 🟢 'zone' garante que o Spring olhe para o relógio de São Luís, não do servidor
+    // 'zone' garante que o Spring olhe para o relógio de São Luís, não do servidor
     @Transactional
     @Scheduled(cron = "0 0 0 * * *", zone = DataUtils.STR_ZONE)
     public void resetarGuichesDiarios() {

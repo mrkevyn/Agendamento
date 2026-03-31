@@ -30,7 +30,7 @@ public class ConfiguracaoAtendimentoService {
         this.slotAtendimentoRepository = slotAtendimentoRepository;
     }
 
-    // 🔹 Criar configuração
+    // Criar configuração
     @Transactional
     public ConfiguracaoAtendimento salvar(ConfiguracaoAtendimento configuracao) {
         validarConfiguracao(configuracao); // valida só a base (hora/regra/guiches)
@@ -55,12 +55,12 @@ public class ConfiguracaoAtendimentoService {
 
         ConfiguracaoAtendimento cfg = buscarPorId(configuracaoId);
 
-        // 🟢 1. Filtra as datas: pega a lista que chegou e mantém APENAS as que não existem no banco
+        // 1. Filtra as datas: pega a lista que chegou e mantém APENAS as que não existem no banco
         Set<LocalDate> novasDatas = datas.stream()
                 .filter(data -> !cfg.getDatasAtendimento().contains(data))
                 .collect(Collectors.toSet());
 
-        // 🟢 2. Se depois de filtrar não sobrar nenhuma data nova, avisa o usuário
+        // 2. Se depois de filtrar não sobrar nenhuma data nova, avisa o usuário
         if (novasDatas.isEmpty()) {
             throw new RuntimeException("Todas as datas informadas já estão cadastradas para este setor.");
         }
@@ -118,7 +118,7 @@ public class ConfiguracaoAtendimentoService {
         }
     }
 
-    // 🔹 Atualizar configuração
+    // Atualizar configuração
     @Transactional
     public ConfiguracaoAtendimento atualizar(Long id, ConfiguracaoAtendimento novosDados) {
 
@@ -137,26 +137,26 @@ public class ConfiguracaoAtendimentoService {
 
         validarConfiguracao(existente);
 
-        // 🔥 recria horários sem quebrar a coleção
+        // recria horários sem quebrar a coleção
         gerarHorarios(existente);
 
         // Salva a configuração (o "molde") atualizada
         ConfiguracaoAtendimento salvo = repository.save(existente);
 
-        // 👇 A MÁGICA AQUI: Vai no banco e atualiza a capacidade física dos slots futuros!
+        // A MÁGICA AQUI: Vai no banco e atualiza a capacidade física dos slots futuros!
         // (Lembre-se de garantir que o SlotAtendimentoService esteja injetado nesta classe)
         slotService.sincronizarCapacidadeFutura(salvo.getId(), salvo.getNumeroGuiches());
 
         return salvo;
     }
 
-    // 🔹 Buscar por ID
+    // Buscar por ID
     public ConfiguracaoAtendimento buscarPorId(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Configuração não encontrada"));
     }
 
-    // 🔹 Listar por secretaria
+    // Listar por secretaria
     public List<ConfiguracaoAtendimento> listarPorSetor(Long setorId) {
         System.out.print(repository.findBySetorIdAndAtivoTrue(setorId));
         return repository.findBySetorId(setorId);
@@ -177,7 +177,7 @@ public class ConfiguracaoAtendimentoService {
         return new DatasResponse(datas);
     }
 
-    // 🔹 Desativar configuração
+    // Desativar configuração
     public void desativar(Long id) {
         ConfiguracaoAtendimento configuracao = buscarPorId(id);
         configuracao.setAtivo(false);
@@ -190,7 +190,7 @@ public class ConfiguracaoAtendimentoService {
         repository.save(configuracao);
     }
 
-    // 🔹 Verifica se uma data/horário é permitido
+    // Verifica se uma data/horário é permitido
     public ConfiguracaoAtendimento validarDisponibilidade(
             Long setorId,
             LocalDate data,
@@ -200,11 +200,11 @@ public class ConfiguracaoAtendimentoService {
                 repository.findAtivasPorSetor(setorId);
 
         return configuracoes.stream()
-                // 📆 valida por data específica
+                // valida por data específica
                 .filter(cfg -> cfg.getDatasAtendimento() != null
                         && cfg.getDatasAtendimento().contains(data))
 
-                // ⏰ valida horário dentro do bloco
+                // valida horário dentro do bloco
                 .filter(cfg -> !hora.isBefore(cfg.getHoraInicio())
                         && hora.isBefore(cfg.getHoraFim()))
 
@@ -214,7 +214,7 @@ public class ConfiguracaoAtendimentoService {
                 );
     }
 
-    // 🔹 Validações de regra
+    // Validações de regra
     private void validarConfiguracao(ConfiguracaoAtendimento cfg) {
 
         if (cfg.getHoraInicio() == null || cfg.getHoraFim() == null) {
@@ -229,7 +229,7 @@ public class ConfiguracaoAtendimentoService {
             throw new RuntimeException("Tipo de regra é obrigatório");
         }
 
-        // ✅ PAUSA (opcional) - ex: 13:00 até 14:00
+        // PAUSA (opcional) - ex: 13:00 até 14:00
         if (cfg.getPausaInicio() != null || cfg.getPausaFim() != null) {
 
             // se um veio, os dois precisam vir
@@ -253,25 +253,25 @@ public class ConfiguracaoAtendimentoService {
             }
         }
 
-        // 🔹 POR INTERVALO
+        // POR INTERVALO
         if (cfg.getTipoRegra() == TipoRegraAtendimento.POR_INTERVALO) {
 
             if (cfg.getIntervaloMinutos() == null || cfg.getIntervaloMinutos() <= 0) {
                 throw new RuntimeException("Intervalo em minutos é obrigatório");
             }
 
-            // 🔥 IGNORA quantidade vinda do front
+            // IGNORA quantidade vinda do front
             cfg.setQuantidadeAtendimentos(null);
         }
 
-        // 🔹 POR QUANTIDADE
+        // POR QUANTIDADE
         if (cfg.getTipoRegra() == TipoRegraAtendimento.POR_QUANTIDADE) {
 
             if (cfg.getQuantidadeAtendimentos() == null || cfg.getQuantidadeAtendimentos() < 2) {
                 throw new RuntimeException("Quantidade mínima de atendimentos é 2");
             }
 
-            // 🔥 IGNORA intervalo vindo do front
+            // IGNORA intervalo vindo do front
             cfg.setIntervaloMinutos(null);
         }
 
@@ -285,7 +285,7 @@ public class ConfiguracaoAtendimentoService {
 
         LocalTime atual = cfg.getHoraInicio();
 
-        while (atual.isBefore(cfg.getHoraFim())) { // ✅ não inclui horaFim
+        while (atual.isBefore(cfg.getHoraFim())) { // não inclui horaFim
             if (!estaNaPausa(cfg, atual)) {
                 HorarioAtendimento h = new HorarioAtendimento();
                 h.setConfiguracao(cfg);
@@ -323,7 +323,7 @@ public class ConfiguracaoAtendimentoService {
                 atual = cfg.getPausaFim();
             }
 
-            // ✅ não inclui horaFim
+            // não inclui horaFim
             if (!atual.isBefore(cfg.getHoraFim())) {
                 break;
             }

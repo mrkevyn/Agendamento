@@ -219,18 +219,11 @@ public class AgendamentoService {
         ConfiguracaoAtendimento cfg =
                 configuracaoService.buscarPorSetorId(req.setorId());
 
-        configuracaoService.validarDisponibilidade(
-                req.setorId(),
-                req.data(),
-                req.hora()
-        );
+        configuracaoService.validarDisponibilidade(req.setorId(), req.data(), req.hora());
 
         slotAtendimentoService.garantirSlotsDoDia(cfg, req.data());
 
-        SlotAtendimento slot = slotAtendimentoRepository.lockSlot(
-                cfg.getId(),
-                req.data(),
-                req.hora()
+        SlotAtendimento slot = slotAtendimentoRepository.lockSlot(cfg.getId(), req.data(), req.hora()
         ).orElseThrow(() -> new RuntimeException("Horário indisponível"));
 
         if (!slot.temVaga()) {

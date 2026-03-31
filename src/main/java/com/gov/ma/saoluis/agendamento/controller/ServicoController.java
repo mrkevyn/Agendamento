@@ -89,4 +89,22 @@ public class ServicoController {
     ) {
         return ResponseEntity.ok(servicoService.listarPorSetor(setorId, gerenciadorId));
     }
+
+    @PostMapping("/{gerenciadorId}/servicos/{servicoId}")
+    public ResponseEntity<Void> vincularServico(
+            @PathVariable Long gerenciadorId,
+            @PathVariable Long servicoId
+    ) {
+        servicoService.vincularServico(gerenciadorId, servicoId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/gerenciador/{gerenciadorId}/servico/{servicoId}")
+    public ResponseEntity<Void> desvincularServico(
+            @PathVariable Long gerenciadorId,
+            @PathVariable Long servicoId
+    ) {
+        servicoService.desvincularServico(gerenciadorId, servicoId);
+        return ResponseEntity.noContent().build();
+    }
 }

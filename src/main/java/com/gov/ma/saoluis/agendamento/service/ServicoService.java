@@ -129,4 +129,52 @@ public class ServicoService {
 
         return servicoRepository.save(servico);
     }
+
+    @Transactional
+    public void vincularServico(Long gerenciadorId, Long servicoId) {
+
+        Gerenciador gerenciador = gerenciadorRepository.findById(gerenciadorId)
+                .orElseThrow(() -> new RuntimeException("Gerenciador não encontrado"));
+
+        Servico servico = servicoRepository.findById(servicoId)
+                .orElseThrow(() -> new RuntimeException("Serviço não encontrado"));
+
+        // Evita duplicidade
+        if (gerenciador.getServicos().contains(servico)) {
+            return;
+        }
+
+        gerenciador.getServicos().add(servico);
+
+        gerenciadorRepository.save(gerenciador);
+    }
+
+    @Transactional
+    public void desvincularServico(Long gerenciadorId, Long servicoId) {
+
+        Gerenciador gerenciador = gerenciadorRepository.findById(gerenciadorId)
+                .orElseThrow(() -> new RuntimeException("Gerenciador não encontrado"));
+
+        Servico servico = servicoRepository.findById(servicoId)
+                .orElseThrow(() -> new RuntimeException("Serviço não encontrado"));
+
+        gerenciador.getServicos().remove(servico);
+
+        gerenciadorRepository.save(gerenciador);
+    }
+
+    @Transactional
+    public void vincularServicos(Long gerenciadorId, List<Long> servicosIds) {
+
+        Gerenciador gerenciador = gerenciadorRepository.findById(gerenciadorId)
+                .orElseThrow(() -> new RuntimeException("Gerenciador não encontrado"));
+
+        List<Servico> servicos = servicoRepository.findAllById(servicosIds);
+
+        gerenciador.getServicos().clear(); // opcional (reset total)
+
+        gerenciador.getServicos().addAll(servicos);
+
+        gerenciadorRepository.save(gerenciador);
+    }
 }

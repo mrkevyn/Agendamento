@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Configuration
-@EnableWebSecurity // 🟢 Boa prática: Garante a ativação da segurança web
+@EnableWebSecurity // Boa prática: Garante a ativação da segurança web
 public class SecurityConfig {
 
     @Autowired
@@ -39,7 +39,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                // 🟢 2. SESSÃO STATELESS: Fundamental para APIs REST com JWT
+                // 2. SESSÃO STATELESS: Fundamental para APIs REST com JWT
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth

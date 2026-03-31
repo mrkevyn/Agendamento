@@ -25,9 +25,7 @@ public class HorarioAtendimento {
     @Column(nullable = false)
     private Boolean ocupado = false;
 
-    // =========================
     // Getters e Setters
-    // =========================
 
     public Long getId() {
         return id;

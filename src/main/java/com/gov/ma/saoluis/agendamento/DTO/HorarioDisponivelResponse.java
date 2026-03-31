@@ -6,4 +6,3 @@ public record HorarioDisponivelResponse(
         LocalTime hora,
         int vagasDisponiveis
 ) {}
-

@@ -33,7 +33,7 @@ public interface ChamadaAgendamentoRepository
         sec.id              AS secretariaId,
         sec.nome            AS secretariaNome,
 
-        -- 🟢 Agora traz a descrição completa para a TV (ex: "Consultório 01")
+        -- Agora traz a descrição completa para a TV (ex: "Consultório 01")
         COALESCE(pa.descricao || ' ' || LPAD(CAST(pa.numero AS TEXT), 2, '0'), 'Ponto ' || ca.guiche) AS guiche
 
     FROM chamada_agendamento ca

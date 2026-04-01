@@ -213,7 +213,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
              OR 
              (a.tipoAgendamento = 'ESPONTANEO' AND a.horaAgendamento >= :inicio AND a.horaAgendamento <= :fim)
          )
-       ORDER BY a.tipoAtendimento.peso DESC, a.horaAgendamento ASC
+       ORDER BY a.tipoAtendimento.peso ASC, a.horaAgendamento ASC
    """)
 	List<Agendamento> buscarProximoPrioridadeHoje(
 			@Param("setorId") Long setorId,

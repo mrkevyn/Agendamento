@@ -169,7 +169,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             WHEN a.situacao IN ('AGENDADO', 'REAGENDADO') AND a.hora_agendamento > :agora THEN 3
             ELSE 4
         END ASC,
-        COALESCE(ta.peso, 0) DESC,
+        COALESCE(ta.peso, 0) ASC,
         a.hora_agendamento ASC
 """, nativeQuery = true)
 	List<AgendamentoDTO> buscarAgendamentosPorSetor(

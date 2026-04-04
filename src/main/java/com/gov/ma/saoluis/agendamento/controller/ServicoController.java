@@ -85,9 +85,10 @@ public class ServicoController {
     @GetMapping("/setor/{setorId}")
     public ResponseEntity<List<ServicoResponseDTO>> listarPorSetor(
             @PathVariable Long setorId,
-            @RequestParam(required = false) Long gerenciadorId
+            @RequestParam(required = false) Long gerenciadorId,
+            @RequestParam(required = false, defaultValue = "false") boolean cadastro // 👈 Novo param
     ) {
-        return ResponseEntity.ok(servicoService.listarPorSetor(setorId, gerenciadorId));
+        return ResponseEntity.ok(servicoService.listarPorSetor(setorId, gerenciadorId, cadastro));
     }
 
     @PostMapping("/{gerenciadorId}/servicos/{servicoId}")

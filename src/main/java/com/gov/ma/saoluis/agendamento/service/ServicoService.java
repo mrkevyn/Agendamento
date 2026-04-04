@@ -64,26 +64,43 @@ public class ServicoService {
                 .anyMatch(g -> g.getId().equals(gerenciador.getId()));
     }
 
-    public List<ServicoResponseDTO> listarPorSetor(Long setorId, Long gerenciadorId) {
-        Gerenciador gerenciador = gerenciadorRepository.findById(gerenciadorId)
-                .orElseThrow(() -> new RuntimeException("Gerenciador não encontrado"));
+    public List<ServicoResponseDTO> listarPorSetor(Long setorId, Long gerenciadorId, boolean isModoCadastro) {
 
-        // Pegamos a lista de serviços que o atendente TEM vinculados a ele
-        Set<Servico> servicosDoGerenciador = gerenciador.getServicos();
+        // 1. Se for cadastro, IGNORE o gerenciadorId e retorne a lista bruta do banco
+        if (isModoCadastro) {
+            List<Servico> resultadoBanco = servicoRepository.findBySetoresId(setorId);
 
-        // A LÓGICA MUDOU AQUI:
-        // Se o atendente JÁ TEM uma relação de serviços exclusivos...
-        if (servicosDoGerenciador != null && !servicosDoGerenciador.isEmpty()) {
-            return servicosDoGerenciador.stream()
-                    // Garantimos que o serviço exclusivo pertença ao setor solicitado
-                    .filter(s -> s.getSetores().stream().anyMatch(setor -> setor.getId().equals(setorId)))
+            // 🚩 OLHE O CONSOLE DA IDE: Se aqui imprimir o número correto, o problema era o DTO
+            System.out.println("DEBUG CADASTRO: Setor " + setorId + " retornou " + resultadoBanco.size() + " serviços.");
+
+            return resultadoBanco.stream()
                     .map(s -> new ServicoResponseDTO(s.getId(), s.getNome(), s.getDescricao()))
                     .toList();
         }
 
-        // Caso contrário (ele não tem relação exclusiva), ele vê os serviços gerais do setor
-        return servicoRepository.findBySetoresId(setorId)
-                .stream()
+        // 2. Se não for cadastro, mas o ID for nulo, também retorna tudo (segurança)
+        if (gerenciadorId == null) {
+            return servicoRepository.findBySetoresId(setorId).stream()
+                    .map(s -> new ServicoResponseDTO(s.getId(), s.getNome(), s.getDescricao()))
+                    .toList();
+        }
+
+        // --- DAQUI PARA BAIXO SÓ ENTRA O FLUXO DE ATENDIMENTO ---
+        Gerenciador gerenciador = gerenciadorRepository.findById(gerenciadorId)
+                .orElseThrow(() -> new RuntimeException("Gerenciador não encontrado"));
+
+        Set<Servico> servicosDoGerenciador = gerenciador.getServicos();
+
+        // REGRA ESPECIALISTA
+        if (servicosDoGerenciador != null && !servicosDoGerenciador.isEmpty()) {
+            return servicosDoGerenciador.stream()
+                    .filter(s -> s.getSetores().stream().anyMatch(st -> st.getId().equals(setorId)))
+                    .map(s -> new ServicoResponseDTO(s.getId(), s.getNome(), s.getDescricao()))
+                    .toList();
+        }
+
+        // REGRA GERAL
+        return servicoRepository.findBySetoresId(setorId).stream()
                 .filter(s -> s.getGerenciadores() == null || s.getGerenciadores().isEmpty())
                 .map(s -> new ServicoResponseDTO(s.getId(), s.getNome(), s.getDescricao()))
                 .toList();

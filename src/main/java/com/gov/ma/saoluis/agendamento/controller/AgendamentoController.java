@@ -26,10 +26,12 @@ public class AgendamentoController {
     @GetMapping("/setor/{setorId}")
     public ResponseEntity<List<AgendamentoDTO>> listarPorSetor(
             @PathVariable Long setorId,
-            @RequestParam(required = false) Long gerenciadorId
+            @RequestParam(required = false) Long gerenciadorId,
+
+            @RequestParam(name = "perfil", defaultValue = "ATENDENTE") String perfil
     ) {
         return ResponseEntity.ok(
-                agendamentoService.listarPorSetorGerenciador(setorId, gerenciadorId)
+                agendamentoService.listarPorSetorGerenciador(setorId, gerenciadorId, perfil)
         );
     }
 

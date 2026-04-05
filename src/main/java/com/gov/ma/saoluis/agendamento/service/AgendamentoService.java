@@ -77,7 +77,7 @@ public class AgendamentoService {
         this.tipoAtendimentoService = tipoAtendimentoService;
     }
 
-    public List<AgendamentoDTO> listarPorSetorGerenciador(Long setorId, Long gerenciadorId) {
+    public List<AgendamentoDTO> listarPorSetorGerenciador(Long setorId, Long gerenciadorId, String perfil){
         // 1. Busca o setor para verificar a secretaria
         Setor setor = setorRepository.findById(setorId)
                 .orElseThrow(() -> new RuntimeException("Setor não encontrado"));
@@ -92,7 +92,7 @@ public class AgendamentoService {
         Timestamp agoraSql = Timestamp.valueOf(horaLocal);
 
         // 4. Chama a Query com os 3 parâmetros
-        return agendamentoRepository.buscarAgendamentosPorSetor(setorId, agoraSql, isHospital, gerenciadorId);
+        return agendamentoRepository.buscarAgendamentosPorSetor(setorId, agoraSql, isHospital, gerenciadorId, perfil);
     }
 
     // Buscar todos os agendamentos com detalhes

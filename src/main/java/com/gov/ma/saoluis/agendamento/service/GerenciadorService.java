@@ -241,7 +241,7 @@ public class GerenciadorService {
             }
 
             // Verifica se o perfil está na lista dos permitidos para auto-alteração
-            if (!"ATENDENTE".equals(perfil) && !"MEDICO".equals(perfil) && !"TRIAGEM".equals(perfil)) {
+            if (!"ATENDENTE".equals(perfil) && !"MEDICO".equals(perfil) && !"TRIAGEM".equals(perfil) && !"CADASTRO".equals(perfil)) {
                 throw new RuntimeException("Seu perfil (" + perfil + ") não tem permissão para selecionar local de trabalho.");
             }
         }
